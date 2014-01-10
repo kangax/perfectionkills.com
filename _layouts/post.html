@@ -37,6 +37,16 @@
 
           {{ content }}
 
+          <p class="donations-in-post">
+            Liked this? Donations are welcome
+
+            <script data-gittip-username="kangax"
+                data-gittip-widget="button"
+                src="//gttp.co/v1.js"></script>
+
+            <script id='fba9cr0'>(function(i){var f,s=document.getElementById(i);f=document.createElement('iframe');f.src='//api.flattr.com/button/view/?uid=kangax&button=compact&url='+encodeURIComponent(document.URL);f.title='Flattr';f.height=20;f.width=110;f.style.borderWidth=0;s.parentNode.insertBefore(f,s);})('fba9cr0');</script>
+          </p>
+
           <div id="disqus_thread"></div>
           <script>
             var disqus_shortname = 'perfectionkillscom';
@@ -53,6 +63,10 @@
 
       </div>
     </div>
+
+    {% include footer.html %}
+
     <script src="../js/master.js"></script>
+
   </body>
 </html>
