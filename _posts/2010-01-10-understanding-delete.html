@@ -1,0 +1,571 @@
+---
+layout: post
+title: Understanding delete
+popular: popular
+tags:
+  - js
+---
+
+<h2>Understanding delete</h2>
+
+<div class="understanding-delete">
+  <ol class="toc">
+    <li>
+      <a href="#theory" title="">Theory</a>
+      <ul>
+        <li><a href="#type_of_code" title="">Type of code</a></li>
+        <li><a href="#execution_context" title="">Execution context</a></li>
+        <li><a href="#activation_object_variable_object" title="">Activation object / Variable object</a></li>
+        <li><a href="#property_attributes" title="">Property attributes</a></li>
+        <li><a href="#built_ins_and_dontdelete" title="">Built-ins and DontDelete</a></li>
+        <li><a href="#undeclared_assignments" title="">Undeclared assignments</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#firebug_confusion" title="">Firebug confusion</a>
+      <ul>
+        <li><a href="#deleting_variables_via_eval" title="">Deleting variables via eval</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#browsers_compliance" title="">Browsers compliance</a>
+      <ul>
+        <li><a href="#gecko_dontdelete_bug" title="">Gecko DontDelete bug</a></li>
+      </ul>
+    </li>
+    <li><a href="#ie_bugs" title="">IE bugs</a></li>
+    <li><a href="#misconceptions" title="">Misconceptions</a></li>
+    <li><a href="#delete_and_host_objects">`delete` and host objects</a></li>
+    <li><a href="#es5_strict_mode" title="">ES5 strict mode</a></li>
+    <li><a href="#summary" title="">Summary</a></li>
+  </ol>
+
+  <p>A couple of weeks ago, I had a chance to glance through Stoyan Stefanov&#8217;s <a href="http://www.amazon.com/Object-Oriented-JavaScript-high-quality-applications-libraries/dp/1847194141">Object-Oriented Javascript</a>. The book had an exceptionally high rating on Amazon (12 reviews with 5 stars), so I was curious to see if it was something worth recommending. I started reading through chapter on functions, and really enjoyed the way things were explained there; the flow of examples was structured in such nice, progressive way, it seemed even beginners would grasp it easily. However, almost immediately I stumbled upon an <strong>interesting misconception</strong> present throughout the entire chapter — deleting functions. There were some other mistakes (such as the difference between function declarations and function expressions), but we aren't going to talk about them now.</p>
+
+  <p>The book claims that <cite>&#8220;function is treated as a normal variable—it can be copied to a different variable and even deleted.&#8221;</cite>. Following that explanation, there is this example:</p>
+
+<pre lang="javascript"><code>
+  >>> var sum = function(a, b) {return a + b;}
+  >>> var add = sum;
+  >>> delete sum
+  true
+  >>> typeof sum;
+  "undefined"
+</code></pre>
+
+  <p>Ignoring a couple of missing semicolons, can you see what&#8217;s wrong with this snippet? The problem, of course, is that deleting <code>sum</code> variable should not be successful; <code>delete</code> statement should not evaluate to <code>true</code> and <code>typeof sum</code> should not result in &#8220;undefined&#8221;. All because <strong>it&#8217;s not possible to delete variables</strong> in Javascript. At least not when declared in such way.</p>
+
+  <p>So what&#8217;s going on in this example? Is it a typo? A diversion? Probably not. This whole snippet is actually a real output from the <a href="http://getfirebug.com/">Firebug</a> console, which Stoyan must have been using for quick testing. It&#8217;s almost as if Firebug follows some other rules of deletion. It is Firebug that has led Stoyan astray! So what is <strong>really</strong> going on here?</p>
+
+  <p>To answer this question, we need to understand how <code>delete</code> operator works in Javascript: what exactly can and cannot be deleted and why. Today I&#8217;ll try to explain this in details. We&#8217;ll take a look at Firebug&#8217;s &#8220;weird&#8221; behavior and realize that it&#8217;s not all that weird; we&#8217;ll delve into what&#8217;s going on behind the scenes when declaring variables, functions, assigning properties and deleting them; we'll look at browsers' compliance and some of the most notorious bugs; we&#8217;ll also talk about strict mode of 5th edition of ECMAScript, and how it changes <code>delete</code> operator behavior.</p>
+
+  <p style="background-color:#ffd;padding:0.25em;border:1px solid #fcc;">I'll be using Javascript and ECMAScript interchangeable to really mean ECMAScript (unless explicitly talking about Mozilla's JavaScript&trade; implementation).</p>
+
+  <p>Unsurprisingly, explanations of <code>delete</code> on the web are rather scarce. <a href="https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Operators/Special_Operators/delete_Operator">MDC article</a> is probably the most comprehensive resource, but unfortunately misses few interesting details about the subject; Curiously, one of these forgotten things is the cause of Firebug&#8217;s tricky behavior. <a href="http://msdn.microsoft.com/en-us/library/2b2z052x%28VS.85%29.aspx">MSDN reference</a> is practically useless.</p>
+
+  <h3 id="theory">Theory</h3>
+
+  <p>So why is it that we can delete object properties: </p>
+
+<pre lang="javascript"><code>
+  var o = { x: 1 };
+  delete o.x; // true
+  o.x; // undefined
+</code></pre>
+
+  <p>but not variables, declared like this:</p>
+
+<pre lang="javascript"><code>
+  var x = 1;
+  delete x; // false
+  x; // 1
+</code></pre>
+
+  <p>or functions, declared like this:</p>
+
+<pre lang="javascript"><code>
+  function x(){}
+  delete x; // false
+  typeof x; // "function"
+</code></pre>
+
+  <p>Note that <code>delete</code> only returns <code>false</code> when a <strong>property can not be deleted</strong>.</p>
+
+  <p>To understand this, we need to first grasp such concepts as variable instantiation and property attributes — something that&#8217;s unfortunately rarely covered in books on Javascript. I&#8217;ll try go over these very concisely in the next few paragraphs. It&#8217;s not hard to understand them at all! If you don&#8217;t care about <strong>why things work the way they work</strong>, feel free to skip this chapter.</p>
+
+  <h4 id="type_of_code">Type of code</h4>
+
+  <p>There are 3 types of executable code in ECMAScript: <strong>Global code</strong>, <strong>Function code</strong> and <strong>Eval code</strong>. These types are somewhat self-descriptive, but here&#8217;s a short overview:</p>
+
+  <ol>
+    <li>When a source text is treated as a Program, it is executed in a global scope, and is considered a <strong>Global code</strong>. In a browser environment, content of SCRIPT elements is usually parsed as a Program, and is therefore evaluated as a Global code.</li>
+    <li>Anything that&#8217;s executed directly within a function is, quite obviously, considered a <strong>Function code</strong>. In browsers, content of event attributes (e.g. <code>&lt;p onclick="..."&gt;</code>) is usually parsed and treated as a Function code.</li>
+    <li>Finally, text that&#8217;s supplied to a built-in <code>eval</code> function is parsed as <strong>Eval code</strong>. We will soon see why this type is special.</li>
+  </ol>
+
+  <h4 id="execution_context">Execution context</h4>
+
+  <p>When ECMAScript code executes, it always happens within certain <strong>execution context</strong>. Execution context is a somewhat abstract entity, which helps understand how scope and variable instantiation works. For each of three types of executable code, there&#8217;s an execution context. When a function is executed, it is said that control enters <strong>execution context for Function code</strong>; when Global code executes, control enters <strong>execution context for Global code</strong>, and so on. </p>
+
+  <p>As you can see, execution contexts can logically form a stack. First there might be Global code with its own execution context; that code might call a function, with its own execution context; that function could call another function, and so on and so forth. Even if function is calling itself recursively, a new execition context is being entered with every invocation.</p>
+
+  <h4 id="activation_object_variable_object">Activation object / Variable object</h4>
+
+  <p>Every execution context has a so-called <strong>Variable Object</strong> associated with it. Similarly to execution context, Variable object is an abstract entity, a mechanism to describe variable instantiation. Now, the interesing part is that variables and functions declared in a source text are actually <strong>added as properties of this Variable object</strong>. </p>
+
+  <p>When control enters execution context for Global code, a Global object is used as a Variable object. This is precisely why variables or functions declared globally <strong>become properties of a Global object</strong>:</p>
+
+<pre lang="javascript"><code>
+  /* remember that `this` refers to global object when in global scope */
+  var GLOBAL_OBJECT = this;
+
+  var foo = 1;
+  GLOBAL_OBJECT.foo; // 1
+  foo === GLOBAL_OBJECT.foo; // true
+
+  function bar(){}
+  typeof GLOBAL_OBJECT.bar; // "function"
+  GLOBAL_OBJECT.bar === bar; // true
+</code></pre>
+
+  <p>Ok, so global variables become properties of Global object, but what happens with local variables — those declared in Function code? The behavior is actually very similar: they become properties of Variable object. The only difference is that when in Function code, a Variable object is not a Global object, but a so-called <strong>Activation object</strong>. Activation object is created every time execution context for Function code is entered. </p>
+
+  <p>Not only do variables and functions declared within Function code become properties of Activation object; this also happens with each of function arguments (under names corresponding to formal parameters) and a special <code>Arguments</code> object (under <code>arguments</code> name). Note that Activation object is an internal mechanism and is never really accessible by program code.</p>
+
+<pre lang="javascript"><code>
+  (function(foo){
+
+    var bar = 2;
+    function baz(){}
+
+    /*
+    In abstract terms,
+
+    Special `arguments` object becomes a property of containing function's Activation object:
+      ACTIVATION_OBJECT.arguments; // Arguments object
+
+    ...as well as argument `foo`:
+      ACTIVATION_OBJECT.foo; // 1
+
+    ...as well as variable `bar`:
+      ACTIVATION_OBJECT.bar; // 2
+
+    ...as well as function declared locally:
+      typeof ACTIVATION_OBJECT.baz; // "function"
+    */
+
+  })(1);
+</code></pre>
+
+  <p>Finally, variables declared within Eval code are <strong>created as properties of calling context&#8217;s Variable object</strong>. Eval code simply uses Variable object of the execution context that it&#8217;s being called within:</p>
+
+<pre lang="javascript"><code>
+  var GLOBAL_OBJECT = this;
+
+  /* `foo` is created as a property of calling context Variable object,
+      which in this case is a Global object */
+
+  eval('var foo = 1;');
+  GLOBAL_OBJECT.foo; // 1
+
+  (function(){
+
+    /* `bar` is created as a property of calling context Variable object,
+      which in this case is an Activation object of containing function */
+
+    eval('var bar = 1;');
+
+    /*
+      In abstract terms,
+      ACTIVATION_OBJECT.bar; // 1
+    */
+
+  })();
+</code></pre>
+
+  <h4 id="property_attributes">Property attributes</h4>
+
+  <p>We are almost there. Now that it&#8217;s clear what happens with variables (they become properties), the only remaining concept to understand is property attributes. Every property can have zero or more attributes from the following set — <strong>ReadOnly</strong>, <strong>DontEnum</strong>, <strong>DontDelete</strong> and <strong>Internal</strong>. You can think of them <strong>as flags</strong> — an attribute can either exist on a property or not. For the purposes of today&#8217;s discussion, we are only interested in DontDelete.</p>
+
+  <p>When declared variables and functions become properties of a Variable object — either Activation object (for Function code), or Global object (for Global code), these properties are <strong>created with DontDelete attribute</strong>. However, any explicit (or implicit) property assignment creates property <strong>without DontDelete attribute</strong>. And this is essentialy why we can delete some properties, but not others:</p>
+
+<pre lang="javascript"><code>
+  var GLOBAL_OBJECT = this;
+
+  /*  `foo` is a property of a Global object.
+      It is created via variable declaration and so has DontDelete attribute.
+      This is why it can not be deleted. */
+
+  var foo = 1;
+  delete foo; // false
+  typeof foo; // "number"
+
+  /*  `bar` is a property of a Global object.
+      It is created via function declaration and so has DontDelete attribute.
+      This is why it can not be deleted either. */
+
+  function bar(){}
+  delete bar; // false
+  typeof bar; // "function"
+
+  /*  `baz` is also a property of a Global object.
+      However, it is created via property assignment and so has no DontDelete attribute.
+      This is why it can be deleted. */
+
+  GLOBAL_OBJECT.baz = 'blah';
+  delete GLOBAL_OBJECT.baz; // true
+  typeof GLOBAL_OBJECT.baz; // "undefined"
+</code></pre>
+
+  <h4 id="built_ins_and_dontdelete">Built-ins and DontDelete</h4>
+
+  <p>So this is what it&#8217;s all about: a special attribute on a property that controls whether this property can be deleted or not. Note that some of the properties of built-in objects are specified to have DontDelete, and so can not be deleted. Special <code>arguments</code> variable (or, as we know now, a property of Activation object) has DontDelete. <code>length</code> property of any function instance has DontDelete as well:</p>
+
+<pre lang="javascript"><code>
+  (function(){
+
+    /* can't delete `arguments`, since it has DontDelete */
+
+    delete arguments; // false
+    typeof arguments; // "object"
+
+    /* can't delete function's `length`; it also has DontDelete */
+
+    function f(){}
+    delete f.length; // false
+    typeof f.length; // "number"
+
+  })();
+</code></pre>
+
+  <p>Properties corresponding to function arguments are created with DontDelete as well, and so can not be deleted either:</p>
+
+<pre lang="javascript"><code>
+  (function(foo, bar){
+
+    delete foo; // false
+    foo; // 1
+
+    delete bar; // false
+    bar; // 'blah'
+
+  })(1, 'blah');
+</code></pre>
+
+  <h4 id="undeclared_assignments">Undeclared assignments</h4>
+
+  <p>As <a href="http://perfectionkills.com/onloadfunction-considered-harmful/#how_does_it_work">you might remember</a>, undeclared assignment <strong>creates a property on a global object</strong>. That is unless that property is found somewhere in the scope chain before global object. And now that we know the difference between property assignment and variable declaration — latter one sets DontDelete, whereas former one doesn&#8217;t — it should be clear why <strong>undeclared assignment creates a deletable property</strong>:</p>
+
+<pre lang="javascript"><code>
+  var GLOBAL_OBJECT = this;
+
+  /* create global property via variable declaration; property has DontDelete */
+  var foo = 1;
+
+  /* create global property via undeclared assignment; property has no DontDelete */
+  bar = 2;
+
+  delete foo; // false
+  typeof foo; // "number"
+
+  delete bar; // true
+  typeof bar; // "undefined"
+</code></pre>
+
+<p>Note that it is <strong>during property creation</strong> that attributes are determined (i.e. none are set). Later assignments don't modify attributes of existing property. It's important to understand this distinction.</p>
+
+<pre lang="javascript"><code>
+  /* `foo` is created as a property with DontDelete */
+  function foo(){}
+
+  /* Later assignments do not modify attributes. DontDelete is still there! */
+  foo = 1;
+  delete foo; // false
+  typeof foo; // "number"
+
+  /* But assigning to a property that doesn't exist,
+     creates that property with empty attributes (and so without DontDelete) */
+
+  this.bar = 1;
+  delete bar; // true
+  typeof bar; // "undefined"
+</code></pre>
+
+  <h3 id="firebug_confusion">Firebug confusion</h3>
+
+  <p>So what happens in Firebug? Why is it that variables declared in console can be deleted, contrary to what we have just learned? Well, as I said before, Eval code has a special behavior when it comes to variable declaration. Variables declared within Eval code are actually <strong>created as properties without DontDelete</strong>:</p>
+
+<pre lang="javascript"><code>
+  eval('var foo = 1;');
+  foo; // 1
+  delete foo; // true
+  typeof foo; // "undefined"
+</code></pre>
+
+  <p>and, similarly, when called within Function code:</p>
+
+<pre lang="javascript"><code>
+  (function(){
+
+    eval('var foo = 1;');
+    foo; // 1
+    delete foo; // true
+    typeof foo; // "undefined"
+
+  })();
+</code></pre>
+
+  <p>And this is the gist of Firebug&#8217;s abnormal behavior. All the text in console seems to be parsed and <strong>executed as Eval code</strong>, not as a Global or Function one. Obviously, any declared variables end up as <strong>properties without DontDelete</strong>, and so can be easily deleted. Be aware of these differences between regular Global code and Firebug console.</p>
+
+  <h4 id="deleting_variables_via_eval">Deleting variables via eval</h4>
+
+  <p>This interesting <code>eval</code> behavior, coupled with another aspect of ECMAScript can technically allow us to delete non-deletable properties. The thing about function declarations is that they can overwrite same-named variables in the same execution context:</p>
+
+<pre lang="javascript"><code>
+  function x(){ }
+  var x;
+  typeof x; // "function"
+</code></pre>
+
+  <p>Note how function declaration takes precedence and overwrites same-named variable (or, in other words, same property of Variable object). This is because <strong>function declarations are instantiated after variable declarations</strong>, and are allowed to overwrite them. Not only does function declaration replaces previous value of a property, it <strong>also replaces that property attributes</strong>. If we declare function via <code>eval</code>, that function should also replace that property&#8217;s attributes with its own. And since variables declared from within <code>eval</code> create properties without DontDelete, instantiating this new function should essentially <strong>remove existing DontDelete attribute</strong> from the property in question, making that property deletable (and of course changing its value to reference newly created function).</p>
+
+<pre lang="javascript"><code>
+  var x = 1;
+
+  /* Can't delete, `x` has DontDelete */
+
+  delete x; // false
+  typeof x; // "number"
+
+  eval('function x(){}');
+
+  /* `x` property now references function, and should have no DontDelete */
+
+  typeof x; // "function"
+  delete x; // should be `true`
+  typeof x; // should be "undefined"
+</code></pre>
+
+  <p>Unfortunately, this kind of spoofing doesn&#8217;t work in any implementation I tried. I might be missing something here, or this behavior might simply be too obscure for implementors to pay attention to.</p>
+
+  <h3 id="browsers_compliance">Browsers compliance</h3>
+
+  <p>Knowing how things work in theory is useful, but practical implications are paramount. Do browsers follow standards when it comes to variable/property creation/deletion? For the most part, yes.</p>
+
+  <p>I wrote <a href="http://kangax.github.com/jstests/delete_compliance_test/">a simple test suite</a> to check compliance of <code>delete</code> operator with Global code, Function code and Eval code. Test suite checks both — return value of <code>delete</code> operator, and whether properties are deleted (or not) as they are supposed to. <code>delete</code> return value is not as important as its actual results. It&#8217;s not very crucial if <code>delete</code> returns <code>true</code> instead of <code>false</code>, but it&#8217;s important that properties with DontDelete are not deleted and vice versa.</p>
+
+  <p>Modern browsers are generally pretty compliant. Besides this <a href="#deleting_variables_via_eval"><code>eval</code> peculiarity I mentioned earlier</a>, the following browsers pass test suite fully: Opera 7.54+, Firefox 1.0+, Safari 3.1.2+, Chrome 4+.</p>
+
+  <p>Safari 2.x and 3.0.4 have problems with deleting function arguments; those properties seem to be created without  DontDelete, so it is possible to delete them. Safari 2.x has even more problems — deleting non-reference (e.g. <code>delete 1</code>) throws error; function declarations create deletable properties (but, strangely, not variable declarations); variable declarations in <code>eval</code> become non-deletable (but not function declarations).</p>
+
+  <p>Similar to Safari, Konqueror (3.5, but not 4.3) throws error when deleting non-reference (e.g. <code>delete 1</code>) and erroneously makes function arguments deletable.</p>
+
+  <h4 id="gecko_dontdelete_bug">Gecko DontDelete bug</h4>
+
+  <p>
+    Gecko 1.8.x browsers — Firefox 2.x, Camino 1.x, Seamonkey 1.x, etc. — exhibit an interesting bug where explicitly assigning to a property can remove its DontDelete attribite, even if that property was created via variable or function declaration:
+  </p>
+
+<pre lang="javascript"><code>
+  function foo(){}
+  delete foo; // false (as expected)
+  typeof foo; // "function" (as expected)
+
+  /* now assign to a property explicitly */
+
+  this.foo = 1; // erroneously clears DontDelete attribute
+  delete foo; // true
+  typeof foo; // "undefined"
+
+  /* note that this doesn't happen when assigning property implicitly */
+
+  function bar(){}
+  bar = 1;
+  delete bar; // false
+  typeof bar; // "number" (although assignment replaced property)
+</code></pre>
+
+  <p>Surprisingly, Internet Explorer 5.5 - 8 passes test suite fully except that deleting non-reference (e.g. <code>delete 1</code>) throws error (just like in older Safari). But there are actually <strong>more serious bugs in IE</strong>, that are not immediately apparent. These bugs are related to Global object.</p>
+
+  <h3 id="ie_bugs">IE bugs</h3>
+
+  <p>The entire chapter just for bugs in Internet Explorer? How unexpected!</p>
+  <p>In IE (at least, 6-8), the following expression throws error (when evaluated in Global code):</p>
+
+<pre lang="javascript"><code>
+  this.x = 1;
+  delete x; // TypeError: Object doesn't support this action
+</code></pre>
+
+  <p>and this one as well, but different exception, just to make things interesting:</p>
+
+<pre lang="javascript"><code>
+  var x = 1;
+  delete this.x; // TypeError: Cannot delete 'this.x'
+</code></pre>
+
+  <p>It&#8217;s as if <strong>variable declarations in Global code do not create properties on Global object</strong> in IE. Creating property via assignment (<code>this.x = 1</code>) and then deleting it via <code>delete x</code> throws error. Creating property via declaration (<code>var x = 1</code>) and then deleting it via <code>delete this.x</code> throws another error.</p>
+
+  <p>But that&#8217;s not all. Creating property via explicit assignment actually <strong>always throws error on deletion</strong>. Not only is there an error, but created property appears to have DontDelete set on it, which of course it shouldn&#8217;t have:</p>
+
+<pre lang="javascript"><code>
+  this.x = 1;
+
+  delete this.x; // TypeError: Object doesn't support this action
+  typeof x; // "number" (still exists, wasn't deleted as it should have been!)
+
+  delete x; // TypeError: Object doesn't support this action
+  typeof x; // "number" (wasn't deleted again)
+</code></pre>
+
+  <p>Now, contrary to what one would think, undeclared assignments (those that should create a property on global object) <strong>do create deletable properties</strong> in IE:</p>
+
+<pre lang="javascript"><code>
+  x = 1;
+  delete x; // true
+  typeof x; // "undefined"
+</code></pre>
+
+  <p>But if you try to delete such property by referecing it via <code>this</code> in Global code (<code>delete this.x</code>), a familiar error pops up:</p>
+
+<pre lang="javascript"><code>
+  x = 1;
+  delete this.x; // TypeError: Cannot delete 'this.x'
+</code></pre>
+
+  <p>If we were to generalize this behavior, it would appear that <code>delete this.x</code> from within Global code never succeeds. When property in question is created via explicit assignment (<code>this.x = 1</code>), <code>delete</code> throws one error; when property is created via undeclared assignment (<code>x = 1</code>) or via declaration (<code>var x = 1</code>), <code>delete</code> throws another error.</p>
+
+  <p><code>delete x</code>, on the other hand, only throws error when property in question is created via explicit assignment — <code>this.x = 1</code>. If a property is created via declaration (<code>var x = 1</code>), deletion simply never occurs and <code>delete</code> correctly returns <code>false</code>. If a property is created via undeclared assignment (<code>x = 1</code>), deletion works as expected.</p>
+
+  <p>
+    I was <a href="http://groups.google.com/group/comp.lang.javascript/browse_thread/thread/22e6b2d147f57ee5/dda4dee3390fa71a">pondering about this issue back in September</a>, and <a href="http://dhtmlkitchen.com/">Garrett Smith</a> suggested that in IE <cite>"The global variable object is implemented as a JScript object, and the global object is implemented by the host</cite>. Garrett used <a href="http://blogs.msdn.com/ericlippert/archive/2005/05/04/414684.aspx">Eric Lippert's blog entry</a> as a reference.
+    We can somewhat confirm this theory by performing few tests. Note how <code>this</code> and <code>window</code> seem to reference same object (if we can believe <code>===</code> operator), but Variable object (the one on which function is declared) is different from whatever <code>this</code> references.
+  </p>
+
+<pre lang="javascript"><code>
+  /* in Global code */
+  function getBase(){ return this; }
+
+  getBase() === this.getBase(); // false
+  this.getBase() === this.getBase(); // true
+  window.getBase() === this.getBase(); // true
+  window.getBase() === getBase(); // false
+</code></pre>
+
+  <h3 id="misconceptions">Misconceptions</h3>
+
+  <p>
+    The beauty of understanding why things work the way they work can not be underestimated. I've seen few misconceptions on the web related to misunderstanding of <code>delete</code> operator. For example, there's <a href="http://stackoverflow.com/questions/1596782/how-to-unset-a-javascript-variable/1596889#1596889">this answer on Stackoverflow</a> (with surprisingly high rating), confidently explaining how <cite>"delete is supposed to be no-op when target isn't an object property"</cite>. Now that we understand the <strong>core of <code>delete</code> behavior</strong>, it becomes pretty clear that this <strong>answer is rather inaccurate</strong>. <code>delete</code> doesn't differentiate between variables and properties (in fact, for <code>delete</code>, those are all References) and really only cares about DontDelete attribute (and property existence).
+  </p>
+
+  <p>
+    It's also interesting to see how misconceptions bounce off of each other, where in the very same thread someone first suggests to just delete variable (which won't work unless it's declared from within <code>eval</code>), and another person <a href="http://stackoverflow.com/questions/1596782/how-to-unset-a-javascript-variable/1596790#comment-1461494">provides a wrong correction</a> how it's possible to delete variables in Global code but not in Function one.
+  </p>
+
+  <p>Be careful with Javascript explanations on the web, and ideally, always seek to understand the core of the issue ;)</p>
+
+  <h3 id="delete_and_host_objects">`delete` and host objects</h3>
+
+  <p>An algorithm for <code>delete</code> is specified roughtly like this:</p>
+
+  <ol style="margin-bottom:2em;">
+    <li>If operand is not a reference, return <code>true</code></li>
+    <li>If object has no <strong>direct property</strong> with such name, return <code>true</code> (where, as we now know, object can be Activation object or Global object)</li>
+    <li>If property exists but has DontDelete, return <code>false</code></li>
+    <li>Otherwise, remove property and return <code>true</code></li>
+  </ol>
+
+  <p>
+    However, behavior of <strong><code>delete</code> operator with host objects can be rather unpredictable</strong>. And there's actually nothing wrong with that: host objects are allowed (by specification) to implement any kind of behavior for operations such as read (internal [[Get]] method), write (internal [[Put]] method) or delete (internal [[Delete]] method), among few others. This allowance for custom [[Delete]] behavior is what makes host objects so chaotic.
+  </p>
+
+  <p>
+    We've already seen some IE oddities, where deleting certain objects (which are apparently implemented as host objects) throws errors. Some versions of Firefox throw when trying to delete <code>window.location</code>. You can't trust return values of delete either, when it comes to host objects; take a look at what happens in Firefox:
+  </p>
+
+<pre lang="javascript"><code>
+  /* "alert" is a direct property of `window` (if we were to believe `hasOwnProperty`) */
+  window.hasOwnProperty('alert'); // true
+
+  delete window.alert; // true
+  typeof window.alert; // "function"
+</code></pre>
+
+  <p>
+    Deleting <code>window.alert</code> returns <code>true</code>, even though there's nothing about this property that should lead to such result. It resolves to a reference (so can't return <code>true</code> on the first step). It's a direct property of a <code>window</code> object (so can't return <code>true</code> on a second step). The only way <code>delete</code> could return <code>true</code> is after reaching step 4 and actually deleting a property. Yet, property is never deleted.
+  </p>
+
+  <p>The moral of the story is to <strong>never trust host objects</strong>.</p>
+
+  <p>As a bonus, here's another case of quirky delete behavior in IE:</p>
+
+<pre lang="javascript"><code>
+  var element = document.createElement('div')
+  delete element.onclick; // throws "Object doesn't support this action"
+
+  document.body.x = 1;
+  delete document.body.x; // throws "Object doesn't support this action"
+
+  // in IE8
+  delete XMLHttpRequest.prototype.open; // throws "Object doesn't support this action"
+</code></pre>
+
+  <h3 id="es5_strict_mode">ES5 strict mode</h3>
+
+  <p>So what does strict mode of <a href="http://www.ecma-international.org/publications/standards/Ecma-262.htm">ECMAScript 5th edition</a> bring to the table? Few restrictions are being introduced. SyntaxError is now thrown when expression in <code>delete</code> operator is a direct reference to a variable, function argument or function identifier. In addition, if property has internal [[Configurable]] == false, a TypeError is thrown:</p>
+
+<pre lang="javascript"><code>
+(function(foo){
+
+  "use strict"; // enable strict mode within this function
+
+  var bar;
+  function baz(){}
+
+  delete foo; // SyntaxError (when deleting argument)
+  delete bar; // SyntaxError (when deleting variable)
+  delete baz; // SyntaxError (when deleting variable created with function declaration)
+
+  /* `length` of function instances has { [[Configurable]] : false } */
+
+  delete (function(){}).length; // TypeError
+
+})();
+</code></pre>
+
+  <p>In addition, deleting undeclared variable (or in other words, unresolved Referece) throws SyntaxError as well:</p>
+
+<pre lang="javascript"><code>
+  "use strict";
+  delete i_dont_exist; // SyntaxError
+</code></pre>
+
+  <p>This is somewhat similar to the way undeclared assignment in strict mode behaves (except that ReferenceError is thrown instead of a SyntaxError):</p>
+
+<pre lang="javascript"><code>
+  "use strict";
+  i_dont_exist = 1; // ReferenceError
+</code></pre>
+
+  <p>As you now understand, all these restrictions somewhat make sense, given how much confusion deleting variables, function declarations and arguments causes. Instead of silently ignoring deletion, strict mode takes more <strong>agressive and descriptive measures</strong>.</p>
+
+  <h3 id="summary">Summary</h3>
+
+  <p>This post turned out to be quite lengthy, so I'm not going to talk about things like removing array items with <code>delete</code> and what the implications of it are. You can always refer to MDC article <a href="https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Operators/Special_Operators/delete_Operator#section_5">for that particular explanation</a> (or read specs and experiment yourself).</p>
+
+  <p>Here's a short summary of how deletion works in Javascript:</p>
+
+  <ul>
+    <li>Variables and function declarations are properties of either Activation or Global objects.</li>
+    <li>Properties have attributes, one of which — DontDelete — is responsible for whether a property can be deleted.</li>
+    <li>Variable and function declarations in <strong>Global and Function code</strong> always create properties <strong>with DontDelete</strong>.</li>
+    <li><strong>Function arguments</strong> are also properties of Activation object and are created <strong>with DontDelete</strong>.</li>
+    <li>Variable and function declarations in <strong>Eval code</strong> always create properties <strong>without DontDelete</strong>.</li>
+    <li><strong>New properties</strong> are always created with empty attributes (and so <strong>without DontDelete</strong>).</li>
+    <li><strong>Host objects</strong> are allowed to react to deletion <strong>however they want</strong>.</li>
+  </ul>
+
+  <p>If you'd like to get more familiar with things described here, please refer to <a href="http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-262.pdf">ECMA-262 3rd edition specification</a>.</p>
+
+  <p>I hope you enjoyed this overview and learned something new. Any questions, suggestions and corrections are as always welcomed.</p>
+</div>

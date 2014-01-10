@@ -1,0 +1,423 @@
+---
+layout: post
+title: Exploring canvas drawing techniques
+popular: popular
+tags:
+  - js
+---
+
+<h2>Exploring canvas drawing techniques</h2>
+
+<style>
+  .example-img { margin-top: 30px; }
+  iframe { width: 520px !important; vertical-align: top; }
+  .flattr-button iframe { width: 110px !important; }
+  .exploring-canvas-drawing-techniques div { display: inline-block; vertical-align: top; }
+  .wordpress-sucks { display: inline-block; }
+</style>
+
+<a href="#" id="toc-toggler">Table Of Contents (toggle)</a>
+
+<ul id="toc-body" style="display: none" class="toc">
+  <li><a href="#basics">Basics</a><ul>
+      <li><a href="#simple-pencil">Simple pencil</a></li>
+      <li><a href="#smooth-connections">Smooth connections</a></li>
+      <li><a href="#edge-smoothing-shadows">Edge smoothing with shadows</a></li>
+      <li><a href="#point-based">Storing points</a></li>
+      <li><a href="#point-based-with-shadow">Storing points with shadow</a></li>
+      <li><a href="#edge-smoothing-gradient">Edge smoothing with radial gradient</a></li>
+      <li><a href="#bezier-curves">Bezier curves</a></li>
+    </ul>
+  </li>
+  <li><a href="#brush-fur-pen">Brush, Fur, Pen</a><ul>
+      <li><a href="#fur">Fur (rotating strokes)</a></li>
+      <li><a href="#pen">Pen (variable segment width)</a></li>
+      <li><a href="#pen">Pen #2 (multiple strokes)</a></li>
+      <li><a href="#thick-brush">Thick brush</a></li>
+      <li><a href="#sliced-strokes">Sliced strokes</a></li>
+      <li><a href="#sliced-strokes-opacity">Sliced strokes with opacity</a></li>
+      <li><a href="#multiple-lines">Multiple lines</a></li>
+      <li><a href="#multiple-lines-with-opacity">Multiple lines with opacity</a></li>
+    </ul>
+  </li>
+  <li><a href="#stamp-like">Stamp-like</a><ul>
+      <li><a href="#stamp-basic-contept">Basic concept</a></li>
+      <li><a href="#random-radius">Random radius, opacity</a></li>
+      <li><a href="#stamp-shapes">Shapes</a></li>
+      <li><a href="#stamp-shapes-rotation">Shapes with rotation</a></li>
+      <li><a href="#randomize-everything">Randomize everything!</a></li>
+      <li><a href="#colored-pixels">Colored pixels</a></li>
+    </ul>
+  </li>
+  <li><a href="#pattern-based">Pattern-based</a><ul>
+      <li><a href="#dots-pattern">Basic concept (dots)</a></li>
+      <li><a href="#lines-pattern">Lines</a></li>
+      <li><a href="#double-lines">Double lines</a></li>
+      <li><a href="#rainbow">Rainbow</a></li>
+      <li><a href="#image-pattern">Image</a></li>
+    </ul>
+  </li>
+  <li><a href="#spray">Spray</a><ul>
+      <li><a href="#time-based-spray">Time-based spray</a></li>
+      <li><a href="#round-distribution">Time-based spray with round distribution</a></li>
+      <li><a href="#randomizing-dots">Randomizing dots</a></li>
+    </ul>
+  </li>
+  <li><a href="#neighbor-points">Neighbor points connection</a><ul>
+      <li><a href="#all-points-connection">All-points connection</a></li>
+      <li><a href="#nearby-connections">Neighbor points</a></li>
+      <li><a href="#fur-via-nearby-connections">Fur via neighbor points</a></li>
+    </ul>
+  </li>
+
+</ul>
+
+<div class="exploring-canvas-drawing-techniques">
+  <p>I recently started working on adding some good-looking brushes to <a href="http://fabricjs.com">Fabric.js</a>. We've had <a href="http://fabricjs.com/freedrawing/">free drawing</a> functionality for a while, but it was... laughable. Just a simple pencil of varying thickness. Far from anything you would see in those amazing drawing applications popping up in the last few years — <a href="http://mrdoob.com/projects/harmony">Mr. doob's Harmony</a>, <a href="http://sta.sh/muro/">deviantART's Muro</a>, or <a href="http://mudcu.be/sketchpad/">mudcu.be Sketchpad</a>. Freedrawing is one of the strongest points of canvas, so it's a shame not to have something good in a canvas library like Fabric.</p>
+
+  <p>
+    <img src="/images/harmony_kbdesign.jpg" height="350">
+    <em>image by <a href="http://kbdesign.bdl.pl/">Krzysztof Banaś</a></em>
+  </p>
+
+  <p>I started experimenting with different styles and techniques — edge smoothing, bezier curves, ink and chalk and pen and stamp and patterns — oh my. Turns out there's not much written about this on the web. Not in the context of Javascript and <a href="http://www.whatwg.org/specs/web-apps/current-work/multipage/the-canvas-element.html">&lt;canvas></a>, anyway. The best you can do is look at the demos <a href="https://github.com/paulirish/harmony">source code</a> to get a glimpse of what's going on.</p>
+
+  <p>So I've got an idea to create sort of an <b>interactive tutorial</b>. Taking you from the very basics (drawing a primitive mouse-following-line on canvas), all the way to those harmony brushes, with their sophisticated curves and strokes, spanning from the edges and curling around into weirdly beautiful structures. The tutorial pretty much reflects my own path of exploration.</p>
+
+  <p>I'll go over different code implementations of brushes so that you can understand how to implement free drawing on canvas yourself. And you can play with things around as we go.</p>
+
+  <p>Before proceeding, it's good to have <a href="https://developer.mozilla.org/en-US/docs/HTML/Canvas/Tutorial">general understanding of HTML5 canvas</a>.</p>
+
+  <h2 id="basics">Basics</h2>
+
+  <p>So let's start with a very basic approach.</p>
+
+  <h3 id="simple-pencil">Simple pencil</h3>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="vGxEm" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/vGxEm">Check out this Pen!</a></pre><p class="wordpress-sucks"><img src="/images/drawing_techniques/pencil.png" class="example-img"></p>
+
+  <p>We observe "mousedown", "mousemove", and "mouseup" events on canvas. On "mousedown", we move pointer to clicked coordinates (<code>ctx.moveTo</code>). On "mousemove", we draw a line to new coordinates of a mouse (<code>ctx.lineTo</code>). Finally, on "mouseup", we end drawing by setting <code>isDrawing</code> flag to false. This flag is used to prevent drawing when just moving mouse on canvas (without first clicking it). You could avoid flag by assigning "onmousemove" event handler right in "onmousedown" one (and then removing it in "onmouseup"), but flag is a simple solution that works just as well.</p>
+
+  <h3 id="smooth-connections">Smooth connections</h3>
+
+  <p>Well, that's a start. Now, we can control the line thickness by changing value of <code>ctx.lineWidth</code>. However, with thick line comes <del>thick responsibility</del> jagged edges. This happens on "sharp turns" and can be solved by setting <code>ctx.lineJoin</code> and <code>ctx.lineCap</code> to "round" (see MDN for <a href="https://developer.mozilla.org/en-US/docs/HTML/Canvas/Tutorial/Applying_styles_and_colors#A_lineJoin_example">examples</a> of how these affect rendering).</p>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="nadDx" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/nadDx">Check out this Pen!</a></pre><p class="wordpress-sucks"><img src="/images/drawing_techniques/smooth_connections.png" class="example-img"></p>
+
+  <h3 id="edge-smoothing-shadows">Edge smoothing with shadows</h3>
+
+  <p>Now the lines are not jagged around corners. But they aren't very smooth on the edges either. This is because there's no antialiasing hapenning here (controlling antialiasing on canvas <a href="http://stackoverflow.com/questions/195262/can-i-turn-off-antialiasing-on-an-html-canvas-element">has never been straightforward</a>). So how do we emulate it?</p>
+
+  <p>One way to make edges smooth is with the help of shadows.</p>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="wDuxl" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/wDuxl">Check out this Pen!</a></pre><p class="wordpress-sucks"><img src="/images/drawing_techniques/smooth_with_shadow.png" class="example-img"></p>
+
+  <p>All we've added is <code>ctx.shadowBlur</code> and <code>ctx.shadowColor</code>. Edges are definitely smoother now, since lines are surrounded with a shadow. But there's still a little problem. Notice how line is thinner and blurry at the beginning but then becomes thicker and more solid at the tail. An interesting effect on its own, but perhaps not exactly what we want. So why does this happen?</p>
+
+  <p>Turns out this is due to shadows overlapping each other. Shadow from current stroke overlaps shadow from previous stroke which overlaps shadow from previous stroke, and so on. The more overlapping shadows, the less blurry and the thicker line is. So how would we go about fixing this?</p>
+
+  <h3 id="point-based">Point-based approach</h2>
+
+  <p>One way to avoid these kind of issues is to <b>always stroke once</b>. Instead of blindly stroking on every mousemove, we can introduce a state — store points in an array, and always stroke through them once.</p>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="pxfCn" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/pxfCn">Check out this Pen!</a></pre><p class="wordpress-sucks"><img src="/images/drawing_techniques/point_based.png" class="example-img"></p>
+
+  <p>As you can see, it looks the same as the first example. Now we can try adding shadow here. Notice how it stays even throughout entire path.</p>
+
+  <h3 id="point-based-with-shadow">Point-based with shadow</h3>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="FasdL" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/FasdL">Check out this Pen!</a></pre><p class="wordpress-sucks"><img src="/images/drawing_techniques/point_based_with_shadow.png" class="example-img"></p>
+
+  <h3 id="edge-smoothing-gradient">Edge smoothing with radial gradient</h3>
+
+  <p>Another smoothing option is to use radial gradients. Gradients allow for more even color distribution, unlike shadows which often comes out more blurry than "smooth".</p>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="lpAnD" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/lpAnD">Check out this Pen!</a></pre><p class="wordpress-sucks"><img src="/images/drawing_techniques/edge_smoothing_gradient.png" class="example-img"></p>
+
+  <p>But, as you can see, stroking with gradient has other issues. Notice how we're simply filling area with circular gradient on each mousemove. When moving mouse quick, we get a sequence of disconnected circles rather than a straight line with smooth edges.</p>
+
+  <p>One way to solve this is by generating additional points whenever there's too much distance between any of them.</p>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="FdlHC" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/FdlHC">Check out this Pen!</a></pre>
+  <p class="wordpress-sucks"><img src="/images/drawing_techniques/edge_smoothing_extra_points.png" class="example-img"></p>
+
+  <p>Finally a decently smooth curve!</p>
+
+  <p>You might notice a small change in the above example. Instead of storing all points of a path, we only store last one. And we always stroke from that last one to the current one. Having last point is all we really need to calculate the distance between it and the current one. If the distance is too large, we stroke more in between. The good thing about this approach is that we use less memory by not having entire <code>points</code> array!</p>
+
+  <h3 id="bezier-curves">Bezier curves</h3>
+
+  <p>One interesting concept I came across was using bezier lines instead of straight ones. This allows for curves of a free-drawn path to be naturally smoother. The idea is to replace straight-line stroke with <code>quadraticCurveTo</code>, using middle point between two consecutive points as <a href="http://en.wikipedia.org/wiki/B%C3%A9zier_curve#Quadratic_curves">quadratic curve control points</a>. Try it:</p>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="zofsp" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/zofsp">Check out this Pen!</a></pre>
+  <p class="wordpress-sucks"><img src="/images/drawing_techniques/bezier.png" class="example-img"></p>
+
+  <p>So there you have it: some basic variations of drawing and smoothing lines, from simple few-liner to more complex curve-based solution. Let's move on to something more fun.</p>
+
+  <h2 id="brush-fur-pen">Brush, Fur, Pen</h2>
+
+  <p>One of the tricks in a realistic brush toolbox is to simply stroke with an image. I came across this technique in this <a href="http://www.tricedesigns.com/2012/01/04/sketching-with-html5-canvas-and-brush-images/">blog post by Andrew Trice</a>. The idea is to fill with an image of a little chunk of a stroke, using last-point-technique. This opens a huge number of possibilities.</p>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="HFpun" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/HFpun">Check out this Pen!</a></pre>
+  <p class="wordpress-sucks"><img src="/images/drawing_techniques/image_stroke.png" class="example-img"></p>
+
+  <p>Depending on an image, we can achieve different brush styles. In this case, it's something resembling a thick brush.</p>
+
+  <h3 id="fur">Fur (rotating strokes)</h3>
+
+  <p>An interesting twist (excuse the pun) to a previous technique is to fill path with same image but rotating it randomly every time it's rendered. If we do this, we can get something resembling a fur (or a garland?).</p>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="euKIx" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/euKIx">Check out this Pen!</a></pre>
+  <p class="wordpress-sucks"><img src="/images/drawing_techniques/rotating_stroke.png" class="example-img"></p>
+
+  <h3 id="pen">Pen (variable segment width)</h3>
+
+  <p>When it comes to simulating a pen, a nice solution is to simply randomize segment width of a path! We can still use good-old <code>moveTo</code>+<code>lineTo</code> combination, but change "lineWidth" every time stroke occurs. Here's how it looks:</p>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="aoxwb" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/aoxwb">Check out this Pen!</a></pre>
+  <p class="wordpress-sucks"><img src="/images/drawing_techniques/variable_segment.png" class="example-img"></p>
+
+  <p>One thing to keep in mind is that, in order for drawing to look realistic, randomized values should be not too far apart.</p>
+
+  <h3 id="pen-2">Pen #2 (multiple strokes)</h3>
+
+  <p>Another pen simulation is done via multiple strokes. Instead of stroking between points once, we add 2 more passes. But we don't want to stroke at the same spot, as that wouldn't change anything. Instead, we take couple random points (blue dots on a picture) next to original (green dots on a picture), and stroke from there. So instead of 1 line, we get 2 lines "sloppily" stroked right next to the original one. Perfect simulation of a pen!</p>
+
+  <p><img src="/images/drawing_techniques/multiple_strokes.png"></p>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="AFoaH" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/AFoaH">Check out this Pen!</a></pre>
+  <p class="wordpress-sucks"><img src="/images/drawing_techniques/pen_multiple_strokes.png" class="example-img"></p>
+
+  <h3 id="thick-brush">Thick brush</h3>
+
+  <p>There's so much you can do with this "multiple stroke" technique. I urge you to try your own variations. Here's one example where, if we increase line thickness and offset 2nd pass just slightly, we get a simulation of a thick brush. Those blank spots on the edges is what makes it look realistic.</p>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="KnuaD" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/KnuaD">Check out this Pen!</a></pre>
+  <p class="wordpress-sucks"><img src="/images/drawing_techniques/thick_brush.png" class="example-img"></p>
+
+  <h3 id="sliced-strokes">"Sliced" strokes</h3>
+
+  <p>If we implement multiple strokes, but at <b>even and small offsets</b>, we can get something resembling a sliced brush again. This time, without using an image. The path simply comes out skewed.</p>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="jLDAf" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/jLDAf">Check out this Pen!</a></pre>
+  <p class="wordpress-sucks"><img src="/images/drawing_techniques/sliced_strokes.png" class="example-img"></p>
+
+  <h3 id="sliced-strokes-opacity">"Sliced" strokes with opacity</h3>
+
+  <p>If we take the same brush as in previous example, and give each stroke lesser and lesser opacity, we get an interesting effect like this.</p>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="GHrlF" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/GHrlF">Check out this Pen!</a></pre>
+  <p class="wordpress-sucks"><img src="/images/drawing_techniques/sliced_strokes_opacity.png" class="example-img"></p>
+
+  <h3 id="multiple-lines">Multiple lines</h3>
+
+  <p>But enough with straight strokes. Can we apply the same technique to, say, bezier-curve based path? Of course. We just need to draw each curve at an offset from the original points. This is how it looks:</p>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="nmFgE" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/nmFgE">Check out this Pen!</a></pre>
+  <p class="wordpress-sucks"><img src="/images/drawing_techniques/multiple_lines.png" class="example-img"></p>
+
+  <h3 id="multiple-lines-with-opacity">Multiple lines with opacity</h3>
+
+  <p>We can also use same "fading" technique where each line has lesser opacity. This makes these lines look even more elegant.</p>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="BycEa" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/BycEa">Check out this Pen!</a></pre>
+  <p class="wordpress-sucks"><img src="/images/drawing_techniques/multiple_lines_opacity.png" class="example-img"></p>
+
+  <p>As with straight strokes, the possibilities with bezier curves are endless.</p>
+
+  <h2 id="stamp-like">Stamp-like</h2>
+
+  <h3 id="stamp-basic-contept">Basic concept</h3>
+
+  <p>After we learned how to stroke lines and curves, implementing stamp brush couldn't be simpler! All we need is to draw certain shape on every mouse move, at a location of a mouse. That's it. Here's an example of stamping with a red circle.</p>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="yJHqe" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/yJHqe">Check out this Pen!</a></pre>
+  <p class="wordpress-sucks"><img src="/images/drawing_techniques/stamp.png" class="example-img"></p>
+
+  <h3>Trail effect</h3>
+
+  <p>You can see the same issues with intermediate points, which we can solve with the same technique of prefilling. The prefilling in case of stamps tends to create pretty interesting trail-like or tube-like effects. You can control the density of a tube by changing interval at each points are prefilled between last point and current.</p>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="Ictqs" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/Ictqs">Check out this Pen!</a></pre>
+  <p class="wordpress-sucks"><img src="/images/drawing_techniques/stamp_trail.png" class="example-img"></p>
+
+  <h3 id="random-radius">Random radius, opacity</h3>
+
+  <p>Of course we can always spice things up, changing each stamp in some way. For example, randomly varying radius and opacity in the 1st example gives us this.</p>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="vFfep" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/vFfep">Check out this Pen!</a></pre>
+  <p class="wordpress-sucks"><img src="/images/drawing_techniques/stamp_random_radius.png" class="example-img"></p>
+
+  <h3 id="stamp-shapes">Shapes</h3>
+
+  <p>When it comes to the kind of stamp, you can really go as far as you can — anything from basic shapes (e.g. circle) like we've just seen to more complex paths, made of hundreds or thousands of curves. The only limiting aspect here is performance. Here's an example of stamping with a simple five-pointed star.</p>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="hulJm" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/hulJm">Check out this Pen!</a></pre>
+  <p class="wordpress-sucks"><img src="/images/drawing_techniques/stamp_shapes.png" class="example-img"></p>
+
+  <h3 id="stamp-shapes-rotation">Shapes with rotation</h3>
+
+  <p>And here's the same star, but rotated randomly on each move, for a bit more natural feel.</p>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="Cspre" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/Cspre">Check out this Pen!</a></pre>
+  <p class="wordpress-sucks"><img src="/images/drawing_techniques/stamp_shapes_rotation.png" class="example-img"></p>
+
+  <h3 id="randomize-everything">Randomize everything!</h3>
+
+  <p>Heck, let's radomize even more — size, angle, opacity, color, thickness! Now isn't that fun.</p>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="oxElC" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/oxElC">Check out this Pen!</a></pre>
+  <p class="wordpress-sucks"><img src="/images/drawing_techniques/stamp_randomized.png" class="example-img"></p>
+
+  <h3 id="colored-pixels">Colored pixels</h3>
+
+  <p>We're also not limited to just shapes. One option is to manipulate pixels around mouse point directly. A simple example would be to just randomize their color and location.</p>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="tvjIo" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/tvjIo">Check out this Pen!</a></pre>
+  <p class="wordpress-sucks"><img src="/images/drawing_techniques/colored_pixels.png" class="example-img"></p>
+
+  <h3 id="pattern-based">Pattern-based brushes</h3>
+
+  <p>Now that we went over stroking and stamping, let's take a look at a completely different beast — patterns. We can use canvas' <code>createPattern</code> filling the path with it as we go. This makes for some very interesting effects. Let's take a look at a simple dot pattern.</p>
+
+  <h4 id="dots-pattern">Dots pattern</h4>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="DLamu" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/DLamu">Check out this Pen!</a></pre>
+  <p class="wordpress-sucks"><img src="/images/drawing_techniques/pattern.png" class="example-img"></p>
+
+  <p>Notice how the pattern is created here. We're instantiating mini canvas, drawing circle on it, then using that canvas as a pattern on a main canvas! We might have just as well used a plain image, but the beauty of using canvas is that we have programmatic access to it and can change it anyway we like. This means we can create dynamic patterns, e.g. changing color of a circle in a patttern, its radius, etc. It also means that we can experiment with patterns quicker and easier.</p>
+
+  <h4 id="lines-pattern">Lines pattern</h4>
+
+  <p>Based on previous example, you should be able to create something similar. Let's say a horizontal lines pattern.</p>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="yeCuB" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/yeCuB">Check out this Pen!</a></pre>
+  <p class="wordpress-sucks"><img src="/images/drawing_techniques/pattern_lines.png" class="example-img"></p>
+
+  <h4 id="double-lines">Double-color lines pattern</h4>
+
+  <p>...or vertical lines, with interchanging colors.</p>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="dajwE" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/dajwE">Check out this Pen!</a></pre>
+  <p class="wordpress-sucks"><img src="/images/drawing_techniques/pattern_double_lines.png" class="example-img"></p>
+
+  <h4 id="rainbow">Rainbow</h4>
+
+  <p>...or even multiple lines with varying colors. Once again, everything is possible. Just think of some pattern and try to create it on a mini canvas. The rest is taken care by <code>createPattern</code> and path filling.</p>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="bznkE" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/bznkE">Check out this Pen!</a></pre>
+  <p class="wordpress-sucks"><img src="/images/drawing_techniques/pattern_rainbow.png" class="example-img"></p>
+
+  <h4 id="image-pattern">Image</h4>
+
+  <p>Finally, here's an example of using image-based pattern together with bezier-curved path. All that's changed here is that we're passing an image object to <code>createPattern</code> (and then assigning resulting pattern to <code>strokeStyle</code>).</p>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="bhiKl" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/bhiKl">Check out this Pen!</a></pre>
+  <p class="wordpress-sucks"><img src="/images/drawing_techniques/pattern_image.png" class="example-img"></p>
+
+  <h2 id="spray">Spray</h2>
+
+  <p>Now what about goold-old spray brush? There's few ways we can implement it. One of them is to simply fill area (pixels) around mouse point with color. The larger the area (radius), the thicker spray is. The more pixels we fill, the denser it is.</p>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="Lkszi" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/Lkszi">Check out this Pen!</a></pre>
+  <p class="wordpress-sucks"><img src="/images/drawing_techniques/spray.png" class="example-img"></p>
+
+  <h3 id="time-based-spray">Time-based spray</h3>
+
+  <p>You might notice that previous approach does not really paint like a real spray. A real spray paints area <b>continuously</b>, not just when we move a mouse/brush. In order to achieve this, we need to paint area at a constant interval while the mouse is pressed. This way, certain areas can be made darker just by "holding a spray" there longer.</p>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="Craxn" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/Craxn">Check out this Pen!</a></pre>
+  <p class="wordpress-sucks"><img src="/images/drawing_techniques/spray_timed.png" class="example-img"></p>
+
+  <h3 id="round-distribution">Time-based spray with round distribution</h3>
+
+  <p>The previous example is more realistic but not fully so. Real spray throws paint over a round area, not rectangular. So let's try to distribute pixels over a round area.</p>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="itmrd" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/itmrd">Check out this Pen!</a></pre>
+  <p class="wordpress-sucks"><img src="/images/drawing_techniques/spray_timed_round.png" class="example-img"></p>
+
+  <p>Much better.</p>
+
+  <h3 id="randomizing-dots">Randomizing dots</h3>
+
+  <p>Finally, is there anything else we can do to make spray more realistic? Aside from using an image as a stamp, of course. We can certainly make paint spread out even more sporadically, as it would in a real life. If we change opacity of each of the painted pixels, we get a very similar effect.</p>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="qhIoa" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/qhIoa">Check out this Pen!</a></pre>
+  <p class="wordpress-sucks"><img src="/images/drawing_techniques/spray_randomized.png" class="example-img"></p>
+
+  <h3 id="neighbor-points">Neighbor points connection</h3>
+
+  <p>The concept of <b>connecting neighbour points</b> was popularized by zefrank's <a href="http://www.zefrank.com/scribbler/">Scribbler</a> and Mr. doob's <a href="www.mrdoob.com/projects/harmony/index.html">Harmony</a>. If you remember Harmony brushes like sketchy, shaded, chrome — that's the effect I'm talking about.</p>
+
+  <p>The idea is: add additional strokes between nearby points of already drawn path. This usually creates an effect of a sketch, or a web, or a shading of some sort; additional strokes add illusion of darker spots in small, "bended" areas.</p>
+
+  <h4 id="all-points-connection">All-points connection</h4>
+
+  <p>A naive approach would be to take our first simple example of point-based brush, and add extra stroking. For each point along the path, we would stroke towards one of previous points on a path:</p>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="Hlfac" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/Hlfac">Check out this Pen!</a></pre>
+  <p class="wordpress-sucks"><img src="/images/drawing_techniques/neighbor_connection.png" class="example-img"></p>
+
+  <p>You can kind of start to see something resembling Harmony's brushes, but it's not exactly the same. It could be made better by reducing opacity (i.e. contrast) of additional strokes, to make them more realistic and shadowy. But to recreate effect fully, we need to follow a different algorithm.</p>
+
+  <h4 id="nearby-connections">Neighbor points</h4>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="EjivI" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/EjivI">Check out this Pen!</a></pre>
+  <p class="wordpress-sucks"><img src="/images/drawing_techniques/harmony_brush.png" class="example-img"></p>
+
+  <p>The part responsible for "nearby" stroking is this:</p>
+
+<pre lang="javascript"><code>
+  var lastPoint = points[points.length-1];
+
+  for (var i = 0, len = points.length; i < len; i++) {
+    dx = points[i].x - lastPoint.x;
+    dy = points[i].y - lastPoint.y;
+    d = dx * dx + dy * dy;
+
+    if (d < 1000) {
+      ctx.beginPath();
+      ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+      ctx.moveTo(lastPoint.x + (dx * 0.2), lastPoint.y + (dy * 0.2));
+      ctx.lineTo(points[i].x - (dx * 0.2), points[i].y - (dy * 0.2));
+      ctx.stroke();
+    }
+  }
+</code></pre>
+
+  <p>What's going on here? Looks crazy. Took me a while to understand but the concept is strikingly simple!</p>
+
+  <p>When drawing a line, we check entire distance of already-drawn path comparing all the points to the current (last) one. If the point is in certain proximity (<code>d < 1000</code>) of a last one, we move pointer to it and stroke a line from there to the current point. <code>dx * 0.2</code> and <code>dy * 0.2</code> give those additional strokes a bit of offset.</p>
+
+  <img src="/images/drawing_techniques/neighbor_connections_illustrated.png" class="example-img">
+
+  <p>That's it. Simple idea, powerful effect.</p>
+
+  <h4 id="fur-via-nearby-connections">Fur via neighbor points</h4>
+
+  <p>An interesting twist to this technique — seen in Harmony — is to create fur effect. Instead of stroking <em>towards</em> the nearby point (from the last one), the stroke is made to the <b>opposite direction</b>. With a little bit of offset, it produces furry strokes around certain (close) areas.</p>
+
+  <pre class="codepen" data-height="360" data-type="result" data-href="tmIuD" data-user="kangax" data-safe="true"><code></code><a href="http://codepen.io/kangax/pen/tmIuD">Check out this Pen!</a></pre>
+  <p class="wordpress-sucks"><img src="/images/drawing_techniques/fur_nearby_connections.png" class="example-img"></p>
+
+  <p>Shortly after investigating Harmony brushes, I came across this wonderful <a href="http://lukast.mediablog.sk/log/?p=347">blog post by Lukáš Tvrdý</a>, explaining nicely some of the variations of neighbor-points technique. He describes how different parameters affect the strokes and the kind of effects they produce. Definitely worth checking out.</p>
+
+  <img src="/images/drawing_techniques/harmony_customization.png" class="example-img">
+
+  <p>So there you have it — some of the basic as well as more interesting drawing techniques. We've only scratched a surface here. There are endless possibilities to customize either of the brushes, creating even more exciting effects. Change opacity or color, width or offsets, introduce random factor, and a whole new effect is born.</p>
+
+  <p>Try experimenting with them on your own!</p>
+</div>
+
+<!--<p>http://rezoner.net/haiku/</p>
+<h2>canvasbrushes.com?</h2>-->
+
+<script async src="http://codepen.io/assets/embed/ei.js"></script>
+
+<script>
+  document.getElementById('toc-toggler').onclick = function() {
+    var tocBodyEl = document.getElementById('toc-body');
+    tocBodyEl.style.display = tocBodyEl.style.display === 'none' ? 'block' : 'none';
+    return false;
+  };
+</script>

@@ -1,0 +1,32 @@
+---
+layout: default
+title: Home page
+---
+
+<div class="filter">
+  Read about
+
+  <span>
+    <a href="#" class="topic" data-name="js">JS</a> |
+    <a href="#" class="topic" data-name="css">CSS</a> |
+    <a href="#" class="topic" data-name="html">HTML</a> |
+    <a href="#" class="topic" data-name="prototype">Prototype.js</a> |
+    <a href="#" class="topic" data-name="other">Other</a>
+  </span>
+</div>
+
+<ul class="posts">
+{% for post in site.posts %}
+  <li class="{{ post.popular }} {{ post.new }}">
+    <span class="tags" style="display: none">{{ post.tags | jsonify }}</span>
+    <a href="{{ post.url }}">{{ post.title }}</a>
+    <span class="date">{{ post.date | date: "%-d %B %Y" }}</span>
+    <span class="num-words"><em>{{ post.content | number_of_words }}</em> words</span>
+  </li>
+{% endfor %}
+</ul>
+
+<p style="font-size: 12px; margin-top: 30px">
+  Showing <b id="shown">{{ site.posts | size }}</b> posts.
+  Those with 10,000+ views are marked as <span class="popular-tag">popular</span>
+</p>

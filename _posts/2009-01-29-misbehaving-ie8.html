@@ -1,0 +1,24 @@
+---
+layout: post
+title: Misbehaving IE8
+tags:
+  - js
+---
+
+<h2>Misbehaving IE8</h2>
+
+<p>When testing IE8 Beta 2 a couple of months ago, I noticed how one innocent line would bring poor pal to its knees:</p>
+
+<pre lang="javascript"><code>
+Element.prototype.cloneNode.call();
+</code></pre>
+
+<p>Go ahead, try it out. It <strong>crashes</strong> my browser. Does it crash yours? A few days ago, Release Candidate 1 came out. The “magic” expression <strong>still crashes</strong> my browser…  This doesn’t apply to <code>cloneNode</code> only. Most if not all of the Element.prototype methods (as well as some others) fail in the very same way:</p>
+
+<pre lang="javascript"><code>
+Element.prototype.appendChild.call();
+Element.prototype.hasChildNodes.call();
+document.querySelector.call();
+</code></pre>
+
+<p>I tried submitting a bug to IE team few times but only kept getting errors in bug tracker.  Here’s hoping to a more stable RC2!</p>

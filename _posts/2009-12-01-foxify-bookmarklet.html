@@ -1,0 +1,20 @@
+---
+layout: post
+title: Foxify bookmarklet
+tags:
+  - other
+---
+
+<h2>Foxify bookmarklet</h2>
+
+<img src="/images/screenshot_of_colored_results.png" alt="Screenshot of colored results">
+
+<p>Do you know which percentage of Firefox users are browsing your website with an oldish 2.x version? What about diminishing 3.x or even ancient 1.x and 1.5.x versions? Google Analytics "browser" reports, while being very helpful, make it somewhat hard to answer this particular question.</p>
+
+<p>I made a <a href="javascript:%20(function(){function%20hasParentWithClass(element,className){var%20reClassName=new%20RegExp('(?:\\s|^)'+className+'(?:\\s|$)');while((element=element.parentNode)){if(element&amp;&amp;reClassName.test(element.className))return%20true;}%20return%20false;}%20function%20getVersionTotal(element){var%20parentRow;while((element=element.parentNode)){if(element&amp;&amp;(element.tagName.toUpperCase()==='TR')){parentRow=element;break;}}%20for(var%20i=0,j=0,child,len=parentRow.childNodes.length;i&lt;len;i++){child=parentRow.childNodes[i];if(child.nodeType!==1)continue;if(j++==2)return%20parseInt(child.innerHTML.replace(/,/g,''));}}%20function%20countPercentages(){var%20total=0;for(var%20prop%20in%20versionTotals){total+=versionTotals[prop];}%20for(var%20prop%20in%20versionTotals){versionTotals[prop]+=('%20('+((versionTotals[prop]*100)/total).toFixed(2)+'%)');}}%20function%20padString(str,length){var%20numSpacesToPad;if(str.length&lt;length){numSpacesToPad=length-str.length;return%20str+new%20Array(numSpacesToPad+1).join('%20');}%20return%20str;}%20function%20displayTotals(){var%20str='';for(var%20name%20in%20versionTotals){str+=(padString(name,5)+':%20'+versionTotals[name]+'\n')}%20alert(str);}%20var%20anchors=document.getElementsByTagName('a'),i=anchors.length,el,match,majorVersion,color,bgColor;var%20versionTotals={'1':0,'1.5':0,'2':0,'3':0,'3.5+':0};while(i--){if(!hasParentWithClass((el=anchors[i]),'text_wrapper'))continue;if((match=el.innerHTML.match(/^\s*(\d\.\d)/))&amp;&amp;match[1]){majorVersion=parseFloat(match[1]);color='inherit';if(majorVersion&gt;=3.5){bgColor='lightgreen';versionTotals['3.5+']+=getVersionTotal(el);}%20else%20if(majorVersion&gt;=3){bgColor='yellow';versionTotals['3']+=getVersionTotal(el);}%20else%20if(majorVersion&gt;=2){bgColor='orange';versionTotals['2']+=getVersionTotal(el);}%20else%20if(majorVersion&gt;=1.5){bgColor='red';color='#fff';versionTotals['1.5']+=getVersionTotal(el);}%20else%20if(majorVersion&gt;=1){bgColor='black';color='#fff';versionTotals['1']+=getVersionTotal(el);}%20else%20continue;el.style.backgroundColor=bgColor;el.style.padding='0.5em';el.style.color=color;}}%20countPercentages();displayTotals();})();" title="Foxify bookmarklet">simple bookmarklet</a> (with a silly name) to report a percentage-based breakdown of Firefox visitors by version. Bookmarklet also color-codes each entry for easier navigation — Firefox 3.5 and later (such as currently beta 3.6 and alpha 3.7) in green; 3.x in yellow; 2.x in orange; 1.5.x in red, and finally 1.x — in black (you'll be surprised, but yes, those dinosaurs still exist).</p>
+
+<p>Colored entries make it really easy to spot old version or a group of browsers from particular series. On a screenshot below, for example, you can see 2.0.20 stand out with 1,072 visits; and total amount of all Firefox 2.x users being 3,209 — 3.78% of all visits. Knowing percentage of particular series should also make it easier to decide whether it makes sense to support it.</p>
+
+<p>Don't forget that if you need to analyze Safari versions, there's <del>an app for that</del> a similar <a href="/safarify-bookmarklet/" title="Post about Safarify bookmarklet">Safarify bookmarklet</a>.</p>
+
+<p>As usual, <a href="http://github.com/kangax/foxify" title="bookmarklet's repository on github">source (and latest version) is on github</a>. Hope you find it useful.</p>

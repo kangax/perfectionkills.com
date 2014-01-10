@@ -1,0 +1,73 @@
+---
+layout: post
+title: Extending builtin natives. Evil or not?
+popular: popular
+tags:
+  - js
+---
+
+<h2>Extending builtin natives. Evil or not?</h2>
+
+<p>Couple of days ago, Nick Morgan <a href="https://twitter.com/#!/skilldrick/status/96950919014518785">asked my opinion</a> on extending native objects. The <a href="http://www.reddit.com/r/programming/comments/j32gc/easy_functional_programming_in_javascript_with/c28qyxm">question came up</a> when trying to answer — &#8220;why doesn&#8217;t <a href="http://documentcloud.github.com/underscore">underscore.js</a> extend built-ins&#8221;? Why doesn't it define all those Array methods — like <code>map</code>, <code>forEach</code>, <code>every</code> — on <code>Array.prototype</code>. Why does it put them under <code>_</code> "namespace" — <code>_.each</code>, <code>_.map</code>, <code>_.every</code>, etc. Is it because extending built-in natives is evil? Or is it not? The thread quickly filled with conflicting ideas...</p>
+
+<p>I often see this confusion about extending things in Javascript.</p>
+
+<p>There&#8217;s a <strong>big difference</strong> between extending <strong>native</strong> built-in objects and extending <strong>host</strong> objects. I tried to explain what&#8217;s wrong with extending host objects <a href="http://perfectionkills.com/whats-wrong-with-extending-the-dom/">in a blog post, a while back</a>. Now, if you look at the list of problems with extending host objects it&#8217;s easy to see that most of them don&#8217;t really apply to native, built-in objects.</p>
+
+<p>To avoid any confusion, by native, built-in objects I&#8217;m talking about objects and methods introduced in ES5 — <code>Array.prototype</code> extensions (<code>forEach</code>, <code>map</code>, <code>reduce</code>, etc.), <code>Object</code> extensions (<code>Object.create</code>, <code>Object.keys</code>, etc.), <code>Function.prototype.bind</code>, <code>String.prototype.trim</code>, <code>JSON.*</code>, etc. These are the things that are shimmed most often. And the question is — is it OK to extend native, built-in objects with these standardized methods?</p>
+
+<p>Well, let&#8217;s quickly go over problems with host objects extension:</p>
+
+<h3 id="host_vs_native">Host vs. Native</h3>
+
+<ul>
+<li><p><a href="http://perfectionkills.com/whats-wrong-with-extending-the-dom/#lack_of_specification">&#8220;Lack of specification&#8221;</a> doesn&#8217;t apply here, as long as methods that are being shimmed are <strong>part of ES5</strong>. ES5 is a standard. There&#8217;s a <a href="http://es5.github.com/">publicly available specification</a>. Implementing ES5 methods according to spec is doable (except certain <a href="https://github.com/kriskowal/es5-shim/blob/master/es5-shim.js#L487-544">edge-ish cases</a>).</p></li>
+<li><p><a href="http://perfectionkills.com/whats-wrong-with-extending-the-dom/#host_objects_have_no_rules">&#8220;Host objects have no rules&#8221;</a> doesn&#8217;t apply either. This is <strong>native</strong> objects we&#8217;re dealing with, and semantics of native objects are very well defined in those same ECMA-262 specifications. What this means in practice is that unless we&#8217;re dealing with faulty implementations, adding method <code>bind</code> to <code>Function.prototype</code> should allow us to add it. There&#8217;s no uncertainty about <code>Function.prototype</code> throwing error on extension, or silently ignoring our command (after all, the spec says: <a href="http://es5.github.com/#x15.3.4">&#8220;The initial value of the [[Extensible]] internal property of the Function prototype object is true&#8221;</a>). Ditto for other objects.</p></li>
+<li><p><a href="http://perfectionkills.com/whats-wrong-with-extending-the-dom/#chance_of_collisions">&#8220;Chance of collisions&#8221;</a> is non-existent as well. Since the methods that are being shimmed are part of a standard, and we&#8217;re shimming them according to standard, there&#8217;s no chance of collisions of any sort. Either implementation has those methods, or it doesn&#8217;t. If it doesn&#8217;t, methods are shimmed. That&#8217;s it.</p></li>
+<li><p><a href="http://perfectionkills.com/whats-wrong-with-extending-the-dom/#performance_overhead">&#8220;Performance overhead&#8221;</a> not only doesn&#8217;t exist, but could actually be the opposite of what happens. It&#8217;s likely that <code>[].forEach(...)</code> will be faster then <code>_.forEach([], ...)</code>, but even if it isn&#8217;t, there should certainly be no performance hit with former version. Contrary to DOM objects that might not have [[Prototype]]&#8217;s exposed for public extension, there&#8217;s no need to manually extend arrays, objects and strings with these methods. Conceptually, there&#8217;s no performance overhead there.</p></li>
+<li><p><a href="http://perfectionkills.com/whats-wrong-with-extending-the-dom/#ie_dom_is_a_mess">&#8220;IE DOM is a mess&#8221;</a> doesn&#8217;t apply. We&#8217;re not dealing with DOM. And native objects are extension-friendly in IE, as far as I know.</p></li>
+</ul>
+
+<p>So what do we have?</p>
+
+<p>Well, it looks like properly extending native objects — unlike <strong>host</strong> ones — is actually not all that bad. This is of course considering that we're talking about <strong>standard objects and methods</strong>. Extending native built-ins with <strong>custom methods</strong> immediately makes "collision" problem apparent. It violates <a href="http://www.nczonline.net/blog/2010/03/02/maintainable-javascript-dont-modify-objects-you-down-own/">"don't modify objects you don't own" principle</a>, and makes code not future-proof.</p>
+
+<h3 id="downsides">Downsides</h3>
+
+<p>Are there any downsides?</p>
+
+<p>Well, for once, there are cases when certain scripts mess up native objects/methods in a <strong>non-compliant way</strong>. Kind of like what Prototype.js does with some of its methods (e.g. <a href="https://github.com/sstephenson/prototype/blob/1fb9728/src/lang/enumerable.js#L250-257"><code>Array.prototype.map</code></a> or <a href="https://github.com/sstephenson/prototype/blob/1fb9728ed109cfd682225a13eda13acfb91a94dc/src/lang/array.js#L321-323"><code>Array.prototype.reverse</code></a>; standard-compliance is planned for future releases, as far as I know). If the shim adds standard-compliant methods, and application expects those methods to be non-compliant (but script/library-specific), then there could obviously be problems.</p>
+
+<p>Second, as I mentioned above, while we know that native objects are free for extension, there&#8217;s always a risk of running into an oddball environment which doesn&#8217;t conform to spec. Keeping methods on a standalone (user-defined) object can avoid such scenarios. Whether this could be considered an issue depends on how paranoid you are.</p>
+
+<p>Finally, you have to be careful when shimming methods that are not universally shimmable. Like <code>Object.create</code>, which had a very popular <a href="http://stackoverflow.com/questions/3075308/what-modernizer-scripts-exist-for-the-new-ecmascript-5-functions/3075818#3075818">non-compliant shim floating around</a> for a while. The method was defined directly on an <code>Object</code>, but silently failed to do anything useful with second argument — a set of property descriptors. Adding cross-browser support for property descriptors is a <a href="https://github.com/kriskowal/es5-shim/blob/master/es5-shim.js#L487-544">rather complicated endeavor</a>, which is why defining such methods on a standalone object could save you some trouble (you could just implement a subset of <code>Object.create</code> functionality and call it a day).</p>
+
+<p>Don&#8217;t forget that writing proper, compliant <a href="https://github.com/kriskowal/es5-shim/commit/dcd4da02a652575501fb6c3364356dbe4a9ffdad#es5-shim.js">shims</a> <a href="https://github.com/documentcloud/underscore/commit/174c897fced7bdfd4841103dcb53c468c79ffe37">is</a> <a href="https://github.com/documentcloud/underscore/commit/5edc3761c683e0f64688fa9f8dc3a156702b7241">hard</a>. When in doubt, use standalone object. When the method you&#8217;re shimming is part of the unfinished spec, use standalone object. Only when you&#8217;re certain about method compliance and method is part of the finished, future-proof specification, is it safe to shim native object directly.</p>
+
+<h3 id="enumerability">Enumerability</h3>
+
+<p>Another interesting, but likely insignificant difference is enumerability of shimmed methods. Unless methods are added using ES5 additions that allow to specify property enumerability (<code>Object.defineProperty</code> or <code>Object.defineProperties</code>), methods end up being enumerable:</p>
+
+<pre lang="javascript"><code>
+if (!Array.prototype.map) {
+  Array.prototype.map = function() { /* ... */ };
+}
+Object.keys(Array.prototype); // ["map"]
+
+// can be worked around:
+
+if (!Array.prototype.map) {
+  Object.defineProperty(Array.prototype, 'map', {
+    value: function() { /* ... */ }
+  });
+}
+Object.keys(Array.prototype); // []
+</code></pre>
+
+<h3 id="underscorejs_and_api_consistency">Underscore.js and API consistency</h3>
+
+<p>Getting back to underscore.js, I see an important aspect of <strong>consistency</strong>. Underscore adds not only standard methods like <code>map</code>, <code>reduce</code> and <code>trim</code>, but also its own, custom ones — <code>values</code>, <code>extend</code>, <code>clone</code>, etc. By adding <code>map</code>, <code>reduce</code>, and <code>trim</code> to standalone object, it keeps its API consistent.</p>
+
+<p>I&#8217;d like to also mention that I do <a href="https://github.com/kangax/fabric.js/blob/gh-pages/src/util/lang_array.js#L18-49">extend <code>Array.prototype</code> in fabric.js</a> with methods like <code>forEach</code>, <code>map</code>, <code>every</code>. I make sure those methods are spec-compliant, and I take a risk of conflicts with libraries that shim methods in non-compliant way. Methods that are non-standard, on the other hand, are <a href="https://github.com/kangax/fabric.js/blob/gh-pages/src/util/lang_array.js#L179-183">defined under standalone utility object</a>. I&#8217;m not worried much about inconsistency, since — unlike in underscore.js — there&#8217;s only a handful of shimmed methods.</p>
+
+<p>So there you have it. It should be now clear that extending native built-ins is definitely not as risky as messing with host objects. Do it carefully, follow spec closely, and use your reasonable judgement. For a spec-compliant shims, <a href="https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Array/map#Compatibility">MDN is a good place to start with</a> (but don't trust it blindly either, as there were also cases of non-compliance there).</p>

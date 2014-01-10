@@ -1,0 +1,771 @@
+---
+layout: post
+title: How ECMAScript 5 still does not allow to subclass array
+popular: popular
+tags:
+  - js
+---
+
+<h2>How ECMAScript 5 still does not allow to subclass array</h2>
+
+<div class="subclassing-array">
+  <style>
+    .subclassing-array .yes, table .no { text-align: center; }
+    .subclassing-array .yes { background-color: #afa; }
+    .subclassing-array .no { background-color: #faa; }
+    .subclassing-array thead th { padding: 0.5em 1em; }
+    .subclassing-array tbody th { padding-right: 1em; text-align: left; }
+    .subclassing-array h4 { font-size: 1em; }
+    .subclassing-array table { margin-bottom: 2em; }
+    .subclassing-array ul li { margin-bottom: 0.25em; }
+    .subclassing-array ul { margin-left: 0; }
+  </style>
+  <ul>
+    <li><a href="#why_subclass_an_array">Why subclass an array?</a></li>
+    <li><a href="#naive_approach">Naive approach</a></li>
+    <li><a href="#problems_with_naive_approach">Problems with naive approach</a></li>
+    <li><a href="#special_nature_of_arrays">Special nature of arrays</a></li>
+    <li><a href="#function_objects_and_construct">Function objects and [[Construct]]</a></li>
+    <li><a href="#the_importance_of_array_special_behavior">The importance of array special behavior</a></li>
+    <li><a href="#existing_solutions">Existing solutions</a></li>
+    <li><a href="#ecmascript_5_accessors_to_the_rescue">ECMAScript 5 accessors to the rescue</a></li>
+    <li><a href="#class_limitations">[[Class]] limitations</a></li>
+    <li><a href="#does_class_matter">Does [[Class]] matter?</a></li>
+    <li><a href="#wrappers_direct_property_injection">Wrappers. Direct property injection.</a></li>
+    <li><a href="#wrappers_prototype_chain_injection">Wrappers. Prototype chain injection.</a></li>
+    <li><a href="#summary">Summary</a></li>
+  </ul>
+  <p>Subclassing an array in Javascript has never been a trivial task. At least for a certain meaning of &#8220;subclassing an array&#8221;. Curiously, new edition of the language — ECMAScript 5 — still <strong>does not allow to fully subclass an array</strong>.</p>
+
+  <p>Not everything is lost though, and there are few ways ECMAScript 5 makes this task closer to the ideal. However, there are few <strong>fundamental issues</strong> which prevent true array subclassing from happening.</p>
+
+  <p>Let&#8217;s talk about that.</p>
+
+  <p>Today we&#8217;ll take a look at what it means to subclass an array, what some of the existing implementations/workarounds are, and which drawbacks those implementations have; We&#8217;ll see what ECMAScript 5 brings to the table, and what those fundamental issues with subclassing are. We&#8217;ll also talk about alternative approaches to subclassing an array, such as using wrappers, and get to know their limitations.</p>
+
+  <p>But first, what does it mean to subclass an array? And why do we even need it?</p>
+
+  <h3 id="why_subclass_an_array">Why subclass an array?</h3>
+
+  <p>We can define "subclassing an array" as the process of creating an object which inherits from native <code>Array</code> object (has <code>Array.prototype</code> in its prototype chain), and follows behavior similar (or identical) to native array.</p>
+
+  <p>The last point about <strong>behavior similar to native array</strong> is actually very important, as we&#8217;ll see later on. Having &#8220;subclass&#8221; of array could be thought of as being able to create an array object, but an object which would inherit not directly from <code>Array</code>, but from another object, and only then from <code>Array</code>.</p>
+
+  <p>In other words, we want behavior similar to this:</p>
+
+<pre lang="javascript"><code>
+var sub = new SubArray(1, 2, 3);
+sub; // [1, 2, 3]
+
+sub.length; // 3
+sub[1]; // 2
+
+sub.push(4);
+sub; // [1, 2, 3, 4]
+
+// etc.
+
+sub intanceof SubArray; // true
+sub intanceof Array; // true
+</code></pre>
+
+  <p>Note how <code>SubArray</code> constructor creates a <code>sub</code> object identical in its behavior to array (object has &#8220;length&#8221; property, numeric &#8220;0&#8221;, &#8220;1&#8221;, &#8220;2&#8221; properties, and inherits <code>Array.prototype.*</code> methods). At the same time, it is <code>SubArray</code> that a <code>sub</code> object <strong>directly inherits from</strong>, not <code>Array</code>.</p>
+
+  <p>So what exactly is the purpose of doing all this? Why subclass an array in such way?</p>
+
+  <p>There are usually two reasons:</p>
+
+  <h4 id="avoid_pollution_of_global_array">1. Avoid pollution of global <code>Array</code></h4>
+
+  <p>Javascript prototypal nature makes it easy to extend all array objects with custom methods. Instead of assigning to direct properties of array objects, it&#8217;s much easier and more efficient to assign to array&#8217;s &#8220;prototype&#8221; object (the one that&#8217;s usually accessed via <code>Array.prototype</code>). </p>
+
+<pre lang="javascript"><code>
+Array.prototype.last = function () {
+  return this[this.length-1];
+};
+// ...
+[1, 2, 3].last(); // 3
+</code></pre>
+
+  <p>However, extending <code>Array.prototype</code> comes with the price; And that price is chance of collisions. When scripts coexist with other scripts in an application, it&#8217;s important for those scripts not to conflict with each other. Extending <code>Array.prototype</code>, while tempting and seemingly useful, unfortunately isn&#8217;t very safe in a diverse environment. Different scripts can end up defining same-named methods, but with different behavior. Such scenario often leads to inconsistent behavior and hard-to-track errors.</p>
+
+  <p>Collisions can happen not only with user-defined code, but also with <strong>proprietary methods</strong> implemented by environment itself (e.g. <code>Array.prototype.indexOf</code> from JavaScript 1.6, before it was standardized by <abbr title="ECMAScript 5">ES5</abbr>) or from <strong>future standards</strong> (e.g. <code>Array.prototype.map</code>, <code>Array.prototype.reduce</code>, etc. — now all part of <abbr title="ECMAScript 5">ES5</abbr>).</p>
+
+  <p>Using constructor function other than native <code>Array</code> — but with same behavior — would allow to avoid such collisions. Instead of extending <code>Array.prototype</code>, another object would be extended (say, <code>SubArray.prototype</code>) and then used to initialize (sub)array objects. Any third party code which depends on methods from <code>Array.prototype</code> would still be able to safely use them.</p>
+
+  <h4 id="create_data_structures_naturally_inheriting_from_array">2. Create data structures naturally inheriting from array</h4>
+
+  <p>Another reason to subclass an array is to be able to create data structures, which naturally inherit from array; such as Stack, List, Queue, Set, etc. While there are certainly valid use cases for these structures, in this article I will instead focus on the first aspect — reducing chance of collisions. It is somewhat more relevant in context of cross-browser scripting.</p>
+
+  <h3 id="naive_approach">Naive approach</h3>
+
+  <p>Creating objects that inherit from other objects is more or less straightforward in Javascript. We can use well-known <code>clone</code> method:</p>
+
+<pre lang="javascript"><code>
+function clone(obj) {
+  function F() { }
+  F.prototype = obj;
+  return new F();
+}
+</code></pre>
+
+  <p>and then set-up inheritance like this:</p>
+
+<pre lang="javascript"><code>
+function Child() { }
+Child.prototype = clone(Parent.prototype);
+</code></pre>
+
+  <p><code>clone</code> might look confusing, but all it does is create an object with another object as nearest ancestor in its prototype chain. It uses intermediate function to avoid executing "parent" constructor. In this example, <code>new Child</code> creates an object with <code>Child.prototype</code> as first object in the prototype chain, <code>Parent.prototype</code> — second, and so on. To visualize, the prototype chain here looks like this:</p>
+
+<pre lang="javascript"><code>
+new Child()
+    |
+    | [[Prototype]]
+    |
+    v
+Child.prototype
+    |
+    | [[Prototype]]
+    |
+    v
+Parent.prototype
+    |
+    | [[Prototype]]
+    |
+    v
+Object.prototype
+    |
+    | [[Prototype]]
+    |
+    v
+   null
+</code></pre>
+
+  <p>Using <code>clone</code> method is exactly what person attempts when trying to subclass an array for the first time:</p>
+
+<pre lang="javascript"><code>
+function SubArray() {
+  // Take any arguments passed to constructor and add them to an instance
+  this.push.apply(this, arguments);
+}
+SubArray.prototype = clone(Array.prototype);
+
+var sub = new SubArray(1, 2, 3);
+</code></pre>
+
+  <p>The approach seems reasonable. After all, the goal is to create an object that inherits from <code>Array</code>, so there&#8217;s no reason tried-and-true <code>clone</code> wouldn&#8217;t work. Or is there? As with few other things in Javascript, it&#8217;s not as trivial as it seems.</p>
+
+  <h3 id="problems_with_naive_approach">Problems with naive approach</h3>
+
+  <p>So what exactly is wrong with subclassing array using <code>clone</code> method? Let&#8217;s take a look at how previously declared <code>SubArray</code> function behaves. We&#8217;ll be using native array object alongside, for comparison.</p>
+
+<pre lang="javascript"><code>
+var arr = new Array(1, 2, 3);
+var sub = new SubArray(1, 2, 3);
+
+arr.length; // 3
+sub.length; // 0 (in IE&lt;8)
+
+arr.length = 2;
+sub.length = 2;
+
+arr; // [1, 2]
+sub; // [1, 2, 3]
+
+arr[10] = 'foo';
+sub[10] = 'foo';
+
+arr.length; // 11
+sub.length; // 2
+</code></pre>
+
+  <p>There&#8217;s clearly some kind of inconsistency here. Even not counting a bug in IE&lt;8. But what is this strange relation between <code>length</code> and numeric properties in array? And why doesn&#8217;t subclassed array behave identical? To understand this, we need to look into what array objects in Javascript really are.</p>
+
+  <h3 id="special_nature_of_arrays">Special nature of arrays</h3>
+
+  <p>It turns out that arrays in Javascript are almost like plain <code>Object</code> objects, except for one little difference in behavior. The crux of this difference is summarized concisely in one paragraph of specification (<a href="http://bclary.com/2004/11/07/#a-15.4" title="Chapter 15.4 of ECMA-262, 3rd ed.">15.4</a>):</p>
+
+  <cite style="background: #ffc; padding: 1em; border: 1px solid orange; display: block;">Array objects give special treatment to a certain class of property names. A property name P (in the form of a string value) is an array index if and only if ToString(ToUint32(P)) is equal to P and ToUint32(P) is not equal to 2^32 - 1. Every Array object has a length property whose value is always a nonnegative integer less than 2^32. The value of the length property is numerically greater than the name of every property whose name is an array index; whenever a property of an Array object is created or changed, other properties are adjusted as necessary to maintain this invariant. Specifically, whenever a property is added whose name is an array index, the length property is changed, if necessary, to be one more than the numeric value of that array index; and whenever the length property is changed, every property whose name is an array index whose value is not smaller than the new length is automatically deleted. This constraint applies only to properties of the Array object itself and is unaffected by length or array index properties that may be inherited from its prototype.
+  </cite>
+
+  <p>For those allergic to the condensed language of ECMA-262, here&#8217;s a short summary.</p>
+
+  <p>Array objects treat &#8220;numeric&#8221; properties in a special way. Whenever such property changes, value of array&#8217;s <strong>&#8220;length&#8221; property is adjusted as well</strong>; it&#8217;s adjusted in such was as to make sure that it is always one more than the greatest numeric (own) property of an array. Similarly, when &#8220;length&#8221; property is changed, <strong>numeric properties are adjusted accordingly</strong> (but only those that are larger than value of &#8220;length&#8221;).</p>
+
+  <p>We have already seen relation between numeric properties and length in the previous example, but let&#8217;s take a look at it again, step by step:</p>
+
+  <p>1) When array object is created, its &#8220;length&#8221; property is set to a value one more than the largest index of an array.</p>
+
+<pre lang="javascript"><code>
+  var arr = ['x', 'y', 'z'];
+  arr.length; // 3 (1 greater than largest index of an array — 2 in this case)
+
+  arr = ['foo'];
+  arr.length; // 1 (1 greater than largest index of an array — 0 in this case)
+</code></pre>
+
+  <p>2) When numeric properties change, so does &#8220;length&#8221; change — to maintain the relationship of being 1 greater than the largest index.</p>
+
+<pre lang="javascript"><code>
+var arr = ['x', 'y'];
+arr.length; // 2, as expected
+
+arr[2] = 'z'; // add another numeric property (2) larger than the largest existing one (1)
+arr.length; // 3 — length is changed to be 1 greater than (new) largest index (2)
+</code></pre>
+
+  <p>3) When &#8220;length&#8221; property changes, numeric properties are adjusted in such way so that greatest index is 1 smaller than value of &#8220;length&#8221;.</p>
+
+<pre lang="javascript"><code>
+var arr = ['x', 'y', 'z'];
+arr.length = 2;
+
+arr; // ['x', 'y'] — note how last element (z) is deleted, because being at 2nd index,
+     //              it doesn't satisfy criteria of largest index being 1 less than length
+
+arr.length = 4;
+
+arr; // ['x', 'y'] — "increasing" length doesn't affect numeric properties...
+
+arr.join(); // "x,y,," ...but has consequences visible in other cases, such as when using `Array.prototype.join`
+
+arr.push('z');
+arr; // ['x', 'y', undefined, undefined, 'z'] — ...or when using `Array.prototype.push`
+</code></pre>
+
+  <p>Now you know the &#8220;special&#8221; nature of Array objects in Javascript, which is in the relationship between &#8220;length&#8221; and numeric properties. One little detail we haven&#8217;t looked at is that array&#8217;s &#8220;length&#8221; property MUST always have a value of non-negative integer less than 2^32. Whenever this condition is violated, a <code>RangeError</code> is thrown:</p>
+
+<pre lang="javascript"><code>
+var arr = [];
+arr.length = Math.pow(2, 32); // RangeError
+
+arr.length; // 0 (length is still 0, as it initially was)
+
+arr.length = Math.pow(2, 32) - 1; // set length to maximum allowed value
+
+arr.length++; // RangeError (when setting length explicitly)
+arr.push(1); // RangeError (or when setting length implicitly)
+</code></pre>
+
+  <h3 id="function_objects_and_construct">Function objects and [[Construct]]</h3>
+
+  <p>It should start to make sense why there are discrepancies in behavior of objects created via <code>SubArray</code> and <code>Array</code> functions. Even though <code>SubArray</code> creates an object that inherits from <code>Array.prototype</code>, that <strong>object completely lacks array&#8217;s special behavior</strong>. The SubArray instance is nothing more than a plain <code>Object</code> object (as if it was created via an object literal — <code>{ }</code>).</p>
+
+  <p>But why does <code>SubArray</code> create an <code>Object</code> object and not an <code>Array</code> object? The core of this issue is in the way functions work in ECMAScript.</p>
+
+  <p>When <code>new</code> operator is applied to an object — as in <code>new SubArray</code> — that object&#8217;s internal [[Construct]] method is called. In our case, it is [[Construct]] of <code>SubArray</code> function. <code>SubArray</code> — being a native function — has [[Construct]] that&#8217;s specified to <strong>create a plain <code>Object</code> object</strong>, and invoke corresponding function providing newly created object as <code>this</code> value. Any native function, including <code>SubArray</code>, should create an <code>Object</code> object and return it as a result.</p>
+
+  <p>Now it&#8217;s worth mentioning that it&#8217;s possible to sort of supersede return value of [[Construct]] by explicitly returning non-primitive value from constructor function:</p>
+
+<pre lang="javascript"><code>
+function SubArray() {
+  this.push.apply(this, arguments);
+  return []; // return array object explicitly
+}
+</code></pre>
+
+  <p>— but in that case, returned object does NOT inherit from constructor&#8217;s &#8220;prototype&#8221; (<code>SubArray.prototype</code> in this case); neither is constructor function invoked with that object as <code>this</code> value:</p>
+
+<pre lang="javascript"><code>
+var sub = new SubArray(1, 2, 3);
+
+// Object doesn't have 1, 2, 3, as constructor was never called with `this` value referencing returned object
+sub; // []
+
+// SubArray is not in the prototype chain of returned object
+sub instanceof SubArray; // false
+</code></pre>
+
+  <p>As you can see, creating an object that inherits from <code>Array.prototype</code> is only part of the story. The biggest issue is to <strong>preserve the special relation of length and numeric properties</strong>. This is why using regular <code>clone</code> approach is not quite up to the task.</p>
+
+  <h3 id="the_importance_of_array_special_behavior">The importance of array special behavior</h3>
+
+  <p>A reasonable question at this point is — &#8220;Why does array special behavior matter&#8221;? Why would we want to preserve relationship between length and numeric properties when subclassing an array? It turns out that consequences of proper length are not only visible when working with length directly, but also indirectly, when performing other tasks via <code>Array.prototype.*</code> methods.</p>
+
+  <p>Take for example <code>Array.prototype.push</code> — a method to append items to the end of array. To determine from which position to start inserting elements into, <code>push</code> <strong>retrieves a value of array&#8217;s &#8220;length&#8221;</strong>. If length is not preserved properly, elements are inserted at the wrong location:</p>
+
+<pre lang="javascript"><code>
+var arr = ['x', 'y'];
+arr.length = 5;
+arr.push('z'); // 'z' is inserted at 5th index, since that is what the value of "length" is
+arr; // ['x', 'y', undefined, undefined, undefined, 'z']
+</code></pre>
+
+  <p>Take another method — <code>Array.prototype.join</code>. Used to return a representation of an array by concatenating all elements with a separator, <code>Array.prototype.join</code> <strong>also uses length property</strong> to determine when to stop concatenating values:</p>
+
+<pre lang="javascript"><code>
+var arr = ['x', 'y'];
+arr.join(); // "x,y"
+arr.length = 5;
+arr.join(); // "x,y,,,"
+</code></pre>
+
+  <p>Same goes for <code>Array.prototype.concat</code> — method used to produce a new array by concatenating values passed to <code>concat</code>:</p>
+
+<pre lang="javascript"><code>
+var arr = ['x'];
+arr.length = 3;
+arr.concat('y'); // ['x', undefined, undefined, 'y']
+</code></pre>
+
+  <p>Finally, the special behavior is often cleverly exploited in other situations, such as to &#8220;clear&#8221; an array (i.e. delete all of its numeric properties):</p>
+
+<pre lang="javascript"><code>
+var arr = [1, 2, 3];
+arr.length = 0;
+arr; // [] — setting length to 0 effectively removes all numeric properties (elements) of an array
+</code></pre>
+
+  <h3 id="existing_solutions">Existing solutions</h3>
+
+  <p>Now that we're familiar with the theory, let's see what the situation is with subclassing arrays in practice. There have been few attempts in the past, with various levels of &#8220;success&#8221;. Here are a couple of most popular ones:</p>
+
+  <h4 id="andrea_giammarchi_solution">Andrea Giammarchi solution</h4>
+
+  <p>One of the recent implementations is <a href="http://webreflection.blogspot.com/2008/05/habemus-array-unlocked-length-in-ie8.html">Stack, by Andrea Giammarchi</a>, which looks like this:</p>
+
+<pre lang="javascript"><code>
+var Stack = (function(){ // (C) Andrea Giammarchi - Mit Style License
+
+  function Stack(length) {
+    if (arguments.length === 1 &amp;&amp; typeof length === "number") {
+      this.length = -1 &lt; length &amp;&amp; length === length &lt;&lt; 1 >> 1 ? length : this.push(length);
+    }
+    else if (arguments.length) {
+      this.push.apply(this, arguments);
+    }
+  };
+
+  function Array() { };
+  Array.prototype = [];
+
+  Stack.prototype = new Array;
+  Stack.prototype.length = 0;
+  Stack.prototype.toString = function () {
+    return this.slice(0).toString();
+  };
+
+  Stack.prototype.constructor = Stack;
+  return Stack;
+})();
+</code></pre>
+
+  <p>It's an interesting solution, which mainly works around IE&lt;8 bug with <code>Array.prototype.push</code> and <code>length</code> property. However, as should be obvious by now, it doesn't really solve the problem of maintaining relation between <code>length</code> and numeric properties:</p>
+
+<pre lang="javascript"><code>
+var stack = new Stack('x', 'y');
+stack.length;           // 2
+
+// so far so good
+
+stack.push('z');
+stack.length;           // 3
+
+// still good
+
+stack[3] = 'foo';
+stack.length;           // 3
+
+// not good anymore (length should have been changed to 4)
+
+stack.length = 2;
+stack[2];               // 'z'
+
+// still not good (element at 2nd index should have been deleted)
+</code></pre>
+
+  <h4 id="dean_edwards_solution">Dean Edwards solution</h4>
+
+  <p>Another <a href="http://dean.edwards.name/weblog/2006/11/hooray/">popular solution is by Dean Edwards</a>. This one takes a completely different approach — instead of creating an object that inherits from <code>Array.prototype</code>, an actual <code>Array</code> constructor is "borrowed" from the context of another iframe. </p>
+
+<pre lang="javascript"><code>
+// create an &lt;iframe>
+var iframe = document.createElement("iframe");
+iframe.style.display = "none";
+document.body.appendChild(iframe);
+
+// write a script into the &lt;iframe> and steal its Array object
+frames[frames.length - 1].document.write(
+  "&lt;script>parent.Array2 = Array;<\/script>";
+);
+</code></pre>
+
+  <p>The reason this &#8220;works&#8221; is due to browsers creating separate execution environments for each frame in a document. Each such environment has a separate set of both — built-in and host objects. Built-in objects include global <code>Array</code> constructor, among others. <code>Array</code> object of one iframe is different from <code>Array</code> object of another iframe. They also don&#8217;t have any kind of hierarchical relation:</p>
+
+<pre lang="javascript"><code>
+// assuming that SubArray was borrowed from another iframe
+
+var sub = new SubArray(1, 2, 3);
+
+sub instanceof SubArray; // true
+sub instanceof Array; // false
+sub instanceof Object; // false
+</code></pre>
+
+  <p>Notice how <code>sub</code> is reported as NOT an instance of <code>Array</code>, and NOT an instance of <code>Object</code>. This is because neither <code>Array</code>, nor <code>Object</code> are anywhere in the prototype chain of <code>sub</code> object. Instead, prototype chain consists of <code>SubArray.prototype</code>, followed by <code>&lt;Object from another iframe&gt;.prototype</code>:</p>
+
+<pre lang="javascript"><code>
+new SubArray()
+    |
+    | [[Prototype]]
+    |
+    v
+&lt;another iframe>.Array.prototype
+    |
+    | [[Prototype]]
+    |
+    v
+&lt;another iframe>.Object.prototype
+    |
+    | [[Prototype]]
+    |
+    v
+   null
+</code></pre>
+
+  <p>This brings us to one &#8220;consideration&#8221; with this approach — difficulties determining the nature of an object derived from such iframe. It&#8217;s no longer possible to determine that an object is an array using <code>instanceof</code> or <code>constructor</code> checks <sup>[1]</sup>:</p>
+
+<pre lang="javascript"><code>
+  // is this object an array?
+
+  sub instanceof Array; // false
+  sub.constructor === Array; // false
+</code></pre>
+
+  <p>It is, however, still possible to use [[Class]] check (we&#8217;ll talk about [[Class]] later on):</p>
+
+<pre lang="javascript"><code>
+  Object.prototype.toString.call(sub) === '[object Array]'; // true
+</code></pre>
+
+  <p>Another, more inherent, downside of this approach is that it <strong>doesn&#8217;t work in non-browser environments</strong> (or, more precisely, in any environment without support for iframes). This problem is likely to become even bigger, given that server-side Javascript implementations are rising quite fast.</p>
+
+  <p>Finally, it was reported that <code>Array</code> borrowing can cause mixed content warning in IE6, among few other minor issues.</p>
+
+  <p>Other than that, iframe-based array &#8220;subclassing&#8221; is free of downsides of solutions like Stack, since we&#8217;re dealing with real array objects, and so proper length/indices relation.</p>
+
+  <h3 id="ecmascript_5_accessors_to_the_rescue">ECMAScript 5 accessors to the rescue</h3>
+
+  <p>But let&#8217;s talk about ECMAScript 5, which as I mentioned in the beginning, brings something that helps with subclassing arrays. This &#8220;something&#8221; is actually nothing but property accessors. These useful language constructs have been present in some popular implementations (SpiderMonkey, JavaScriptCore, and others) as a non-standard extension for quite a while now. They are now standardized by the new edition of the language.</p>
+
+  <p>Using accessors, it&#8217;s rather trivial to <strong>create an <code>Object</code> object with special length/indices relation</strong> — relation that&#8217;s identical to that of <code>Array</code> objects! And since we already know how to create an object with <code>Array.prototype</code> in its prototype chain, combining these two aspects would allow for a complete emulation of arrays.</p>
+
+  <p>There&#8217;s one little detail about implementation. Since ECMAScript (including last, 5th version) doesn&#8217;t provide any catch-all (aka <a href="https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Global_Objects/Object/noSuchMethod">__noSuchMethod__</a>) mechanism, it&#8217;s not possible to change value of <code>length</code> property of an object when numeric property is modified; in other words, we can&#8217;t intercept the moment when &#8216;0&#8217;, &#8216;1&#8217;, &#8216;2&#8217;, &#8216;15&#8217;, etc. properties are being set. However, accessors allow us to <strong>intercept any read access</strong> of <code>length</code> property and return proper value, depending on which numeric properties object has at that moment. This is all we really need.</p>
+
+  <p>Here&#8217;s an implementation of it, at about 45 lines of code:</p>
+
+<pre lang="javascript"><code>
+var makeSubArray = (function(){
+
+  var MAX_SIGNED_INT_VALUE = Math.pow(2, 32) - 1,
+      hasOwnProperty = Object.prototype.hasOwnProperty;
+
+  function ToUint32(value) {
+    return value >>> 0;
+  }
+
+  function getMaxIndexProperty(object) {
+    var maxIndex = -1, isValidProperty;
+
+    for (var prop in object) {
+
+      isValidProperty = (
+        String(ToUint32(prop)) === prop &amp;&amp;
+        ToUint32(prop) !== MAX_SIGNED_INT_VALUE &amp;&amp;
+        hasOwnProperty.call(object, prop));
+
+      if (isValidProperty &amp;&amp; prop > maxIndex) {
+        maxIndex = prop;
+      }
+    }
+    return maxIndex;
+  }
+
+  return function(methods) {
+    var length = 0;
+    methods = methods || { };
+
+    methods.length = {
+      get: function() {
+        var maxIndexProperty = +getMaxIndexProperty(this);
+        return Math.max(length, maxIndexProperty + 1);
+      },
+      set: function(value) {
+        var constrainedValue = ToUint32(value);
+        if (constrainedValue !== +value) {
+          throw new RangeError();
+        }
+        for (var i = constrainedValue, len = this.length; i < len; i++) {
+          delete this[i];
+        }
+        length = constrainedValue;
+      }
+    };
+    methods.toString = {
+      value: Array.prototype.join
+    };
+    return Object.create(Array.prototype, methods);
+  };
+})();
+</code></pre>
+
+  <p>We can now create &#8220;sub arrays&#8221; via <code>makeSubArray</code> function. It accepts one argument — an object with methods to add to [[Prototype]] of returned &#8220;sub array&#8221;.</p>
+
+<pre lang="javascript"><code>
+var subMethods = {
+  last: {
+    value: function() {
+      return this[this.length - 1];
+    }
+  }
+};
+var sub = makeSubArray(subMethods);
+var sub2 = makeSubArray(subMethods);
+// etc.
+</code></pre>
+
+  <p>We can also hide this factory method behind a constructor, to make it similar to <code>Array</code>&#8217;s one:</p>
+
+<pre lang="javascript"><code>
+var SubArray = (function() {
+  var methods = {
+    last: {
+      value: function() {
+        return this[this.length - 1];
+      }
+    }
+  };
+  return function() {
+    var arr = makeSubArray(methods);
+    if (arguments.length === 1) {
+      arr.length = arguments[0];
+    }
+    else {
+      arr.push.apply(arr, arguments);
+    }
+    return arr;
+  };
+})();
+</code></pre>
+
+  <p>And then use it as you would use regular <code>Array</code> constructor:</p>
+
+<pre lang="javascript"><code>
+var sub = new SubArray(1, 2, 3);
+
+sub.length; // 3
+sub; // [1, 2, 3]
+
+sub.length = 1;
+sub; // [1]
+
+sub[10] = 'x';
+sub.push(1);
+</code></pre>
+
+<p>You can find this version of <code>SubArray</code> together with unit tests in <a href="https://github.com/kangax/array_subclassing">Gtihub repository</a>. For brevity, I made this implementation mainly take care of length/indices relation; certain methods (e.g. <code>concat</code>) do not behave identical to <code>Array</code> and need to be implemented accordingly.</p>
+
+  <h3 id="class_limitations">[[Class]] limitations</h3>
+
+  <p>The implementation we have just seen — the one utilizing property accessors — is great. It doesn&#8217;t require any host objects (such as iframes); it preserves relation between length and numeric properties; it even disallows out-of-range values for length or indices. All it requires is support for ES5 (or even just <code>Object.create</code> method).</p>
+
+  <p>But the dramatic title of this post is not there just for fun. There&#8217;s one little detail we&#8217;re missing in this otherwise complete implementation. And that detail is <strong>proper [[Class]] value</strong> — something that ECMAScript still doesn&#8217;t give full control over.</p>
+
+  <p>I wrote about [[Class]] before, when <a href="http://perfectionkills.com/instanceof-considered-harmful-or-how-to-write-a-robust-isarray/">explaining how to detect  arrays</a>. In a nutshell, [[Class]] is an internal property of objects in ECMAScript. Its value is never exposed directly, but can still be inspected using certain methods (e.g. <code>Object.prototype.toString</code>). The usefulness of [[Class]] is that it allows to detect type of objects without relying on <code>instanceof</code> operator or checking object&#8217;s <code>constructor</code> — both of which fall short to detect objects from other contexts (e.g. iframes), as we&#8217;ve seen earlier.</p>
+
+  <p>Now, since objects created by <code>makeSubArray</code> are nothing but plain <code>Object</code> objects (only with special <code>length</code> getters/setters), <strong>their [[Class]] is also that of &#8220;Object&#8221; not an &#8220;Array&#8221;</strong>! We&#8217;ve taken care of length/indices relation, we&#8217;ve set up <code>Array.prototype</code> inheritance, but there&#8217;s no way to change object&#8217;s [[Class]] value. And so this solution can not claim to be complete.</p>
+
+  <h3 id="does_class_matter">Does [[Class]] matter?</h3>
+
+  <p>You might be wondering — what are the actual implications of these pseudo-array objects having [[Class]] of &#8220;Object&#8221; not an &#8220;Array&#8221;. Do we even care? Well, for once, there&#8217;s an issue with object detection. Ironically, the solution I proposed to detect arrays relies on [[Class]], and so would fall short with objects like these.</p>
+
+<pre lang="javascript"><code>
+// assuming that `sub` is a pseudo-array
+Object.prototype.toString.call(sub) === '[object Array]'; // false
+</code></pre>
+
+  <p>Another, probably more important, implication is that some of the <strong>methods in ECMAScript actually rely on [[Class]] value</strong>. For example, a well-known <code>Function.prototype.apply</code> accepts an array as its second argument (as well as an <code>arguments</code> object). Section 15.3.4.3 of ES3 says — <cite>&#8220;if argArray is neither an array nor an arguments object (see 10.1.8), a TypeError exception is thrown&#8221;</cite>. What this means is that if we pass pseudo-array object as a second argument to <code>apply</code> it will throw TypeError. <code>apply</code> doesn&#8217;t know or care if an object inherits from <code>Array.prototype</code>; neither does it care about object implementing special length/indices behavior. All it cares is that <strong>object is of proper type</strong> — type that we, unfortunately, can not emulate.</p>
+
+<pre lang="javascript"><code>
+// assuming that `sub` is a pseudo-array
+someFunction.apply(this, sub); // TypeError
+</code></pre>
+
+  <p>There&#8217;s some vagueness in specification on this matter. For example, in <code>Date.prototype.setTime</code> spec says <cite>&#8220;If the this value is <strong>not a Date object</strong>, throw a TypeError exception.&#8221;</cite>, but in <code>Date.prototype.getTime</code>, it uses [[Class]] rather than just &#8220;not a Date object&#8221; — <cite>&#8220;If the this value is <strong>not an object whose [[Class]]</strong> property is &#8220;Date&#8221;, throw a TypeError exception&#8221;</cite>.</p>
+
+  <p>It&#8217;s probably safe to assume that these 2 phrases — &#8220;Date object&#8221; and &#8220;object with [[Class]] of &#8216;Date&#8217;&#8221; — have identical meaning. Ditto for &#8220;Array object&#8221; and &#8220;object with [[Class]] of &#8216;Array&#8217;&#8221;, as well as others.</p>
+
+  <p><code>Function.prototype.apply</code> is not the only method sensitive to [[Class]] of an object. <code>Array.prototype.concat</code>, for example, follows different algorithm based on whether an object is an array or not (in other words — whether it has [[Class]] of &#8220;Array&#8221; or not).</p>
+
+<pre lang="javascript"><code>
+// array ([[Class]] == "Array")
+var arr = ['x', 'y'];
+
+// object with numeric properties ([[Class]] == "Object")
+var obj = { '0': 'x', '1': 'y' };
+
+[1,2,3].concat(arr); // [1, 2, 3, 'x', 'y']
+[1,2,3].concat(obj); // [1, 2, 3, { '0': 'x', '1': 'y' }]
+</code></pre>
+
+  <p>As you can see, array values are &#8220;flattened&#8221;, whereas non-array ones are left as is. It is certainly possible to give these pseudo-arrays custom implementation of <code>concat</code> (and &#8220;fix&#8221; any other of <code>Array.prototype.*</code> methods), but <strong>the problem with <code>Function.prototype.apply</code> can not be solved</strong>.</p>
+
+  <p>It&#8217;s worth mentioning that another downside of accessor-based pseudo-array approach is performance. I haven&#8217;t done any tests, but it&#8217;s pretty clear that an implementation which has to <strong>enumerate over all numeric properties</strong> on every access of <code>length</code> property is not going to perform well. This is why <strong>I can't recommend this solution</strong> for anything other than educational purposes.</p>
+
+  <h3 id="wrappers_direct_property_injection">Wrappers. Direct property injection.</h3>
+
+  <p>Realizing a somewhat futile nature of subclassing arrays in Javascript often <strong>makes alternative solutions look very attractive</strong>. One of such solutions is using wrappers. Wrapper approach avoids setting up inheritance or emulating length/indices relation. Instead, a factory-like function can create a plain Array object, and then <strong>augment it directly</strong> with any custom methods. Since returned object is an Array one, it maintains proper length/indices relation, as well as [[Class]] of &#8220;Array&#8221;. It also inherits from <code>Array.prototype</code>, naturally.</p>
+
+<pre lang="javascript"><code>
+function makeSubArray() {
+  var arr = [ ];
+  arr.push.apply(arr, arguments);
+  arr.last = function() {
+    return this[this.length - 1];
+  };
+  return arr;
+}
+
+var sub = makeSubArray(1, 2, 3);
+sub instanceof Array; // true
+
+sub.length; // 3
+sub.last(); // 3
+</code></pre>
+
+  <p>While direct extension of array object is a beautiful, simplistic solution, it&#8217;s not without downsides. The main disadvantage is that on each invocation of constructor, <strong>an array needs to be extended with N number of methods</strong>. The time it takes to create an array is no longer a constant (if methods were on <code>SubArray.prototype</code>), but is directly proportional to the number of methods that need to be added. </p>
+
+  <h3 id="wrappers_prototype_chain_injection">Wrappers. Prototype chain injection.</h3>
+
+  <p>To overcome the problem of &#8220;N methods&#8221;, another variation of wrappers can be used — the one in which object&#8217;s prototype chain is augmented, rather than object itself. Let&#8217;s see how this could be done:</p>
+
+<pre lang="javascript"><code>
+function SubArray() { }
+SubArray.prototype = new Array;
+SubArray.prototype.last = function() {
+  return this[this.length - 1];
+};
+
+function makeSubArray() {
+  var arr = [ ];
+  arr.push.apply(arr, arguments);
+  arr.__proto__ = SubArray.prototype;
+  return arr;
+}
+</code></pre>
+
+  <p>The idea is simple. When <code>makeSubArray</code> function is executed, two things happen: 1) an array object is created and is populated with any passed arguments; 2) object&#8217;s prototype chain is augmented in such way so that next object is <code>SubArray.prototype</code>, not original <code>Array.prototype</code>. The augmentation of prototype chain is done via <a href="https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Global_Objects/Object/Proto">non-standard __proto__ property</a>. </p>
+
+  <p>But what happens in <code>makeSubArray</code> function is of course only half of the story. To make sure that object has <code>Array.prototype</code> in its prototype chain, we need to make <code>SubArray.prototype</code> inherit from it. This is exactly what&#8217;s being done on a second line of this snippet (<code>SubArray.prototype = new Array</code>). Prototype chain of an object returned from <code>makeSubArray</code> now looks like this:</p>
+
+<pre lang="javascript"><code>
+new SubArray()
+    |
+    | [[Prototype]]
+    |
+    v
+SubArray.prototype
+    |
+    | [[Prototype]]
+    |
+    v
+Array.prototype
+    |
+    | [[Prototype]]
+    |
+    v
+Object.prototype
+    |
+    | [[Prototype]]
+    |
+    v
+   null
+</code></pre>
+
+  <p>And because returned object is actually an <code>Array</code>, not an <code>Object</code> one, we also get length/indices relation as well as proper [[Class]] value. In fact, we can go even further and move initialization logic into <code>SubArray</code> constructor itself:</p>
+
+<pre lang="javascript"><code>
+function SubArray() {
+  var arr = [ ];
+  arr.push.apply(arr, arguments);
+  arr.__proto__ = SubArray.prototype;
+  return arr;
+}
+SubArray.prototype = new Array;
+SubArray.prototype.last = function() {
+  return this[this.length - 1];
+};
+
+var sub = new SubArray(1, 2, 3);
+
+sub instanceof SubArray; // true
+sub instanceof Array; // true
+</code></pre>
+
+  <p>Even though augmenting prototype chain is a more performant solution, there&#8217;s a clear downside — <strong>it relies on non-standard __proto__ property</strong>. ECMAScript, unfortunately, does not allow to set [[Prototype]] of an object — internal property referencing immediate ancestor in its prototype chain. Not even in 5th edition. Even though __proto__ is supported by a rather large number of implementations, it is far from being truly compatible.</p>
+
+  <h3 id="summary">Summary</h3>
+
+  <p>So here it is; all the fun intricacies of subclassing arrays in Javascript. </p>
+
+  <p>We&#8217;ve seen that contrary to what might seem, <strong>actual inheritance is by far not the only aspect</strong> of subclassing arrays in Javascript; that arrays are different from regular objects by having <strong>special length/indices relation</strong>; how this length/indices relation is important and has nothing to do with prototype chain of an object; how arrays have special [[Class]] value of &#8220;Array&#8221; which is also rather important, and isn&#8217;t inherited either; how it&#8217;s <strong>not possible to change [[Class]] value</strong> of an object — not even in ECMAScript 5. We looked at different ways to &#8220;subclass&#8221; an array, starting from borrowing <code>Array</code> constructors from other contexts, and ending with augmentation of prototype chain. We examined benefits and downsides of each one of those solutions.</p>
+
+  <p>What we haven&#8217;t touched upon is the performance metrics of each of the implementations — perhaps a good topic for another discussion.</p>
+
+  <p>On this note, I leave you with a table summarizing pros/cons of the above mentioned techniques.</p>
+
+  <table class="array-subclass-implementations">
+    <thead>
+      <tr>
+        <td></td>
+        <th>Proper [[Class]]</th>
+        <th>length/indices</th>
+        <th>Uses native objects only</th>
+        <th>Requires ES3 only</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th>Stack (Andrea Giammarchi)</th>
+        <td class="no">No</td>
+        <td class="no">No</td>
+        <td class="yes">Yes</td>
+        <td class="yes">Yes</td>
+      </tr>
+      <tr>
+        <th>IFrame borrowing (Dean Edwards)</th>
+        <td class="yes">Yes</td>
+        <td class="yes">Yes</td>
+        <td class="no">No</td>
+        <td class="yes">Yes</td>
+      </tr>
+      <tr>
+        <th>Accessors</th>
+        <td class="no">No</td>
+        <td class="yes">Yes</td>
+        <td class="yes">Yes</td>
+        <td class="no">No</td>
+      </tr>
+      <tr>
+        <th>Direct extension</th>
+        <td class="yes">Yes</td>
+        <td class="yes">Yes</td>
+        <td class="yes">Yes</td>
+        <td class="yes">Yes</td>
+      </tr>
+      <tr>
+        <th>Prototype extension</th>
+        <td class="yes">Yes</td>
+        <td class="yes">Yes</td>
+        <td class="yes">Yes</td>
+        <td class="no">No</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><span style="font-size:0.85em"><sup>[1]</sup> Whether this endeavor is something worth pursuing is a topic for another discussion</span></p>
+
+  <p>P.S. Big thanks to <a href="http://twitter.com/jdalton">John David Dalton</a> for reviewing an article and giving useful suggestions.</p>
+
+</div>

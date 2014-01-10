@@ -1,0 +1,220 @@
+---
+layout: post
+title: Sputniktests web runner
+tags:
+  - js
+---
+
+<h2>Sputniktests web runner</h2>
+
+<div id="sputniktests-web-runner">
+  <style>
+    #sputniktests-web-runner h3 code { font-size: 1em; }
+  </style>
+  <ul>
+    <li><a href="#intro" title="">Intro</a></li>
+    <li><a href="#why-it-doesnt-matter">Why it doesn't always matter</a></li>
+    <li><a href="#how-runner-works" title="">How runner works</a></li>
+    <li><a href="#browser-comparison" title="">Browser comparison</a></li>
+    <li><a href="#notable-deviations" title="">Notable deviations</a></li>
+    <li><a href="#errors-in-test-suite" title="">Errors in test suite</a></li>
+    <li><a href="#future-work" title="">Future work</a></li>
+  </ul>
+
+  <h2 id="intro">Intro</h2>
+  <p><a href="http://code.google.com/p/sputniktests/" title="">Sputniktests</a> is an ECMA-262 conformance test suite made by Google. For those who don't know, ECMA-262 is a standard behind well-known implementations like <a href="http://en.wikipedia.org/wiki/JScript" title="JScript">JScript</a>, <a href="http://en.wikipedia.org/wiki/JavaScript" title="JavaScript">JavaScript</a> and others. It's what describes ECMAScript language.</p>
+
+  <p>Ever since <a href="http://blog.chromium.org/2009/06/launching-sputnik-into-orbit.html">Sputniktests release few months ago</a>, I wanted to see <strong>how various browsers conform to the standard</strong>. Unfortunately it wasn't very easy to do so. The way test suite could be executed is by running a python script, passing it an executable file of implementation such as V8 or Rhino. It wasn't possible to just check conformance of any browser, especially browser with implementation that can't be run separately.</p>
+
+  <p>I realized that a "web runner" for Sputniktests would be a useful thing to have and <a href="http://kangax.github.com/sputniktests-webrunner/">made one</a>. In the end, it was a fun little exercise that made me understand ECMAScript language just a bit better.</p>
+
+  <a href="http://kangax.github.io/sputniktests-webrunner/" title="Sputniktests web runner">
+    <img src="/images/sputniktests-webrunner.png" alt="Sputniktests screenshot" style="display:block">
+  </a>
+
+  <p>Web runner is merely a wrapper around original test suite, made fit to run in a browser environment. Its job is to execute tests sequentially and log any errors/failures in the process. When done, it reports elapsed time and number of errors.</p>
+
+  <h2 id="why-it-doesnt-matter">Why it doesn't always matter</h2>
+
+  <p>Contrary to something like <a href="http://acid3.acidtests.org/" title="">Acid test</a>, <strong>Sputniktests is not immediately useful</strong>. Passing it fully does not necessarily make a browser more capable than the other one, with lower score. Many failures in modern browsers are rather insignificant from practical point of view and might not even affect any  real world applications.</p>
+
+  <p>But there's still <strong>a huge value in a conformance test suite like this</strong>. By testing every single detail of ECMAScript implementation, Sputniktests could help minimize regressions, both — functional and performance ones. It could serve as an excellent foundation for creating a new ECMAScript implementation. And last, but not least, it could help browser implementors find actual valid bugs in browser engines.</p>
+
+  <p>There's an important point to understand regarding test suite failures: not all of them can — or even should — be fixed, and here's why:</p>
+
+  <h3>Proprietary extensions</h3>
+  <p>It is a well-known fact that specifications allows implementations to introduce proprietary extensions. JScript and JavaScript (tm) have been doing this for years. JScript's conditional comments and JavaScript's getters/setters demonstrate it very well. Another famous example is the way <a href="http://kangax.github.io/nfe#function-statements">function declarations are treated in statements</a>.
+  </p>
+  <p>The point here is simple. <strong>Failure in Sputniktests can be the result of proprietary extension</strong> and might not even be considered a bug.</p>
+
+  <h3>ECMAScript 5th edition</h3>
+  <p>Another cause of "valid failures" might be the next edition of ECMAScript, currently draft. Some browsers have already started implementing parts of it and might fail to comply with 3rd edition that Sputniktests checks against. <a href="#for-in-undefined-null">For-in handling</a> is a good example of such "misunderstanding".
+  </p>
+
+  <h3>Backwards compatibility</h3>
+  <p>Finally, there's always a beloved backwards compatibility to keep in mind. It might not be possible to fix otherwise valid bug/deviation due to this wonderful constraint.</p>
+
+  <h2 id="how-runner-works">How runner works</h2>
+
+  <p>Runner works very simply. First, a query of tests is initialized and populated with all of the 5000+ tests. Then, a table of tests to ignore is initialized and is later used for&#8230; ignoring certain conflicting or complex tests. Finally, runner starts picking tests from the query, with a certain interval in between — to keep UI functional during this rather intensive process. Note that interval can be changed on the main screen before starting test suite but defaults to 50ms.</p>
+
+  <p>For every test, runner creates a new iframe, inserts it into a current document and writes a script element into it. This is done <strong>to keep tests isolated from each other</strong>, so that one test wouldn&#8217;t affect environment of the next one. Once script is executed, a meta data is printed to the screen: name of current test, total number of errors/failures, elapsed time, etc. Iframe is then deleted.</p>
+
+  <p>Before adding actual test script to an iframe, runner first injects a complementary script into it. That script defines global $ERROR, $FAIL and $PRINT and simply proxies them to same-named functions of main (parent) document. When these methods are called, they write an output to main document log area.</p>
+
+  <h2 id="browser-comparison">Browser comparison</h2>
+
+  <p>So how do modern and not so modern browsers stand against standard? Here's a comparison table (note that <strong>less score is better</strong> and that <strong>score represents total number of errors and failures</strong>):</p>
+
+  <img src="/images/sputniktests_chart.png" alt="Sputniktests results chart" style="display:block">
+
+  <p>We can see few interesting things here:</p>
+
+  <ul>
+  <li>Surprisingly, Opera 9.64 is a winner. Even more strange is that Opera 10 has some serious regressions and falls far far behind, joining ancient Safari 2.x</li>
+  <li>I was expecting Safari 4 to beat Firefox 3.5 (or 3.7), but it doesn't even compare with Firefox 2.x</li>
+  <li>Firefox 3.7 (currently alpha) performs 1 point worse than Firefox 3.5</li>
+  <li>It's amusing to see Internet Explorer results. The latest and greatest 8th version is practically identical to IE 5.5 (!!!). This hints at how fast bugs are being fixed in JScript.</li>
+  <li>Chrome 4 gets surprisingly low number (in between Firefox 3 and Firefox 2). I thought it would beat everyone else, considering that Sputniktests was originally developed to aid Chrome conform to the standard.</li>
+  <li>Out of all latest browsers (not considering regressed Opera 10), Konqueror gets the poorest score and probably needs to work on its compliance in the near future.</li>
+  </ul>
+
+  <h2 id="notable-deviations">Notable deviations</h2>
+
+  <p>Here are some of the bugs and quirks I noticed in few browsers. Each is accompanied with a short explanation.</p>
+
+  <h3 id="for-in-undefined-null"><strong>1) <code>for (var prop in null) { }</code></strong> <br> <strong><code>for (var prop in undefined) { }</code></strong></h3>
+
+  <p>These statements should actually <strong>result in a <code>TypeError</code></strong>, and the explanation to that is pretty simple. During evaluation, an expression on the right hand side of <code>in</code> is being applied internal <code>ToObject</code> method. This internal method is the one that throws <code>TypeError</code> when given <code>null</code> or <code>undefined</code> value. </p>
+
+  <p>You might be wondering if <code>ToObject</code> is used anywhere else and has similar consequences? It does. Roughly, in 3 cases:</p>
+
+  <ul>
+  <li>foo[bar]</li>
+  <li>with (foo) &#8230;</li>
+  <li>for (bar in foo) &#8230;</li>
+  </ul>
+
+  <p>When <code>foo</code> evaluates to <code>null</code> or <code>undefined</code>, in any of these cases, <code>TypeError</code> is inevitable. Most browsers, however, throw error with first two statements, but <strong>not the last one</strong>. This is, arguably, a more useful behavior, even though technically, not ECMA-compliant. </p>
+
+  <p>Note that 5th edition of ECMAScript actually changes &#8220;for-in&#8221; to do exactly what most of the browsers currently do — not throw TypeError, but instead proceed as if <code>foo</code> was an empty object.</p>
+
+  <h3 id="number-u00A0"><strong>2) <code>Number('\u00A0') === 0</code></strong></h3>
+
+  <p>When Number is called as a function, it performs type conversion. String to number type conversion is expressed in rather involved algorithm, but one of the simplest rules there is that when string consists of a whitespace character (or is empty), the result is <code>0</code>. This means that both — <code>Number('')</code> and <code>Number(' ')</code> should evaluate to <code>0</code>. </p>
+
+  <p>Some browsers, however, fail to comply in regards to <strong>the notion of whitespace character</strong>. Passing plain <code>U+0020</code> does the job, but <code>U+00A0</code> (and <a href="http://thinkweb2.com/projects/prototype/whitespace-deviations/">a whole slew of other ones</a>) often doesn&#8217;t. Instead, <code>NaN</code> is returned for what should really be a <code>0</code>.</p>
+
+  <h3 id="parsefloat-u205f"><strong>3) <code>parseFloat(&#8220;\u205F -1.1&#8221;)</code></strong></h3>
+
+  <p>Similar bug exists with handling of white space characters by <code>parseFloat</code>. Spec explains that <strong>any leading whitespace is ignored</strong> in input string. Something like <code>parseFloat('   2.5   ')</code> should result in <code>2.5</code>. And again, some implementations fail with rarer whitespace characters, such as <code>U+205F</code> or <code>U+1680</code>. Interestingly, only Opera is fully conforming here. Firefox and Webkit both fail one way or another.</p>
+
+  <h3 id="error-prototype-message"><strong>4) <code>Error.prototype.message</code></strong></h3>
+
+  <p>This one looks like a real bug in WebKit. WebKit throws &#8220;Unknown error&#8221; when merely attempting to access <code>Error.prototype.message</code>. Sputniktests actually managed to mess up here as well: test suite asserts that the property is an empty string, whereas specs say that <code>Error.prototype.message</code> is <strong>an implementation-dependent string</strong> (which means that it could as well be &#8220;foo-bar_BaZ&#8221;). Sputniktests need to check type of a property — <code>typeof Error.prototype.message == 'string'</code>, and WebKit needs to stop throwing error.</p>
+
+  <h3 id="evalerror-non-enumerable"><strong>5) <code>EvalError</code> and other <code>xxxError</code> ones are non-enumerable global properties</strong></h3>
+
+  <p>This one seems like a rather insignificant compliance. All properties of global object are specified to be non-enumerable (that is — have {DontEnum} internal attribute set on). However, at least WebKit enumerates over all of the global <code>EvalError</code>, <code>RangeError</code>, <code>SyntaxError</code>, etc.</p>
+
+  <h3 id="construct-and-prototype-of-builtins"><strong>6) <code>[[Construct]]</code> and <code>.prototype</code> of built-in objects</strong>.</h3>
+
+  <p>There&#8217;s a whole slew of failures in Firefox due to built-in objects having what they shouldn&#8217;t have — <code>prototype</code> property and [[Construct]] method. To remind you, [[Construct]] is an internal method that&#8217;s called when applying <code>new</code> operator to an object — usually a function. It is basically what makes certain objects &#8220;constructable&#8221;, and what every native function object has intrinsically. The failing built-ins are global methods like <code>parseInt</code>, <code>isNaN</code>, <code>encodeURI</code>, as well as properties of <code>Object.prototype</code>, <code>Array.prototype</code>, and so on. To quote specs:</p>
+
+  <p><em>&#8220;None of the built-in functions described in this section shall initially have a prototype property unless otherwise specified in the description of a particular function&#8221;</em></p>
+
+  <p>and:</p>
+
+  <p><em>&#8220;None of the built-in functions described in this section shall implement the internal [[Construct]] method unless otherwise specified in the description of a particular function.&#8221;</em></p>
+
+  <h3 id="typeof-new-regexp-function"><strong>7) <code>typeof new RegExp() === 'function'</code></strong></h3>
+
+  <p>This is probably one of the most famous WebKit deviations. As you might know, a large number of <strong>browsers make regex objects callable</strong>. Callable regular expressions allow to replace <code>/(a|b)/.exec('a')</code> with simply <code>/(a|b)/('a')</code>. I&#8217;m not sure where this non-standard behavior originates from, but it&#8217;s probably still kept around for backwards compatibility. </p>
+
+  <p>Interestingly, regex objects in WebKit seem to actually implement internal [[Call]] method. As per specs, any native object that implements [[Call]] should return &#8220;function&#8221; when applied <code>typeof</code> to, so WebKit merely follows the standard here. However, this little addition results in a side effect: regex objects are being reported as functions — <code>typeof /x/ == 'function'</code>. </p>
+
+  <p>Older Firefox (e.g. Firefox 2), by the way, behaves just like WebKit here.</p>
+
+  <h3 id="new-regexp-undefined"><strong>8) <code>new RegExp(undefined)</code></strong></h3>
+
+  <p>Another bug in Firefox is the way RegExp constructor treats pattern of <code>undefined</code> value. Specs mandate that when <code>undefined</code>, pattern should simply become an empty string (i.e. functionally identical to <code>new RegExp('')</code>). WebKit and Opera do just that, but Firefox converts <code>undefined</code> into its string representation — &#8220;undefined&#8221;, making regex behave as if it was created literally via <code>/undefined/</code>.</p>
+
+  <h3 id="search-empty-undefined"><strong>9) <code>"".search()</code> and <code>"--undefined--".search()</code></strong></h3>
+
+  <p>This one is related to a previous bug. The purpose of <code>String.prototype.search</code> is to find offset within the string where a given pattern matches. As usual, all is nice and well, until we start dealing with non-trivial input values.</p>
+
+  <p>When given a non-regex object as a first argument, <code>String.prototype.search</code> should apply <code>new RegExp()</code> on it. This means that <code>"".search()</code> is functionally identical to <code>"".search(new RegExp())</code>, where <code>undefined</code> value is being applied <code>new RegExp</code> on. This expression essentially matches empty regex against empty string. The result of <code>"".search()</code>, quite obviously, should be <code>0</code>, since empty regex (i.e. nothingness) matches at the very first position of empty string it&#8217;s being applied to. </p>
+
+  <p>Firefox, however, erroneously makes <code>/undefined/</code> out of <code>new RegExp()</code>, and fails to match empty string at <code>0th</code> position. For the very same reasons, it returns <code>2</code> in <code>"--undefined--".search()</code>, instead of correct <code>0</code>.</p>
+
+  <h3 id="substring-undefined"><strong>10) <code>"foo".substring(0, undefined);</code></strong></h3>
+
+  <p>Another weird quirk in Firefox is the way it handles second argument — ending position — of <code>String.prototype.substring</code>. Spec clearly states that when <code>undefined</code>, position is considered to be end of a string. For example, <code>"foobar".substring(0, 2)</code> should return <code>"fo"</code>, but <code>"foobar".substring(0)</code> — <code>"foobar"</code>, since end position is considered to be at the end of a string.</p>
+
+  <p>Firefox does this partially right, producing proper result when argument is missing — <code>"foobar".substring(0) === "foobar"</code>, but somehow fails to do the same, when passing <code>undefined</code> value explicitly — <code>"foobar".substring(0, undefined) === ""</code>.</p>
+
+  <h3 id="line-terminators-in-regex-literals"><strong>11) Line terminators in regex literals</strong></h3>
+
+  <p>An interesting quirk present in both — Firefox and Opera, but not in WebKit is related to regular expression literals. Spec makes it clear that <strong>regex literals are not allowed to have line terminators</strong> in their bodies. Not even when escaped with backslash. Firefox and Opera, however, seem to be perfectly fine with line terminators as long as those are escaped: <code>eval("/\\\u000A/")</code> results in an invalid regex literal that looks like:</p>
+
+<pre lang="javascript"><code>/\
+/
+</code></pre>
+
+  <h2 id="errors-in-test-suite">Test suite errors and oversights</h2>
+
+  <p>Sputniktests is a truly outstanding effort. I&#8217;m amazed at the amount of work that was put into it. However, the project is still in its infancy, and there are clearly some things that could be done better.</p>
+
+  <p>What striked me as being inconsistent and harmful is the way Sputniktests declares variables: sometimes using proper declarations (<code>var foo = 'bar'</code>), other times — using undeclared assignments (<code>foo = bar</code>). <strong>Undeclared assignments is a very bad practice</strong>, and there&#8217;s no reason to rely on it here or anywhere. It would be nice to see this changed in the future versions.</p>
+
+  <p>Other inconsistencies are with usage of $PRINT function. Sometimes it&#8217;s used to log additional information about tests, but not always.</p>
+
+  <p>There are cases when tests rely on compliance of other components and, as a result, <strong>give false positives</strong>. For example, a test for function expression in <code>for-in</code> statement assumes that <code>prototype</code> property of a function is enumerable:</p>
+
+<pre lang="javascript"><code>
+for (x in function __func(){return 0;}){
+  if (x == "prototype")
+    var __reached = 1;
+}
+if (__reached !== 1) {
+  $ERROR('#2: function expession inside of for-in expression is allowed');
+}
+</code></pre>
+
+  <p>Per specification, <code>prototype</code> property of function object is in fact enumerable (it only has {DontDelete} attribute set on). But Firefox, for example, makes <code>prototype</code> non-enumerable and so fails this test. It <strong>fails it erroneously</strong> because function expression in for-in statements — what this test is actually supposed to ensure — is allowed in Firefox just fine.</p>
+
+  <p>A similar case of false results happens when testing for <code>Array.prototype</code> compliance. <code>Array.prototype</code> should itself be an array object; its internal [[Class]] should be that of all array objects — &#8220;Array&#8221;. The test, unfortunately, checks this compliance by deleting <code>Array.prototype.toString</code>, then calling <code>toString</code> on <code>Array.prototype</code>, letting <code>Object.prototype.toString</code> propagate through and ensuring that [[Class]] of <code>Array.prototype</code> is &#8220;Array&#8221;.</p>
+
+<pre lang="javascript"><code>
+delete Array.prototype.toString;
+if (Array.prototype.toString() !== "[object " + "Array" + "]") {
+  $ERROR(/* ... */);
+}
+</code></pre>
+
+  <p>Clients that have non-deletable <code>Array.prototype.toString</code> fail this test even with fully conforming <code>Array.prototype</code>. </p>
+
+  <p>It might be safer to use <code>call</code> here, but then clients with non-conforming <code>call</code> could result in false positives as well:</p>
+
+<pre lang="javascript"><code>
+// Is Array.prototype's [[Class]] an "Array"?
+if (Object.prototype.toString.call(Array.prototype) !== "[object Array]") {
+  $ERROR(/* ... */);
+}
+</code></pre>
+
+  <p>It is, of course, very hard to avoid these false positives. <strong>We can only guess which things are more likely to be compliant</strong>. We can also ignore these errors: if certain environment fails one test due to non-conformance of unrelated component, that component should simply be fixed as well.</p>
+
+  <p>Test suite has some minor inconsistencies — missing semicolons here and there, or extra ones (after statements). There are superfluous <code>!(... == ...)</code> used instead of <code>(... != ...)</code>, as well as <code>if (... == true)</code> instead of <code>if (...)</code>. I also noticed <a href="http://code.google.com/p/sputniktests/issues/detail?id=13">few</a> <a href="http://code.google.com/p/sputniktests/issues/detail?id=12">missing</a> <a href="http://code.google.com/p/sputniktests/issues/detail?id=14">conformance</a> checks.</p>
+
+  <p>I have no doubt all these annoyances will be gone in the future.</p>
+
+  <h2 id="future-work">Future work</h2>
+  <p>Having extensive compliance test suite can really <strong>help modern browsers achieve even better conformance</strong>. I hope we'll see some of the bugs revealed through the Sputniktests fixed in the near future. I hope we'll also see less regressions, if browser implementors integrate it into existing test suites. I also hope Sputniktests can help people learn and understand ECMAScript better.</p>
+
+  <p><a href="https://github.com/kangax/sputniktests-webrunner">Web runner is published on github</a>, so that anyone can contribute easily. There are many more things we can improve. I can think of additional features like <strong>running separate sections of tests</strong> or even individual ones; being able to <strong>see test contents</strong> right in a browser, or make it possible to <strong>pause/resume test suite execution</strong>.</p>
+
+  <p>Any comments, corrections, suggestions are as always very much welcomed.</p>
+
+  <p>And finally, I would like to, once again, thank Sputniktest team for their outstanding efforts to help move web forward.</p>
+</div>

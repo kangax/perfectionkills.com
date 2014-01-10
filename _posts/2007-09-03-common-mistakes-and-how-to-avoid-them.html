@@ -1,0 +1,117 @@
+---
+layout: post
+title: Common mistakes and how to avoid them
+tags:
+  - prototype
+---
+
+<h2>Common mistakes and how to avoid them</h2>
+
+<p>Here&#8217;s another list of things that tend to confuse unexperienced &#8220;prototypers&#8221;:</p>
+
+<h3>1) Preventing default event behaviour:</h3>
+
+<p>All-famous <code>return false;</code> is good for inline snippets but doesn&#8217;t give the desired effect when used in <em>Event#observe</em>&#8216;s callback. To prevent default event behavior we should call <code>event.stop()</code> (<code>Event.stop(event)</code> in 1.5.1 and earlier) method. Don&#8217;t forget to pass the actual event object as a first argument to callback function.</p>
+
+<p>Wrong:</p>
+
+<div class="wrong_syntax">
+<pre lang="javascript"><code>
+$('someLink').observe('click', function(){ doSomething(); return false; })
+</code></pre>
+</div>
+
+<p>Right:</p>
+
+<div class="right_syntax">
+<pre lang="javascript"><code>
+$('someLink').observe('click', function(e){ e.stop(); doSomething(); }) // Event.stop(e) in v1.5.1 and earlier
+</code></pre>
+</div>
+
+<h3>2) Extending element and IE issues</h3>
+
+<p>Internet Explorer unfortunately does not allow to touch its HTMLElement.prototype object, so elements can not be extended at the top level. We can still make IE behave nicely by extending them explicitly (usually wrapping with <code>Element.extend</code> or <code>$</code>). Doing that before using prototype&#8217;s syntactic sweetness will make your code bullet-proof.</p>
+
+<p>Wrong:</p>
+<div class="wrong_syntax">
+<pre lang="javascript"><code>
+document.body.insert(new Element('div', {className: 'loginPopup'}));
+</code></pre>
+</div>
+
+<p>Right:</p>
+
+<div class="right_syntax">
+<pre lang="javascript"><code>
+$(document.body).insert(new Element('div', className: 'loginPopup'));
+</code></pre>
+</div>
+
+<p>Wrong:</p>
+
+<div class="wrong_syntax">
+<pre lang="javascript"><code>
+var link = document.createElement('ul');
+link.addClassName('ratingWidget'); // IE throws error: "Object does not support this property or method"
+</code></pre>
+</div>
+
+<p>Right:</p>
+
+<div class="right_syntax">
+<pre lang="javascript"><code>
+var link = Element.extend(document.createElement('ul'));
+link.addClassName('ratingWidget');
+</code></pre>
+</div>
+
+<p>As an alternative to Element.extend we can just wrap element with $ (automatically extending it)</p>
+
+<div class="right_syntax">
+<pre lang="javascript"><code>
+var link = document.createElement('ul');
+$(link).addClassName('ratingWidget');
+</code></pre>
+</div>
+
+<p>or to make it more concise (using new 1.6+ goodie)</p>
+
+<div class="right_syntax">
+<pre lang="javascript"><code>
+new Element('ul', {className: 'ratingWidget'}); // new Element() extends element automatically
+</code></pre>
+</div>
+
+<h3>3) Unnecessary constructions or how to &#8220;keep it simple&#8221;</h3>
+
+<p>This one is obvious, yet I see it all the time.<br />
+Function, specified as a callback for Ajax requests, is being passed a response object automatically (so we don&#8217;t have to pass it explicitly).<br />
+The only thing we need to do is make sure to reference that object as a first argument when defining a callback function:</p>
+
+<p>Wrong:</p>
+
+<div class="wrong_syntax">
+<pre lang="javascript"><code>
+new Ajax.Request('get.php', {
+  onSuccess: function(json) {
+    populateLocations(json)
+  }
+});
+</code></pre>
+</div>
+
+<p>Right:</p>
+
+<div class="right_syntax">
+<pre lang="javascript"><code>
+new Ajax.Request('get.php', {
+  onSuccess: populateLocations
+});
+...
+var populateLocations = function(json) {
+  // here we have our json object even without passing it explicitly to onSuccess callback
+  // it can now be used to insert/interpolate some template into some container
+  $('locationsContainer').insert(locationsTemplate.interpolate(json));
+};
+</code></pre>

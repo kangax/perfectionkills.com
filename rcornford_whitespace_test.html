@@ -1,0 +1,191 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+  "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+   <head>
+       <title></title>
+   </head>
+   <body>
+<pre>
+  <script type="text/javascript">
+  var WhiteSpace = [
+     {
+         cp:"9", codePoint:"0x0009",  character :"\u0009",
+         name:"<control>[ASCII Tab]",     group:"Cc"
+     },
+     {
+         cp:"11",    codePoint:"0x000B",  character :"\u000B",
+         name:"<control>[ASCII Vertical Tab]",    group:"Cc"
+     },
+     {
+         cp:"12",    codePoint:"0x000C",  character :"\u000C",
+         name:"<control>[ASCII Form Feed]",   group:"Cc"
+     },
+     {
+         cp:"32",    codePoint:"0x0020",  character :"\u0020",
+         name:"SPACE",    group:"Zs"
+     },
+     {
+         cp:"160",   codePoint:"0x00A0",  character :"\u00A0",
+         name:"NO-BREAK SPACE",   group:"Zs"
+     },
+     {
+         cp:"5760",  codePoint:"0x1680",  character :"\u1680",
+         name:"OGHAM SPACE MARK",     group:"Zs"
+     },
+     {
+         cp:"6158",  codePoint:"0x180E",  character :"\u180E",
+         name:"MONGOLIAN VOWEL SEPARATOR",    group:"Zs"
+     },
+     {
+         cp:"8192",  codePoint:"0x2000",  character :"\u2000",
+         name:"EN QUAD",  group:"Zs"
+     },
+     {
+         cp:"8193",  codePoint:"0x2001",  character :"\u2001",
+         name:"EM QUAD",  group:"Zs"
+     },
+     {
+         cp:"8194",  codePoint:"0x2002",  character :"\u2002",
+         name:"EN SPACE",     group:"Zs"
+     },
+     {
+         cp:"8195",  codePoint:"0x2003",  character :"\u2003",
+         name:"EM SPACE",     group:"Zs"
+     },
+     {
+         cp:"8196",  codePoint:"0x2004",  character :"\u2004",
+         name:"THREE-PER-EM SPACE",   group:"Zs"
+     },
+     {
+         cp:"8197",  codePoint:"0x2005",  character :"\u2005",
+         name:"FOUR-PER-EM SPACE",    group:"Zs"
+     },
+     {
+         cp:"8198",  codePoint:"0x2006",  character :"\u2006",
+         name:"SIX-PER-EM SPACE",     group:"Zs"
+     },
+     {
+         cp:"8199",  codePoint:"0x2007",  character :"\u2007",
+         name:"FIGURE SPACE",     group:"Zs"
+     },
+     {
+         cp:"8200",  codePoint:"0x2008",  character :"\u2008",
+         name:"PUNCTUATION SPACE",    group:"Zs"
+     },
+     {
+         cp:"8201",  codePoint:"0x2009",  character :"\u2009",
+         name:"THIN SPACE",   group:"Zs"
+     },
+     {
+         cp:"8202",  codePoint:"0x200A",  character :"\u200A",
+         name:"HAIR SPACE",   group:"Zs"
+     },
+     {
+         cp:"8239",  codePoint:"0x202F",  character :"\u202F",
+         name:"NARROW NO-BREAK SPACE",    group:"Zs"
+     },
+     {
+         cp:"8287",  codePoint:"0x205F",  character :"\u205F",
+         name:"MEDIUM MATHEMATICAL SPACE",    group:"Zs"
+     },
+     {
+         cp:"12288",codePoint:"0x3000",   character :"\u3000",
+         name:"IDEOGRAPHIC SPACE",    group:"Zs"
+     }
+  ];
+
+  var LineTerminator = [
+     {
+         cp:"8232",  codePoint:"0x2028",  character :"\u2028",
+         name:"LINE SEPARATOR",   group:"Zl"
+     },
+     {
+         cp:"8233",  codePoint:"0x2029",  character :"\u2029",
+         name:"PARAGRAPH SEPARATOR",  group:"Zp"
+     },
+     {
+         cp:"10",    codePoint:"0x000A",  character :"\u000A",
+         name:"<control>[ASCII Line Feed]",   group:"Cc"
+     },
+     {
+         cp:"13",    codePoint:"0x000D",  character :"\u000D",
+         name:"<control>[ASCII Carriage Return]",     group:"Cc"
+     }
+  ];
+
+  var NonWhiteSpace = [
+     {
+       cp:"8203",  codePoint:"0x200B",  character :"\u200B",
+       name:"ZERO WIDTH SPACE (will be whitespace in ES 3.1)",
+       group:"Cf"
+     },
+     {
+       cp:"8204",  codePoint:"0x200C",  character :"\u200C",
+       name:"ZERO WIDTH NON-JOINER",    group:"Cf"
+     },
+     {
+       cp:"8205",  codePoint:"0x200D",  character :"\u200D",
+       name:"ZERO WIDTH JOINER",    group:"Cf"
+     },
+     {
+       cp:"65279", codePoint:"0xFEFF",  character :"\uFEFF",
+       name:"ZERO WIDTH NO-BREAK SPACE (will be whitespace in ES 3.1)",
+       group:"Cf"
+     }
+  ];
+
+
+
+  var testAr = [WhiteSpace, LineTerminator];
+
+  var testRX = /\s/g;
+  function testWS(chObj){
+     var _char, stripped, matches;
+     if(!(_char =  String.fromCharCode(+chObj.cp))){
+         return 'Anomaly: None empty string is false.\n';
+     }
+
+
+     /* First verify that the String.fromCharCode result matches the
+        Unicode escape sequence based string literal for the character.
+     */
+     if(_char != chObj.character){
+         return 'Anomaly in String.String.fromCharCode('+chObj.cp+')\n';
+     }
+     if((stripped = _char.replace(testRX, '')) == chObj.character){
+         matches = false;
+     }else{
+         matches = true;
+     }
+     return (
+         matches+
+         '\t"'+stripped+'"\tcp = '+chObj.codePoint+'\tname = '+
+         chObj.name+'  group = '+chObj.group+'\n'
+     );
+  }
+
+  var  c, cp, list, ctr;
+  document.write('Should be matched by \\s\n');
+  for(c = 0;c < testAr.length;++c){
+     list = testAr[c];
+     for(cp = 0;cp < list.length;++cp){
+         ctr = list[cp];
+         document.write(testWS(ctr)
+            .replace('true', 'GOOD')
+            .replace('false', 'FAIL'));
+
+     }
+  }
+
+  document.write('\n\nMust not be matched by \\s (in ES 3)\n');
+  for(cp = 0;cp < NonWhiteSpace.length;++cp){
+     ctr = NonWhiteSpace[cp];
+     document.write(testWS(ctr)
+       .replace('true', 'FAIL')
+       .replace('false', 'GOOD'));
+
+  }
+  </script>
+</pre>
+   </body>
+</html>

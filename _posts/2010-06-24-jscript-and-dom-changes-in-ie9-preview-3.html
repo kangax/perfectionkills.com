@@ -1,0 +1,223 @@
+---
+layout: post
+title: JScript and DOM changes in IE9 preview 3
+tags:
+  - js
+---
+
+<h2>JScript and DOM changes in IE9 preview 3</h2>
+
+<p><a href="http://blogs.msdn.com/b/ie/archive/2010/06/23/html5-native-third-ie9-platform-preview-available-for-developers.aspx">3rd preview of IE9 was released yesterday</a>, with some amazing additions, like canvas element and an extensive <abbr title="ECMAScript 5">ES5</abbr> support. I&#8217;ve been digging through it a little, to see what has changed and what hasn&#8217;t — mainly looking at JScript and DOM. I posted some of <a href="http://search.twitter.com/search?q=kangax+%23ie9pre3">the findings on twitter</a>, but want to also list them here, as it&#8217;s not very convenient to share code snippets in 140 characters. Referencing it all in one place will hopefully make it easier for IE team to find and fix these deficiencies.</p>
+
+<h2 id="ecmascript_5_and_jscript">ECMAScript 5 and JScript</h2>
+
+<p>The big news is that IE9pre3 has (almost) full support for ES5. By &#8220;full support&#8221;, I mean that it implements majority of new API, such as <code>Object.create</code>, <code>Object.defineProperty</code>, <code>String.prototype.trim</code>, <code>Array.isArray</code>, <code>Date.now</code>, and many other additions. As of now, IE9 implements the largest number of new methods; even more than latest Chrome, Safari and Firefox. Unbelievable, isn&#8217;t it? :)</p>
+
+<p><img src="/images/ie9pre3.png" alt="screenshot of es5 compatibility table"></p>
+
+<p>You can see the results in <a href="http://kangax.github.com/es5-compat-table/">this compatibility table</a> (note that it lists results of mere &#8220;existence&#8221; testing, not any kind of conformance).</p>
+
+<p>What's missing is strict mode, which actually isn't implemented in any of the browsers yet.</p>
+
+<p>Some of the things I noticed:</p>
+
+<p>ES5 <code>Object.getPrototypeOf</code> on host objects seems to lie, always returning <code>null</code> instead of proper value of [[Prototype]]:</p>
+
+<pre lang="javascript"><code>
+  Object.getPrototypeOf(document.body); // null
+  Object.getPrototypeOf(document); // null
+  Object.getPrototypeOf(alert); // null
+  Object.getPrototypeOf(document.childNodes); // null
+</code></pre>
+
+<p>This doesn&#8217;t happen in other browsers that implement <code>Object.create</code> at the moment, such as latest Chrome, WebKit or Firefox. In Chrome, for example:</p>
+
+<pre lang="javascript"><code>
+  Object.getPrototypeOf(document.body) === HTMLBodyElement.prototype;
+  Object.getPrototypeOf(document) === HTMLDocument.prototype;
+  Object.getPrototypeOf(alert) === Function.prototype;
+  Object.getPrototypeOf(document.childNodes) === NodeList.prototype
+</code></pre>
+
+<p>&#8230; and so on.</p>
+
+<p>Interestingly, bound functions in IE9pre3 are represented as &#8220;function(){ [native code] }&#8221;, similar to host objects:</p>
+
+<pre lang="javascript"><code>
+  var bound = (function f(x, y){ return this; }).bind({ x: 1 });
+  bound + ''; // "function(){ [native code] }"
+
+  // compare to
+
+  alert + ''; // "function alert(){ [native code] }"
+</code></pre>
+
+<p>Note how function representation does not include identifier (<code>f</code>), parameters (<code>x</code> and <code>y</code>), nor representation of function body (<code>return this;</code>). This of course proves once again that <a href="/those-tricky-functions/">relying on function decompilation is NOT a good idea</a>.</p>
+
+<p>Whitespace character class (as in <code>/\s/</code>) still doesn&#8217;t match <a href="/whitespace-deviations/">majority of whitespace characters</a> (as defined by specs). These include &#8220;U+00A0&#8221;, &#8220;U+2000&#8221; to &#8220;U+200A&#8221;, &#8220;U+3000&#8221;, etc. The test is <a href="/rcornford_whitespace_test.html">available here</a>. Curiously, ES5 <code>String.prototype.trim</code> seems to &#8220;understand&#8221; those characters as whitespace very well, producing empty string — as expected — for something like <code>'\u00A0'.trim()</code>.</p>
+
+<p>It was nice to see that ES5 <code>Array.isArray</code> is about 20 times faster than custom implementation, such as this one:</p>
+
+<pre lang="javascript"><code>
+  function isArray(o) {
+    return Object.prototype.toString.call(o) === "[object Array]";
+  }
+</code></pre>
+
+<p>The difference in speed is similar to other browsers that implement this method.</p>
+
+<p>An infamous, 10+ year-old JScript NFE bug, <a href="http://kangax.github.io/nfe#jscript-bugs">which I described at length before</a>, is finally fixed:</p>
+
+<pre lang="javascript"><code>
+  var f = function g() { return f === g; };
+  typeof g; // "undefined"
+
+  f(); // true
+</code></pre>
+
+<p><code>arguments</code>&#8217; [[Class]] is now an &#8220;Arguments&#8221;, just like ES5 specifies it:</p>
+
+<pre lang="javascript"><code>
+  var args = (function(){ return arguments; })();
+  Object.prototype.toString.call(args); // "[object Arguments]"
+</code></pre>
+
+<h2 id="dom">DOM</h2>
+
+<p>Unfortunately, the entire host objects infrastructure still looks very similar to the one from IE8. Host objects don&#8217;t inherit from <code>Object.prototype</code>, don&#8217;t report proper <code>typeof</code>, and don&#8217;t even have basic properties like &#8220;length&#8221; or &#8220;prototype&#8221;, which all function objects must have:</p>
+
+<pre lang="javascript"><code>
+  alert instanceof Object; // false
+  typeof alert; // "object"
+  alert.length; // undefined
+</code></pre>
+
+<p>Because they don&#8217;t inherit from <code>Object.prototype</code>, we don&#8217;t have any of <code>Object.prototype</code> methods, naturally:</p>
+
+<pre lang="javascript"><code>
+  alert.toString; // undefined
+  alert.constructor; // undefined
+  alert.hasOwnProperty; undefined
+</code></pre>
+
+<p><code>Object.prototype</code> is not the only object host methods fail to inherit from. In majority of modern browsers, host objects also inherit from <code>Function.prototype</code> and so have <code>Function.prototype</code> methods like <code>call</code> and <code>apply</code>. This doesn&#8217;t happen in IE9pre3.</p>
+
+<pre lang="javascript"><code>
+  alert instanceof Function; // false
+  document.createElement instanceof Function; // false
+
+  alert.call; // undefined
+</code></pre>
+
+<p>Curiously, <code>call</code> and <code>apply</code> are present on some host objects, but they are still not inherited from <code>Function.prototype</code>:</p>
+
+<pre lang="javascript"><code>
+  typeof document.createElement.call; // "function"
+  document.createElement.call === Function.prototype.call; // false
+</code></pre>
+
+<p>Host objects&#8217; [[Class]] is far from ideal as well. IE9pre3 actually violates ES5, which says that objects implementing [[Call]] (or in other words — are callable) should have [[Class]] of &#8220;Function&#8221; — even if they are host objects. In IE9pre3, <code>alert</code> is a callable host object, yet it reports its [[Class]] as &#8220;Object&#8221; not &#8220;Function&#8221;. Not good.</p>
+
+<pre lang="javascript"><code>
+  Object.prototype.toString.call(alert); // "[object Object]"
+  Object.prototype.toString.call(document.createElement); // "[object Object]"
+</code></pre>
+
+<p>IE9pre3 still messes up DOM objects&#8217; attributes and properties, although not as badly as earlier versions:</p>
+
+<pre lang="javascript"><code>
+  var el = document.createElement('p');
+  el.setAttribute('x', 'y');
+  el.x; // 'y'
+
+  el.foobarbaz = 'moo';
+  el.hasAttribute('foobarbaz'); // true
+  el.getAttribute('foobarbaz'); // 'moo'
+</code></pre>
+
+<p>Some old, humorous bugs can still be seen in IE9pre3, such as methods returning &#8220;string&#8221; when applied <code>typeof</code> on:</p>
+
+<pre lang="javascript"><code>
+  typeof Option.create; // "string"
+  typeof Image.create; // "string"
+  typeof document.childNodes.item; // "string"
+</code></pre>
+
+<p>Undeclared assignments still throw error when same-id&#8217;ed elements are present in DOM, however not with same-name&#8217;ed elements (as it was in previous versions):</p>
+
+<pre lang="javascript"><code>
+  &lt;div id="foo"></div>
+  &lt;a name="bar"></a>
+  ...
+  &lt;script>
+    foo = function(){ /* ... */ }; // Error
+    bar = function(){ /* ... */ }; // no Error
+  &lt/script>
+</code></pre>
+
+<p>Similarly to IE8, only <code>Element</code> and specific element type interfaces (<code>HTMLDivElement</code>, <code>HTMLScriptElement</code>, <code>HTMLSpanElement</code>, etc.) are exposed as same-named global properties. <code>Node</code> and <code>HTMLElement</code> are still missing, and element&#8217;s prototype chain most likely still looks like this:</p>
+
+<pre lang="javascript"><code>
+  document.createElement('div');
+    |
+    | [[Prototype]]
+    v
+  HTMLDivElement.prototype
+    |
+    | [[Prototype]]
+    v
+  Element.prototype
+    |
+    | [[Prototype]]
+    v
+  null
+</code></pre>
+
+<p>&#8230;rather than what can be seen in almost all other modern browsers:</p>
+
+<pre lang="javascript"><code>
+  document.createElement('div');
+    |
+    | [[Prototype]]
+    v
+  HTMLDivElement.prototype
+    |
+    | [[Prototype]]
+    v
+  HTMLElement.prototype
+    |
+    | [[Prototype]]
+    v
+  Element.prototype
+    |
+    | [[Prototype]]
+    v
+  Node.prototype
+    |
+    | [[Prototype]]
+    v
+  Object.prototype
+    |
+    | [[Prototype]]
+    v
+  null
+</code></pre>
+
+<p><code>getComputedStyle</code> from DOM Level 2 is still missing, however its value is mysteriously a <code>null</code>, not <code>undefined</code>. The property actually exists on an object, but has a value of <code>null</code>. Hopefully, this is just a placeholder and proper method will be added before final release.</p>
+
+<pre lang="javascript"><code>
+  document.defaultView.getComputedStyle; // null
+  'getComputedStyle' in document.defaultView; // true
+</code></pre>
+
+<p><code>Array.prototype.slice</code> can now convert certain host objects (e.g. <code>NodeList</code>&#8217;s) to arrays — something that majority of modern browsers have been able to do for quite a while:</p>
+
+<pre lang="javascript"><code>
+  Array.prototype.slice.call(document.childNodes) instanceof Array; // true
+</code></pre>
+
+<p>That&#8217;s it for now.</p>
+
+<p>Unfortunately, I don&#8217;t have much time to look into these things extensively, at the moment. There might be more updates on <a href="http://twitter.com/kangax">twitter</a>.</p>
+
+<p>As always, any corrections, suggestions, and additions are much appreciated.</p>

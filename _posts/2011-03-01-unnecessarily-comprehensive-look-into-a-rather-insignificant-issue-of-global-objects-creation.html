@@ -1,0 +1,347 @@
+---
+layout: post
+title: Unnecessarily comprehensive look into a rather insignificant issue of global objects creation
+tags:
+  - js
+---
+
+<h2>Unnecessarily comprehensive look into a rather insignificant issue of global objects creation</h2>
+
+<p>I noticed this code few days ago — in one of the &#8220;modules&#8221; of an internal app I&#8217;m working on — which looked like this:</p>
+<pre lang="javascript"><code>
+if (MyApp == null) {
+    var MyApp = {}
+}
+</code></pre>
+<p>This was at the beginning of the file, and was obviously a way to define global &#8220;namespace&#8221; object, if one didn&#8217;t exist. The condition in this particular case, however, looked rather unusual — <code>if (MyApp == null)</code>. It got me thinking about the <em>ridiculous</em> number of ways in which it is possible to define a global object in Javascript.</p>
+<p>I&#8217;m sure you&#8217;ve seen the variations of this kind:</p>
+<pre lang="javascript"><code>
+if (typeof MyApp == 'undefined') {
+  var MyApp = { };
+}
+</code></pre>
+<p>or:</p>
+<pre lang="javascript"><code>
+if (!window.MyApp) {
+  window.MyApp = { };
+}
+</code></pre>
+<p>or maybe even something as strange as:</p>
+<pre lang="javascript"><code>
+if (MyApp === undefined) {
+  MyApp = { };
+}
+</code></pre>
+<p>But have you ever wondered about the difference between these? Are any of them &#8220;better&#8221; than the other ones, and why? Is there a particular way you prefer, and for which reason?</p>
+<p>If we were to look into some of the possible global object creation patterns, it turns out there&#8217;s quite a bit of interesting little details (and traps) here and there. What do you mean they&#8217;re not interesting? Of course they are! :)</p>
+<p>As a fun exercise, let&#8217;s go over some of the more popular variations, explaining the inner workings of each one of them. We&#8217;ll take a look at troublesome ones; those that are more compatible than others; and those that differ depending on whether implementation follows ES3 or ES5 rules. Hopefully, you&#8217;ll also learn a thing or two about ECMAScript while we&#8217;re at it.</p>
+<h3 id="how_many_ways_to_skin_a_cat">How many ways to skin a cat?</h3>
+<p>So what are the options for creating a global object if one doesn&#8217;t exist? Well, let&#8217;s see. There are <strong>conditions</strong>, used as expression in an <code>if</code> statement. And there are <strong>actions</strong> used as the inner statement in an <code>if</code> statement.</p>
+<pre lang="javascript"><code>
+if (condition) {
+  action
+}
+</code></pre>
+<p>Even if we&#8217;re not using <code>if</code> statement, the general pattern of condition + action is still in effect:</p>
+<pre lang="javascript"><code>
+condition &amp;&amp; action
+!condition || action
+// etc.
+</code></pre>
+<p>The lists of conditions and actions might look like this (I&#8217;ll be using <code>MyApp</code> &#8220;name&#8221; as an example):</p>
+<p>Conditions:</p>
+<pre lang="javascript"><code>
+  !MyApp
+  !window.MyApp
+  !this.MyApp
+  !global.MyApp
+  typeof MyApp == "undefined"
+  typeof MyApp != "object"
+  MyApp === undefined
+  MyApp == null
+  "MyApp" in window
+  window.hasOwnProperty("MyApp")
+</code></pre>
+<p>Actions:</p>
+<pre lang="javascript"><code>
+  var MyApp = { }
+  window.MyApp = { }
+  this.MyApp = { }
+  global.MyApp = { } // where `global` references global object
+  MyApp = { }
+</code></pre>
+<p>There are undoubtedly other similar variations, such as using bracket notation instead of dot notation — <code>if (window['MyApp']) { ... }</code>, or more obscure ones like <code>eval('var MyApp = ...')</code>, but we&#8217;ll omit those for the sake of brevity. Arguably, some of the items in this list are rather similar to each other, like <code>window.MyApp</code>, <code>this.MyApp</code>, and <code>global.MyApp</code> — after all, they are all assignments to a property of global object — but I&#8217;d like to show the important difference in each one of them, which is why we&#8217;ll look at them separately.</p>
+<p>I promise not to go over all of the 50+ possible combinations. Only a handful of them.</p>
+<h3 id="patterns_overview">Patterns overview</h3>
+<h4 id="1_typeof_variable_declaration">1) typeof + variable declaration</h4>
+<pre lang="javascript"><code>
+if (typeof MyApp == 'undefined') {
+  var MyApp = { };
+}
+</code></pre>
+<p>This is probably the most popular variation. Good old variable declaration, and a typeof check. When executed as global code, it creates a global variable (if one doesn&#8217;t exist) and assigns an object reference to it. What&#8217;s important to understand about this snippet is that variable declaration — similar to function declaration — <strong>follows the so-called &#8220;hoisting&#8221; behavior</strong>. In other words, <code>MyApp</code> variable is created before any statements in the current scope are executed. This is why the snippet is functionally identical to:</p>
+<pre lang="javascript"><code>
+var MyApp;
+...
+if (typeof MyApp == 'undefined') {
+  MyApp = { };
+}
+</code></pre>
+<p>When <code>MyApp</code> is already defined and references something, <code>typeof MyApp != 'undefined'</code> check does not succeed and <code>MyApp</code> is not overwritten. The declaration of <code>MyApp</code> does nothing since binding already exists in this scope. However, if <code>MyApp</code> doesn&#8217;t yet exist, <code>typeof MyApp</code> evaluates to &#8220;undefined&#8221;, and <code>MyApp</code> is assigned a reference to a newly created object. The reason <code>typeof MyApp</code> evaluates to &#8220;undefined&#8221; is because at that point MyApp is already declared and has an <code>undefined</code> value (as all undeclared variables do).</p>
+<h4 id="2_boolean_conversion_variable_declaration">2) boolean conversion + variable declaration</h4>
+<pre lang="javascript"><code>
+if (!MyApp) {
+  var MyApp = { };
+}
+</code></pre>
+<p>Another common version is the same as the previous one, only with <code>typeof</code> check replaced by a boolean conversion one. This one is clearly shorter but is it just as reliable? I remember being confused about it a while back. Shouldn&#8217;t <code>MyApp</code> throw a <code>ReferenceError</code> if <code>MyApp</code> isn&#8217;t declared — I thought. My fears were certainly unfounded. The &#8220;hoisting&#8221; behavior of variable declarations <strong>prevents ReferenceError from occurring</strong> here. Similarly to the previous example, let&#8217;s see a functionally identical version of a snippet:</p>
+<pre lang="javascript"><code>
+var MyApp;
+...
+if (!MyApp) {
+  MyApp = { };
+}
+</code></pre>
+<p><code>var MyApp</code> that&#8217;s inside the block, hoists <code>MyApp</code> declaration to the top of the scope. By the time execution gets to the <code>if</code> statement, <strong><code>MyApp</code> is already declared</strong> and has an <code>undefined</code> value. <code>if (!MyApp)</code> can never throw a <code>ReferenceError</code>, since the variable is always declared.</p>
+<h4 id="3_boolean_conversion_undeclared_assignment">3) boolean conversion + undeclared assignment</h4>
+<pre lang="javascript"><code>
+if (!MyApp) {
+  MyApp = { };
+}
+</code></pre>
+<p>Sometimes a perfectly good second version is taken to the &#8220;next level&#8221; with this unpleasant variation. Unlike previous example, there&#8217;s no variable declaration here; only an assignment. When <code>MyApp</code> doesn&#8217;t exist, <code>!MyApp</code> expression throws <code>ReferenceError</code> for exactly this reason — the variable is never declared, and the access to it should throw! This version is hardly practical, but it&#8217;s good to understand why it doesn&#8217;t &#8220;work&#8221;.</p>
+<h5 id="undeclared_assignment">Undeclared assignment</h5>
+<p>Before we move further, take a closer look at <code>MyApp = { }</code> line. Anything looks suspicious there?</p>
+<p>This is a so-called <strong>undeclared assignment</strong>. Instead of declaring a variable via a variable statement (i.e. <code>var MyApp = { }</code>), <code>MyApp</code> is being assigned a value directly. In ECMAScript, when something is being assigned to non-existing variable, the variable with that name is created on a global object and becomes available to any code. Well, to be more precise, it becomes a global property, rather than a variable, but this subtle difference is not important now.</p>
+<p>So <code>MyApp = { }</code> creates a global <code>MyApp</code> property, then assigns a newly created object reference to it.</p>
+<p>Note how very much <code>MyApp = { }</code> is different from <code>var MyApp = { }</code>. The former one — undeclared assignment — <strong>creates a global property</strong>, whereas latter one — variable declaration — <strong>creates a local variable</strong>.</p>
+<p>Undeclared assignments are historically considered a bad practice. They lead to confusion and increase the risk of global collisions. There are also certain browser bugs, such as that in IE (MSHTML DOM), where undeclared assignment results in an error if element with same id/name exists in the document. There&#8217;s a big chance for beginner to forget <code>var</code> and end up creating an unwanted global property. Or simply consider var&#8217;less version to be similar to that with the <code>var</code>. Or not even know about having to use <code>var</code> — after all, plain assignment seems to work just fine.</p>
+<p>Since undeclared assignments are such a misleading part of the language, ECMAScript 5 — newest version of ECMAScript — specifies that when they occur in a strict mode, a ReferenceError should be thrown. This makes for more robust code with less chance for unexpected errors. And since strict mode is more or less a future direction of the language, it makes sense to <strong>avoid undeclared assignments</strong> as if they never existed.</p>
+<h4 id="4_typeof_undeclared_assignment">4) typeof + undeclared assignment</h4>
+<pre lang="javascript"><code>
+if (typeof MyApp == 'undefined') {
+  MyApp = { };
+}
+</code></pre>
+<p>Another harmful variation, and unfortunately the one that actually &#8220;works&#8221;. Note how there&#8217;s still an undeclared assignment, but the condition is now replaced with a <code>typeof</code> check. <code>typeof</code> check is exactly what makes all of this work, unlike plain variable access in the previous example. In ECMAScript, when <code>typeof</code> is passed an undeclared identifier, it&#8217;s specified to return string &#8220;undefined&#8221;. This kind of leniency exists on purpose — <code>typeof</code> is meant to be used with undeclared identifiers; it doesn&#8217;t throw (as regular variable access does) but returns &#8220;undefined&#8221; instead.</p>
+<p>So when <code>MyApp</code> doesn&#8217;t exist and <code>if</code> expression succeeds, <code>MyApp = { }</code> is evaluated and creates a global <code>MyApp</code> property. The problem here is that <code>MyApp = { }</code> is still an <strong>undeclared assignment</strong> and so has all the same problems as undeclared assignment from the previous example.</p>
+<h4 id="5_property_access_on_window">5) property access on window</h4>
+<pre lang="javascript"><code>
+if (!window.MyApp) {
+  window.MyApp = { };
+}
+</code></pre>
+<p>Stepping away from variable declarations and undeclared assignments, which other ways are there to create a global property? </p>
+<p>Well, by assigning directly to a global object of course. In browsers global object is often referenced through global <code>window</code> property. So one of the ways to create a property on a global object is by assigning to property of <code>window</code>. This solution is almost perfect, except for two drawbacks. </p>
+<p>First, it makes code less portable, as there is a reliance on presence of global <code>window</code> property. If you wanted to run it in a non-browser environment (V8, Rhino, WScript, etc.) <code>window</code> is likely to be non-existent there.</p>
+<p>Second problem is a bit more vague. It&#8217;s relevant to browser environments only, and it&#8217;s about <code>window</code> not referencing global object directly. HTML5 defines <code>window</code> to <a href="http://www.whatwg.org/specs/web-apps/current-work/?slow-browser#dom-window">reference not global object, but so-called WindowProxy object</a>. Even though all operations performed on WindowProxy must also be performed on the Window object, there are few existing quirks — notably in Internet Explorer — where <a href="http://groups.google.com/group/comp.lang.javascript/browse_thread/thread/22e6b2d147f57ee5">global (variable) object and <code>window</code> are not fully interchangeable</a> (<a href="https://groups.google.com/group/comp.lang.javascript/msg/c1572441853282c6">more evidence</a>).</p>
+<p>Curiously, current HTML5 draft also says that <code>window</code> <strong>typically references a Global Object</strong>, which makes it a non-requirement. In practice, however, <code>window</code> almost always references Global Object (or at least an object that <strong>acts</strong> as if it was a global object).</p>
+<h4 id="6_property_access_on_this">6) property access on this</h4>
+<p>If you don&#8217;t want to rely on browser-only <code>window</code>, the most straightforward way to assign to a global object is by creating a reference that definitely gives us a Global Object. How to create such reference? Well, since we&#8217;re in global code, we can freely use <code>this</code> keyword.</p>
+<pre lang="javascript"><code>
+if (!this.MyApp) {
+  this.MyApp = { };
+}
+</code></pre>
+<p>This works beautifully, and should create a global object in any respectable (i.e. ECMAScript-compliant) implementation. Note, however, that this code can only be run in global scope to ensure that <code>this</code> references global object. Of course you could also run it non-globally as long as <code>this</code> keeps referencing global object:</p>
+<pre lang="javascript"><code>
+var myObject = {
+  myMethod: function() {
+    ...
+    if (!this.MyApp) {
+      this.MyApp = { };
+    }
+  }
+};
+
+// call method with `this` referencing global object rather than `myObject`
+
+myObject.myMethod.call(this);
+</code></pre>
+<p>The requirement to be able to create global object from within non-global code might seem contrived. Yet, I&#8217;ve seen quite few times how javascript files — representing different &#8220;modules&#8221; — were concatenated together and wrapped into another, global self-executing function. Or the code would be eval&#8217;d after being retrieved from the server via XHR. During evaluation, it would be executed in the scope of a caller, not in the global scope.</p>
+<p>This kind of &#8220;global object passing&#8221; could certainly become cumbersome. If only there was a way to get access to global object from within any scope. Well, there certainly is.</p>
+<h4 id="7_property_access_on_global">7) property access on global</h4>
+<p>The easiest way to achieve this is by creating a globally-accessible unique property referencing global object:</p>
+<pre lang="javascript"><code>
+// from within global code
+var global = this;
+</code></pre>
+<p>.. which brings us to the next variation of global object creation:</p>
+<pre lang="javascript"><code>
+if (!global.MyApp) {
+  global.MyApp = { };
+}
+</code></pre>
+<p>This snippet could now be executed from anywhere — as long as <code>global</code> binding is not shadowed by anything in the executing scope.</p>
+<pre lang="javascript"><code>
+(function(global){
+
+  // this obviously won't work since `global` is now a local variable and has a value of `undefined`.
+
+  if (!global.MyApp) {
+    globa.MyApp = { };
+  }
+
+})();
+</code></pre>
+<p>We solved the problem of not being able to run code from anywhere, but at the expense of having an extra global property. We&#8217;ve also introduced a requirement to actually <strong>create</strong> that global property. If our code is run in unknown environment, where it&#8217;s not possible to create this global object shortcut, this kind of solution is out of the question. Additionally, there&#8217;s a chance of collisions if another code defines global <code>global</code> property referencing something other than global object.</p>
+<p>This is disastrous. What to do?</p>
+<h5 id="global_object_retrieval">Global object retrieval</h5>
+<p>In ECMAScript 3 — it turns out — there&#8217;s a very easy way to retrieve global object from within any code. The beauty of the following solution is also that it&#8217;s not affected by local shadowing. It&#8217;s pretty much the perfect way to get access to global object:</p>
+<pre lang="javascript"><code>
+var global = (function(){return this})();
+</code></pre>
+<p>The idea is simple. In ES3, when function is called as a function (not as a method; more precisely — <a href="http://bclary.com/2004/11/07/#a-11.2.3">as a non-reference or as a reference with <code>null</code> base object</a>) its <code>this</code> is set to reference global object. When <code>(function(){ ... })()</code> is executed, it evaluates to a non-reference, so it&#8217;s invoked with <code>this</code> referencing global object.</p>
+<p>Alternatively, we could have created a reference with <code>null</code> base object, which would also execute function with <code>this</code> referencing global object:</p>
+<pre lang="javascript"><code>
+function f(){return this}
+var global = f();
+</code></pre>
+<p>.. but that wouldn&#8217;t be as short and concise.</p>
+<p>Great! We can now have global object from within anywhere. Is there a catch?</p>
+<h5 id="ecmascript_5_strict_mode">ECMAScript 5 strict mode</h5>
+<p>Well, yes, kind of. The catch is ECMAScript 5 and its newly-introduced <a href="https://developer.mozilla.org/en/JavaScript/Strict_mode">strict mode</a>. In ES5 strict mode, <code>this</code> no longer references global object in the above two cases:</p>
+<pre lang="javascript"><code>
+"use strict";
+(function(){return this})(); // undefined
+
+function f(){return this}
+f(); // undefined
+</code></pre>
+<p>The rationale for this was, supposedly, to increase security by limiting access to global object. There is, however, a workaround and it involves <strong>indirect eval call</strong> (which I <a href="http://perfectionkills.com/global-eval-what-are-the-options/#indirect_eval_call_theory">explained in the past</a>):</p>
+<pre lang="javascript"><code>
+"use strict";
+var global = (1,eval)("this");
+</code></pre>
+<p>Indirect eval evaluates code in global scope, and <a href="http://es5.github.com/#x10.4.2">MUST set <code>this</code> to reference global object</a>. So <code>(1,eval)('this')</code>, which is an indirect eval call, should evaluate to a global object. </p>
+<p>The downside of this workaround is potential shadowing of <code>eval</code> by something other than built-in <code>eval</code>. The solution is certainly not as robust as <code>(function(){return this})()</code> one, which can be used in ES3 and ES5-non-strict code.</p>
+<p>So to summarize:</p>
+<pre lang="javascript"><code>
+var global = (function(){return this})(); // ES3, ES5 non strict
+var global = (1,eval)('this'); // ES5 strict
+</code></pre>
+<p>In our current world of just-appearing ES5-compliant implementations, it&#8217;s hard to come up with a reliable cross-platform solution. Should we use ES3-ES5-non-strict snippet or ES5-strict one? The latter one sounds like a more future-proof solution, but reliance on indirect eval makes it a moving target: as <a href="http://perfectionkills.com/global-eval-what-are-the-options/#indirect_eval_call_in_practice">we&#8217;ve seen before</a>, indirect eval behavior varies across browsers. </p>
+<p>Perhaps we can <strong>assume</strong> that browsers with strict mode support also follow ES5-compliant indirect eval behavior? In that case solution is simple:</p>
+<pre lang="javascript"><code>
+"use strict";
+var global = (function(){ return this || (1,eval)('this') })();
+</code></pre>
+<p>Implementations that don&#8217;t support strict mode, should evaluate left-hand side of <code>||</code> expression — <code>this</code>, which would be a global object and as any object be truthy. Implementations that DO support strict mode, should evaluate right-hand side of an expression since <code>this</code> would be <code>undefined</code>. Right-hand side should then evaluate to a global object — if <code>eval</code> still references built-in function of course.</p>
+<p>This solution is arguably too verbose so it might not be desirable in all cases.</p>
+<h4 id="8_property_access_variable_declaration">8) property access + variable declaration</h4>
+<p>Another common pattern is the one that <strong>combines</strong> any of the previously discussed solutions. For example, property check as condition and variable declaration as action:</p>
+<pre lang="javascript"><code>
+if (!window.MyApp) {
+  var MyApp = { };
+}
+</code></pre>
+<p>or <code>typeof</code> check as condition and property creation as an action:</p>
+<pre lang="javascript"><code>
+if (typeof MyApp == 'undefined') {
+  window.MyApp = { };
+}
+</code></pre>
+<p>Are there any problems with this variation? Benefits?</p>
+<p>Well, first version can obviously only work when run from within global code; we need variable declaration to create global binding. The potential problem with this snippet is that we check existence of property on <code>window</code> but create it on global object. If <code>window</code> doesn&#8217;t reference global object, there&#8217;s a room for discrepancy. We could use previously discussed <code>this</code> or <code>global</code> instead of <code>window</code> — to refer to a global object:</p>
+<pre lang="javascript"><code>
+if (!this.MyApp) {
+  var MyApp = { };
+}
+</code></pre>
+<p>In this case, the snippet is not much different from the first example:</p>
+<pre lang="javascript"><code>
+if (typeof MyApp == 'undefined') {
+  var MyApp = { };
+}
+</code></pre>
+<p>The only subtle difference here is that <code>this.MyApp</code> check proceeds when <code>this.MyApp</code> evaluates to something <strong>falsy</strong> (0, &#8221;, NaN, null, undefined, false), whereas <code>typeof MyApp == "undefined"</code> — only when <code>MyApp</code> evaluates to <code>undefined</code>:</p>
+<pre lang="javascript"><code>
+var MyApp = '';
+...
+
+if (!this.MyApp) {
+  // this statement is executed; MyApp is overwritten
+  var MyApp = { };
+}
+if (typeof MyApp == 'undefined') {
+  // this statement is not executed; MyApp is not overwritten
+  var MyApp = { };
+}
+</code></pre>
+<p>Since both <code>this.MyApp = { }</code> and <code>var MyApp = { }</code> will create global <code>MyApp</code> binding, the only difference here is that <strong>former one makes it deletable, while latter one doesn&#8217;t</strong>. Other than that, there is no difference — both operate on a global object when run from within global code. At least in theory. In practice, though, there has been some evidence of IE having different objects as global variable object and <code>window</code> object. For best cross-browser results, I would suggest to <strong>avoid mixing them up</strong> like this.</p>
+<h4 id="9_typeof_8220object8221">9) typeof &#8220;object&#8221;</h4>
+<p>Sometimes <code>typeof MyApp == 'undefined'</code> check is replaced with the opposite one — <code>typeof MyApp != 'object'</code>. </p>
+<pre lang="javascript"><code>
+  if (typeof MyApp != 'object') {
+    ...
+  }
+</code></pre>
+<p>There isn&#8217;t much difference here, of course, except that <code>typeof != 'object'</code> check will also catch any other non-object and non-undefined values; pretty much all primitives except <code>undefined</code>:</p>
+<pre lang="javascript"><code>
+  var MyApp = "trolololololo";
+
+  if (typeof MyApp != 'object') {
+    MyApp = { }; // MyApp is overwritten
+  }
+</code></pre>
+<h4 id="10_null_and_undefined">10) == null and === undefined</h4>
+<p>Other times, <code>typeof</code> check is replaced with direct comparison with <code>undefined</code> or <code>null</code> values:</p>
+<pre lang="javascript"><code>
+if (MyApp === undefined) {
+  var MyApp = { };
+}
+
+// or
+
+if (MyApp == null) {
+  var MyApp = { };
+}
+</code></pre>
+<p>The second example is what I mentioned in the beginning and what got me surprised in the first place. As you probably know, comparing to <code>null</code> via equality operator (<code>==</code>) returns <code>true</code> when value is either <code>null</code> or <code>undefined</code>. This is why it allows to catch undeclared variables which have <code>undefined</code> values.</p>
+<p>If you think about it, there&#8217;s really no reason to use this kind of check though. Even though it&#8217;s shorter than <code>typeof</code>, comparing to <code>undefined</code> is more fragile, since <code>undefined</code> is a writable property in ES3 (which is why — without taking precautions — it has been generally recommended against). Comparing to <code>null</code> is safer but is still unnecessary; <code>!MyApp</code> is just enough and is even shorter.</p>
+<h4 id="11_in_and_hasownproperty">11) <code>in</code> and <code>hasOwnProperty</code></h4>
+<p>There are even more exotic beasts such as those using <code>in</code> operator or <a href="https://mail.mozilla.org/pipermail/es-discuss/2011-February/012746.html"><code>hasOwnProperty</code> method</a>.</p>
+<pre lang="javascript"><code>
+if (!('MyApp' in this)) {
+  this.MyApp = { };
+}
+
+if (!this.hasOwnProperty('MyApp')) {
+  this.MyApp = { };
+}
+</code></pre>
+<p>Using <code>in</code> is almost identical to using plain boolean conversion — <code>if (!MyApp) ...</code>. The only difference is that <code>in</code> will &#8220;catch&#8221; global properties with any values, whereas boolean conversion-based one — only those that have truthy values. Similarly to <code>typeof ... == "undefined"</code> check, <code>in</code> will catch both — undeclared variables and variables with undefined values.</p>
+<p><code>hasOwnProperty</code>, on the other hand, is a bit more strict. Even though irrelevant in our case, it&#8217;s worth remembering that <code>hasOwnProperty</code> will catch only those properties that exist directly on a global object. That means nothing from global object&#8217;s prototype chain, which could include <code>Object.prototype</code>, <code>Window.prototype</code>, etc.</p>
+<pre lang="javascript"><code>
+this.hasOwnProperty('localStorage'); // false
+'localStorage' in this; // true
+
+this.hasOwnProperty('alert'); // false
+'alert' in this; // true
+
+this.hasOwnProperty('toString'); // false
+'toString' in this; // true
+
+var x;
+this.hasOwnProperty('x'); // true
+'x' in this; // true
+</code></pre>
+<h4 id="12_operator">12) || operator</h4>
+<pre lang="javascript"><code>
+global.MyApp || (global.MyApp = { });
+this.MyApp = this.MyApp || { };
+typeof MyApp == 'undefined' &amp;&amp; (global.MyApp = { });
+</code></pre>
+<p>A slightly different way to write #5, #6, or #7 is using <code>||</code> operator. The functionality is the same; this is only a matter of preference.</p>
+<h3 id="takeaway_points">Takeaway points</h3>
+<p>So there you have it. A quick rundown through some of the most popular options. To summarize:</p>
+<ul>
+<li>Avoid undeclared assignments. They are a &#8220;dying&#8221; part of the language.</li>
+<li>Assigning to <code>window</code> is not completely cross-platform; using <code>this</code> (or retrieving global object) is more portable.</li>
+<li>Retrieving global object is iffy. You can use <code>(function(){ return this || (1,eval)('this') })()</code> which should work in ES3, ES5 and ES5-strict.</li>
+<li>Some variations (e.g. variable assignment) work only in global scope; others (e.g. assignment to window) — from within any.</li>
+<li>No need to perform <code>typeof "undefined"</code>, or <code>=== undefined</code> checks; plain <code>!</code> operator works just as well, as long as variable is created via declaration.</li>
+<li>When in global scope, the easiest &amp; simplest version to create global object is <code>if (!MyApp) var MyApp = ...</code></li>
+<li>When object needs to be deleted at some point after creation, property assignment is the way to go: <code>if (!this.MyApp) this.MyApp = ...</code> (substituting <code>this</code> with <code>window</code> or <code>global</code> as necessary)</li>
+<li>Avoid mixing <code>this</code>/<code>window</code>/<code>global</code> and global variable object (used to create property during variable declaration); they could be different objects.</li>
+</ul>

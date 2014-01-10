@@ -1,0 +1,137 @@
+---
+layout: post
+title: How well do you know prototype (part II)
+tags:
+  - prototype
+---
+
+<h2>How well do you know prototype (part II)</h2>
+
+<h3>1) Detecting key events easily</h3>
+
+<p>How do we detect which key was pressed? Prototype provides set of key event aliases so that we don&#8217;t have to remember that return is &#8220;13&#8243; and escape is &#8220;27&#8243;. Almost all major keys are aliased: KEY_RETURN, KEY_ESC, KEY_TAB, KEY_LEFT, KEY_UP, KEY_RIGHT, KEY_DOWN. See full list <a href="http://prototypejs.org/api/event" title="Event's KEY aliases">in API docs</a></p>
+
+<pre lang="javascript"><code>
+$('myInput').observe('keyup', function(e){
+  if (e.keyCode == Event.KEY_TAB)
+    doSomethingCoolWhenTabIsPressed();
+});
+</code></pre>
+
+<h3>2) You won&#8217;t need event capturing (most likely)</h3>
+
+<p>Sometimes I see capturing phase being explicitly set to false in Event&#8217;s observe method. The good thing is that it&#8217;s set to false by default and you would rarely need to use it. The following 2 lines are fully identical so we can just skip this last argument:</p>
+
+<pre lang="javascript"><code>
+Event.observe('productInfo', 'click', displayProductInfo, false); // 'false' could be skipped
+Event.observe('productInfo', 'click', displayProductInfo);
+</code></pre>
+
+<p>or a short way:</p>
+
+<pre lang="javascript"><code>
+$('productInfo').observe('click', displayProductInfo, false); // 'false' could be skipped
+$('productInfo').observe('click', displayProductInfo);
+</code></pre>
+
+<h3>3) insert() wisely</h3>
+
+<p>Another one of those &#8220;it&#8217;s-there-by-default&#8221; values is a position argument of Element&#8217;s insert method. Surprisingly it&#8217;s not mentioned anywhere in the docs &#8211; I accidentally found it wondering through the source one day. insert accepts one of four position values: <strong>top</strong>, <strong>bottom</strong>, <strong>before</strong>, and <strong>after</strong>. If we omit this argument, it defaults to <strong>bottom</strong> (and luckily this happens to be the most common case). The following lines behave identically:</p>
+
+<pre lang="javascript"><code>
+new Insertion.Bottom('blogEntry',
+  new Template('
+&lt;div>
+&lt;h2>#{name}&lt;/h2>
+
+#{content}
+&lt;/div>
+
+')
+    .evaluate({
+      name: blogEntry.name,
+      content: blogEntry.content
+    }));
+
+// Insertion class is deprecated - it's recommended to use Element's insert method:
+
+$('blogEntry').insert(new Template('
+&lt;div>
+&lt;h2>#{name}</h2>
+
+#{content}
+&lt;/div>
+
+')
+    .evaluate({
+      name: blogEntry.name,
+      content: blogEntry.content
+    }), 'bottom' ); // "bottom" can be skipped
+
+$('blogEntry').insert(new Template('
+&lt;div>
+&lt;h2>#{name}&lt;/h2>
+
+#{content}
+&lt;/div>
+
+')
+    .evaluate({
+      name: blogEntry.name,
+      content: blogEntry.content
+    }));
+</code></pre>
+
+<h3>4) Forms gone wild</h3>
+
+<p>Plain form submission is quite easy but what if we want to prevent certain elements from being serialized before submitting form via ajax? Let&#8217;s take a look at few ways to do this:</p>
+
+<p>Plain form submission using .request</p>
+
+<pre lang="javascript"><code>
+$('register').observe('submit', function(e){
+  Event.stop(e);
+  $(this).request();
+});
+</code></pre>
+
+<p>Using .getInputs makes it easy to filter out elements based on type and name attributes. In this example we&#8217;re serializing elements with name &#8216;email&#8217; and submitting result to the URI contained in form&#8217;s &#8220;action&#8221; attribute</p>
+
+<pre lang="javascript"><code>
+$('register').observe('submit', function(e){
+  Event.stop(e);
+  new Ajax.Request($(this).readAttribute('action'), {
+    parameters: Form.serializeElements($(this).getInputs('', 'email'))
+  });
+});
+</code></pre>
+
+<p>Using .getInputs could help most of the time but what if we want to exclude elements that have &#8220;multiple&#8221; attribute? We might try something like this:</p>
+
+<pre lang="javascript"><code>
+$('register').observe('submit', function(e){
+  Event.stop(e);
+  new Ajax.Request(this.readAttribute('action'), {
+    parameters: Form.serializeElements($(this).getElements()
+      .reject(function(el){return el.hasAttribute('multiple')})
+    );
+  });
+});
+</code></pre>
+
+<p class="colored">Wow, what&#8217;s going on over here?!</p>
+
+<p> When submit event occurs, we prevent default submit action <code>Event.stop(e)</code>, get all form&#8217;s elements <code>this.getElements()</code>, iterate over them REJECTING those that have &#8220;multiple&#8221; attribute <code>.reject(function(el){return el.hasAttribute('multiple')})</code>. The filtered collection is then serialized <code>Form.serializeElements()</code> and is submitted via ajax <code>new Ajax.Request()</code></p>
+
+<p>This is all very cool but here&#8217;s the reason why learning CSS3 selectors might be a good thing (the results from both &#8211; reject-based and selector-based filtering are the same):</p>
+
+<pre lang="javascript"><code>
+$('register').observe('submit', function(e){
+  Event.stop(e);
+  new Ajax.Request($(this).readAttribute('action'), {
+    parameters: Form.serializeElements($$('#register input:not([multiple])'))
+  });
+});
+</code></pre>
+
+<h3>Enjoy prototyping!</h3>

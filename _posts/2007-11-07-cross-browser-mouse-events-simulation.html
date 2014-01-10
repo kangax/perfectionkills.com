@@ -1,0 +1,86 @@
+---
+layout: post
+title: Cross-browser mouse events simulation
+tags:
+  - js
+---
+
+<h2>Cross-browser mouse events simulation</h2>
+
+<p>It&#8217;s been quite a while since my last post. Non-stop work on <a href="http://scripteka.com">scripteka</a> as well as few other projects is fun but takes all the free time.<br />
+I promise to write few useful tutorials in a near future, but for now, let&#8217;s talk about <strong>simulating mouse events</strong> and how this brings <strong>UI testing</strong> on a completely new level.   </p>
+
+<p>In case you haven&#8217;t heard about <a href="http://prototype-ui.com">Prototype UI</a>, now is a good time to check it out. Originally started by Sebastian Gruhier (creator of very popular <a href="http://prototype-window.xilinus.com/">Prototype Window Class</a>) and Ruby/JS guru <a href="http://i.gotfresh.info/">Samuel Lebeau</a>, Prototype UI aims to provide a set of high quality, skinnable UI components which can ease development of complex User Interfaces in web browsers. </p>
+
+<p>I have recently joined the team and am currently working on <a href="http://dev.prototype-ui.com/browser/trunk/src/context_menu/context_menu.js">UI.ContextMenu</a> and <a href="http://dev.prototype-ui.com/browser/trunk/src/util/iframe_shim.js">UI.IframeShim</a> modules. Besides these, the library is featuring full-blown Window and WindowManager classes (completely reworked PWC), Carousel, Dock, Shadow and others.</p>
+
+<p>UI.ContextMenu is nothing more than a port of <a href="http://kangax.github.io/proto.menu">Proto.Menu</a> with few changes to take advantage of library&#8217;s core methods. Increased complexity and deep integration with other components is the reason why we do <a href="http://wiki.script.aculo.us/scriptaculous/show/UnitTesting">Unit Testing</a>. Unit testing is what makes development a summer breeze &#8211; knowing that next commit into a trunk plays nice with the rest of the code sure feels good.</p>
+
+<p>One of the lesser known features of scriptaculous unit testing framework is <code>Event.simulateMouse</code> method. The name is pretty self-descriptive &#8211; it simulates mouse event, allowing us to pass some optional parameters along &#8211; <code>pointerX</code>, <code>pointerY</code>, <code>shiftKey</code>, etc. Everything would be just fine if this nifty helper was a little more cross-browser. The latest revision of Scriptaculous&#8217;s <a href="http://dev.rubyonrails.org/browser/spinoffs/scriptaculous/src/unittest.js">unittest.js</a> states that this feature is <strong>experimental and is Firefox-only</strong>. Bah! Shouldn&#8217;t we account for at least the most popular browser out there &#8211; IE6 and 7?</p>
+
+<p>Ok, so it doesn&#8217;t work cross-browser, but do we really care? Why is it such a big deal anyway? Why simulate mouse event which triggers certain methods in our code, if we can &#8220;shorten the road&#8221; and call those methods directly? I asked myself same questions, and the answer seems to be &#8211; &#8220;Yes, we should be using it&#8221; and here&#8217;s why:</p>
+
+<h3 class="floated">1</h3>
+
+<p> Mouse simulation (MS) based tests are much &#8220;closer&#8221; to the real life use cases. We sort of draw a straight line from <strong>action</strong> to the <strong>result</strong> without delving into actual implementation &#8211; &#8220;Clicking toggle button should collapse container. Clicking it again should expand it.&#8221;</p>
+
+<h3 class="floated">2</h3>
+
+<p> The MS based tests can <strong>effectively catch UI related problems</strong> which would otherwise be really painful to find. As an example, let&#8217;s think of a window widget. This widget has minimize and maximize buttons. Clicking those buttons invokes appropriate actions &#8211; window changes its size and position. We decide to write assertions based on direct method invocation:</p>
+
+<pre lang="javascript"><code>
+
+new Test.Unit.Runner({
+   testMaximize: function() {
+
+      // create window object
+      var myWindow = new UI.Window().show();
+
+      // call our method
+      myWindow.maximize();
+
+      // wait till effect is completed
+      wait(1000, function() {
+
+         // assert that window has proper dimensions
+         asserEqual(800, myWindow.element.getWidth());
+         assertEqual(600, myWindow.element.getHeight());
+      })
+   }
+});
+</code></pre>
+
+<p>Ok, all seems fine. We run the code, window resizes, tests pass, we are happy and feeling safe. Let&#8217;s see what happens next. Few days go by and one of the users reports a problem &#8211; &#8220;clicking on maximize button does NOT maximize the window&#8221;. Feeling pretty clueless, we fire up the test suit and realize that it still passes all the assertions. Moreover, the window appears to be resizing as assertion is executed! It takes us 2 hours of tedious debugging, just to find out that the problem is not in maximize method at all. The problem is that invisible iframe, which should be positioned under the menu (to prevent IE6 &lt;select&gt; overlapping) somehow has z-index higher than window element and is effectively blocking any clicks on a button. No need to mention that MS based tests would make it much easier to catch the nasty bug. </p>
+
+<p>I have to say that this is not a real life example &#8211; it has never happened to me when testing any of the window functionality. My point was to show one of the many UI related problems &#8211; problems which would be not so easy to find and debug. As complexity of web applications increases, the dynamic elements on a page and their behavior can quickly get out of order. Having more precise tools for the job could no doubt save a lot of time.     </p>
+
+<p>Turning Event.simulateMouse into a somewhat robust solution was quite trivial. The result &#8211; cross-browser mouse event simulation that works in FF2+, IE6+, Safari2+ and Opera9+. Instead of calling maximize as in previous example we could now simply do:</p>
+
+<pre lang="javascript"><code>
+
+new Test.Unit.Runner({
+   testMaximize: function() {
+     ...
+
+     var button = myWindow.getButtonElement('maximize');
+
+     // simulate mouse click on a button
+     Event.simulateMouse(button, 'click');
+
+     // or using element's method
+     button._click();
+     ...
+   }
+});
+</code></pre>
+
+<p>Pretty simple, don&#8217;t you think?</p>
+
+<p>Last thing to mention is that all of this is very much work in progress.<br />
+I will see what can be done to simulate drag&#038;drop or mouseover/out functionality, so stay tuned.</p>
+
+<p>The latest version of Event.simulateMouse <a href="http://dev.prototype-ui.com/browser/trunk/test/lib/event_simulate_mouse.js">can be found in a trunk</a> (and <a href="http://dev.prototype-ui.com/browser/trunk/test/functional/unittest/test_event_simulate_mouse.html">unit tests</a> for the curious ones). All you need to do is inculde event_simulate_mouse.js right after unittest.js.</p>
+
+<p>Bug reports, or any comments are as always very welcome.</p>
+
+<p>Start experimenting and have fun!</p>

@@ -1,0 +1,96 @@
+---
+layout: post
+title: Those tricky functions
+tags:
+  - js
+---
+
+<h2>Those tricky functions</h2>
+
+<style>
+  .update-info { background-color: #ffc; border: 1px solid #ccc; padding: 1em 0 0 1em; margin-top: 2em; margin-bottom: 1em; }
+  .update-info ul { margin: 1em 0; }
+  .update-info li { list-style-image: none !important; list-style-position: inside; margin-bottom: 0.25em; }
+</style>
+
+<p>
+Are you still trying to write a regex <a href="http://www.google.com/codesearch?hl=en&amp;lr=&amp;q=%22function\s%22+lang%3Ajavascript&amp;sbtn=Search" title="">matching decompiled function</a> in Javascript? Perhaps, <a href="http://www.google.com/codesearch?hl=en&amp;start=10&amp;sa=N&amp;q=%22[native+code]%22+lang:javascript" title="">trying to detect a native method</a>? Here’s a short but fun list of what you’ll be facing in various browsers. This is, of course, all very similar to <a href="http://webaim.org/blog/user-agent-string-history/" title="">userAgent adventures</a>; Non-standard feature that is as reliable as my old 28K modem.
+</p>
+
+<p>
+  It’s probably better to abandon this idea altogether. Or at least not rely on it, and maybe use only for debugging purposes. Or, if you do like adventures after all, at least know what you’re dealing with:
+</p>
+
+<h3>Safari 1.3.x - 2.x</h3>
+<p>Does not match function expression syntax. Missing identifier.</p>
+
+<pre lang="javascript"><code>
+Object; // (Internal Function)
+document.getElementById; // [function]
+(function foo(){ return a+b; }); // function(){ return a+b; }
+</code></pre>
+
+<h3>Chrome 1.x</h3>
+<p>Missing identifier.</p>
+
+<pre lang="javascript"><code>
+window.focus; // function () { [native code] }
+</code></pre>
+
+<h3>Blackberry</h3>
+<p>Unique representation of function body. Source code is not available for anything but “small” functions</p>
+
+<pre lang="javascript"><code>
+window.XMLHttpRequest;
+// function XMLHttpRequest() { [native code for XMLHttpRequest.XMLHttpRequest, arity=1] }
+
+function foo(){ /* ~10 lines of code */ };
+// function foo() { \\Source code is not available. [1035593284ED8CD9D0734E9B14EF4F3FF6BE9686] }
+</code></pre>
+
+<h3>Opera 10a</h3>
+<p>Missing identifier.</p>
+
+<pre lang="javascript"><code>
+Array.prototype.push; // function () { [native code] }
+</code></pre>
+
+<h3>Opera 10a Turbo Edition</h3>
+<p>Unique representation of function body.</p>
+
+<pre lang="javascript"><code>
+document.getElementById; // function getElementById() { /* source code not available */ }
+</code></pre>
+
+<h3>Caja</h3>
+<p>Unique representation of function body; Augmented identifier.</p>
+
+<pre lang="javascript"><code>
+function f(){}; // function f() { [cajoled code] }
+var f = function(){}; // function f$_var() { [cajoled code] }
+</code></pre>
+
+<h3>Internet Explorer</h3>
+<p>Unique representation of function.</p>
+
+<pre lang="javascript"><code>
+( /* foo bar */ (((function f(){}) /* baz qux */ ))); // ( /* foo bar */ (((function f(){}) /* baz qux */ )))
+</code></pre>
+
+<h3>Rhino</h3>
+<p>Unique representation of function body.</p>
+
+<pre lang="javascript"><code>
+({}).hasOwnProperty; // function hasOwnProperty() { [native code for Object.hasOwnProperty, arity=1] }
+</code></pre>
+
+<p>Do you have any other examples of strange-looking functions? Please, share. Perhaps, <a href="http://www.quirksmode.org/blog/" title="">PPK</a> will tell us how other mobile browsers handle function decompilation.</p>
+
+<div class="update-info">
+  <strong>Edit (10/16/09):</strong>
+  <ul>
+    <li>Added Internet Explorer and its "unique" function representation. Thanks <a href="http://webreflection.blogspot.com/" title="">Andrea Giammarchi</a>.</li>
+    <li>Added Rhino representation, which appears to be similar to that of Blackberry.</li>
+    <li>Updated Safari versions to include 1.3.x (which exhibits same behavior as 2.x)</li>
+  </ul>
+</div>

@@ -1,0 +1,233 @@
+---
+layout: post
+title: Optimizing HTML
+popular: popular
+tags:
+  - js, html
+---
+
+<h2>Optimizing HTML</h2>
+
+<div id="optimizing-html">
+
+<ol class="toc">
+  <li><a href="#why_clean_markup">Why clean markup?</a></li>
+  <li><a href="#markup_smells">Markup smells</a></li>
+  <li><a href="#additional_optimizations">Additional optimizations</a></li>
+  <li><a href="#agressive_optimizations">Agressive optimizations</a></li>
+  <li><a href="#when_things_go_wrong">When things go wrong</a></li>
+  <li><a href="#antipatterns">Antipatterns</a></li>
+  <li><a href="#tools">Tools</a></li>
+  <li><a href="#future_considerations">Future considerations</a></li>
+</ol>
+
+<h3 id="why_clean_markup">Why clean markup?</h3>
+
+<p>Client-side optimization is getting a lot of attention lately, but some of its basic aspects seem to go unnoticed. If you look carefully at pages on the web (even those that are <a href="http://bing.com">supposed to be highly optimized</a>), it&#8217;s easy to spot a good amount of <strong>redundancies, and inefficient or archaic structures</strong> in their markup. All this baggage adds extra weight to pages that are supposed to be as light as possible.</p>
+
+<p>The reason to keep documents clean is not so much about faster load times, as it is about <strong>having a solid and robust foundation</strong> to build upon. Clean markup means better accessibility, easier maintenance, and good search engine visibility. Smaller size is just a property of clean documents, and another reason to keep them this way.</p>
+
+<p>In this post, we&#8217;ll take a look at HTML optimization: removing some of the common markup smells; reducing document size by getting rid of redundant structures, and employing minification techniques. We&#8217;ll look at currently available minification tools, and analyze what they do wrong and right. We&#8217;ll also talk about what can be done in a future.</p>
+
+<h3 id="markup_smells">Markup smells</h3>
+
+<p>So what are the most common offenders?</p>
+
+<h4 id="1_html_comments_in_scripts">1. HTML comments in scripts</h4>
+
+<p>One of the <a href="http://www.google.com/codesearch?q=%2F%2F--%3E">gross redundanies</a> nowadays is inclusion of HTML comments &mdash; <code>&lt;!-- --&gt;</code> &mdash; in script blocks. There&#8217;s not much to say here, except that browsers that actually need this error-prevention measure (such as <a href="http://www.javascripttoolbox.com/bestpractices/#comments">&#8216;95 Netscape 1.0</a>) are pretty much extinct. Comments in scripts are just an unnecessary baggage and should be removed ferociously.</p>
+
+<h4 id="2_cdata_8230_sections">2. &lt;![CDATA[ &#8230; ]> sections</h4>
+
+<p>Another often needless error-prevention measure is inclusion of CDATA blocks in SCRIPT elements:</p>
+
+<pre lang="javascript"><code>
+  &lt;script type="text/javascript">
+    //&lt;![CDATA[
+      ...
+    //]]&gt;
+  &lt;/script>
+</code></pre>
+
+<p>It&#8217;s a noble goal that falls short in reality. While CDATA blocks are a perfectly good way to prevent XML processor from recognizing &lt; and &amp; as start of markup, it is only the case in true XHTML documents &mdash; those that are served with &#8220;application/xhtml+xml&#8221; content-type. Majority of the web is still served as &#8220;text/html&#8221; (since, for example, IE doesn&#8217;t understand XHTML to this date), and so is <strong>parsed as HTML by the browsers</strong>, not as XML. </p>
+
+<p>Unless you&#8217;re serving documents as &#8220;application/xhtml+xml&#8221;, there&#8217;s little reason to  have CDATA sections hanging around. Even if you&#8217;re planning to use xhtml in a future, it might make sense to remove unnecessary weight from the document, and only add it later, when actually needed.</p>
+
+<p>And, of course, an ultimate solution here is to avoid inline scripts altogether (to take advantage of external scripts caching).</p>
+
+<h4 id="3_onclick_onmouseover_etc">3. onclick=&#8221;&#8230;&#8221;, onmouseover=&#8221;&#8220;, etc.</h4>
+
+<p>There are some valid use cases for intrinsic event attributes, such as for performance reasons or to target ancient browsers (although, I&#8217;m not aware of any environment that would understand event attributes &mdash; <code>onclick="..."</code>, and not property-based assignments &mdash; <code>element.onclick = ...</code>). Besides well-known reasons to avoid them, such as separation of concerns and reusability, there&#8217;s a matter of markup pollution. <strong>By moving event logic to external script, we can take advantage of that script&#8217;s caching</strong>. Event handler logic doesn&#8217;t need to be transferred to client every time document is requested.</p>
+
+<h4 id="4_onclick_javascript">4. onclick=&#8221;javascript:&#8230;&#8221;</h4>
+
+<p>An interesting confusion of javascript: pseudo protocol and intrinsic event handlers results in this redundant mix (<a href="http://www.google.com/codesearch?q=%5Cs%2Bon%5Cw%2B%3D%5B'%22%5Djavascript%3A">with 106,000 (!) occurrences</a>). The truth is that entire contents of event handler attribute become a body of a function. That function then serves as an event handler (usually, after <a href="http://www.jibbering.com/faq/names/event_handler.html">having its scope augmented</a> to include some or all of the ancestors and element itself). &#8220;javascript:&#8221; addition merely <strong>becomes an unnecessary</strong> <a href="https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Statements/label">label</a> and <strong>rarely serves any purpose</strong>.</p>
+
+<h4 id="5_href_javascript_void">5. href=&#8221;javascript:void(0)&#8221;</h4>
+
+<p>Continuting with &#8220;javascript:&#8221; pseudo protocol, there&#8217;s an infamous <a href="http://www.google.com/codesearch?q=href%3D%5B'%22%5Djavascript%3A%5Cs*void%5C(0%5C)%3B%3F%5B'%22%5D"><code>href="javascript:void(0)"</code></a> snippet, as a way to prevent default anchor behavior. This terrible practice of course makes anchor completely inacessible when Javascript is disabled/not available/errors out. It should go without saying that ideal solution is to include proper url in href, and stop default anchor behavior in event handler. If, on the other hand, anchor element is created dynamically, and is then inserted into a document (or is hidden initially, then shown via Javascript), plain <code>href="#"</code> is a leaner and faster alternative to &#8220;javascript:&#8221; version.</p>
+
+<h4 id="6_style">6. style=&#8221;&#8230;&#8221;</h4>
+
+<p>There&#8217;s nothing inherently wrong with style attribute, except that by moving its contents to an external stylesheet, we can take advantage of resource caching. This is similar to avoiding event attributes, mentioned earlier. Even if you only need to style one particular element and are not planning to reuse its styles, remember that style information has to be transferred every time document is requested. Moving style to external resouce prevents this, as stylesheet is transferred once and then cached on a client.</p>
+
+<h4 id="7_script_language_javascript">7. &lt;script language=&#8221;Javascript&#8221; &#8230; ></h4>
+
+<p>Probably one of the most misunderstood attributes is SCRIPT&#8217;s &#8220;language&#8221;. This attribute is so archaic that <strong><a href="http://www.w3.org/TR/html4/interact/scripts.html#h-18.2.1">it was already deprecated</a> in 1999 (!), 10 years ago</strong>, when HTML 4.01 became an official recommendation. There&#8217;s absolutely <strong>no reason to use this attribute</strong>, except for the rare cases when <a href="http://bclary.com/2004/08/27/javascript-version-incompatibilities">language version needs to be specified</a> (and even that is somewhat unreliable and should probably be avoided if possible).</p>
+
+<h4 id="8_script_charset">8. &lt;script charset=&#8221;&#8230;&#8221; &#8230; ></h4>
+
+<p>Another misunderstanding of SCRIPT element is that with charset attribute. Sometimes I see documents that include this kind of markup:</p>
+
+<pre lang="javascript"><code>
+  &lt;script type="text/javascript" charset="UTF-8">
+    ...
+  &lt;/script>
+</code></pre>
+<p>The thing is that charset attribute only really makes sense on &#8220;external&#8221; SCRIPT elements &mdash; those that have &#8220;src&#8221; attribute. HTML 4.01 even says:</p>
+<p><em>Note that the charset attribute refers to the character encoding of the script designated by the src attribute; it does not concern the content of the SCRIPT element.</em></p>
+<p>Testing shows that actual browsers behavior also matches specs in this regard.</p>
+<p>Searching for this pattern, <a href="http://www.google.com/codesearch?q=%3Cscript(%5Cs%2Blanguage%3D%5B'%22%5D%5B%5E'%22%5D%2B%5B'%22%5D)%3F%5Cs%2Btype%3D%5B'%22%5Dtext%2Fjavascript%5B'%22%5D%5Cs%2Bcharset%3D%5B'%22%5D%5B%5E'%22%5D%2B%5B'%22%5D%5Cs*%3E">reveals about 2000 occurrences</a>. Not suprising, given that even popular apps like Textmate include <a href="http://github.com/textmate/html.tmbundle/blob/master/Snippets/XHTML%20%3Cscript%3E.plist">wrong usage of charset</a>.</p>
+<h3 id="additional_optimizations">Additional optimizations</h3>
+<p>We&#8217;ve covered some of the bad practices, that almost always have to be avoided. But there&#8217;s still more ahead, and that &#8220;more&#8221; is <strong>removing redundant parts</strong>. Optimizations explained below are often questionable, as they <strong>compromise clarity for size</strong>. Therefore I include them here not as a recommendation, but merely as an option. Employ with careful consideration.</p>
+<h4 id="1_style_media_all">1. &lt;style media=&#8221;all&#8221; &#8230;></h4>
+<p>HTML 4.01 defines media attribute on STYLE elements, as a way of targeting specific medium &mdash; screen, print, handheld, and so on. One of the possible values for media is &#8220;all&#8221;, which also happens to be a de-facto standard among modern (and not so modern) browsers. If you find yourself using <code>media="all"</code>, it should be <strong>safe to just omit it</strong> and let browser set value implicitly.</p>
+<p>Interestingly, HTML 4.01 states that <a href="http://www.w3.org/TR/html401/present/styles.html#edef-STYLE">default value for media is &#8220;screen&#8221;</a>. However, none of the browsers I tested <sup class="reference"><a href="#media-attribute-tested-browsers">[1]</a></sup> implement it as per specs, and default to &#8220;all&#8221; instead. This is probably why <a href="http://www.w3.org/TR/html5/semantics.html#the-style-element">HTML 5 draft specifies default value as &#8220;all&#8221;</a> &mdash; to match actual browsers&#8217; behavior.</p>
+<h4 id="2_form_method_get">2. &lt;form method=&#8221;get&#8221; &#8230;></h4>
+<p>Another default value &mdash; GET &mdash; of FORM element&#8217;s <a href="http://www.w3.org/TR/REC-html40/interact/forms.html#adef-method">&#8220;method&#8221; attribute</a> is often <a href="http://www.google.com/codesearch?q=%3Cform(%5Cs%2Baction%3D%5B'%22%5D%5B%5E'%22%5D%2B%5B'%22%5D)%3F%5Cs%2Bmethod%3D%5B'%22%5Dget%5B'%22%5D">specified explicitly</a>. There&#8217;s no harm in dropping it, except for lesser clarity. Note that HTML 5 draft <a href="http://www.w3.org/TR/html5/forms.html#attr-fs-method">leaves this behavior untouched</a>.</p>
+<h4 id="3_input_type_text">3. &lt;input type=&#8221;text&#8221; &#8230;></h4>
+<p>INPUT element&#8217;s &#8220;type&#8221; defaults to &#8220;text&#8221; in both &mdash; <a href="http://www.w3.org/TR/html401/interact/forms.html#adef-type-INPUT">HTML 4.01</a> and <a href="http://www.w3.org/TR/html5/forms.html#attr-input-type">HTML 5 draft</a>. Dropping this attribute can result in substantial size savings on pages with lots of text fields.</p>
+<h4 id="4_meta_http_equiv_content_type">4. &lt;meta http-equiv=&#8221;Content-type&#8221; &#8230;></h4>
+<p>Specifying <a href="http://www.w3.org/TR/html401/charset.html#h-5.2.2">document&#8217;s character encoding</a> has always been a source of great confusion. Contrary to common belief, META element that specifies Content-type <strong>does not have higher priority</strong> over &#8220;Content-type&#8221; HTTP header that document is served with. When both &mdash; header and META element are specified, header takes precedence.</p>
+<p>If you control server response and can set up Content-type header properly, it&#8217;s safe to omit META element. The only reason to keep it, is to <strong>specify encoding when document is viewed offline</strong>.</p>
+<h4 id="5_a_id_name">5. &lt;a id=&#8221;&#8230;&#8221; name=&#8221;&#8230;&#8221; &#8230;></h4>
+<p>The main reason &#8220;name&#8221; attribute is still used together with &#8220;id&#8221; is for compatibility with ancient browsers (e.g. Netscape 4). Those couldn&#8217;t link to anchors by &#8220;id&#8221;, so &#8220;name&#8221; had to be used. If you have elements with pairing name/id&#8217;s, and don&#8217;t care about ancient browsers, feel free to get rid of this archaic pattern.</p>
+<p>Watch out for any side effects. If you&#8217;re referencing elements by name in scripts (<code>document.getElementsByName</code>, <code>document.evaluate</code>, <code>document.querySelectorAll</code>, etc.), replacing name&#8217;s with id&#8217;s might break things. Also remember that <code>document.anchors</code> <a href="http://www.w3.org/TR/DOM-Level-2-HTML/html.html#ID-7577272">only returns elements with name attributes</a>.</p>
+<h4 id="6_doctype_html">6. &lt;!doctype html></h4>
+<p>A little more than a year ago, <a href="http://www.dustindiaz.com/skinny-on-doctypes/">Dustin Diaz prposed to use HTML 5 doctype</a>, as a way to cut down on document size. This is not a major optimization, but if you don&#8217;t care about validation and need to squeeze every single byte out of the page, using <code>&lt;!doctype html&gt;</code> is a viable option. <a href="http://hsivonen.iki.fi/doctype/#ie8modes">Tests</a> <a href="http://themaingate.net/dev/html/all-you-need-is-doctype-html">revealed</a> that this fancy doctype triggers standards mode in a large variety of browsers.</p>
+<h3 id="agressive_optimizations">Agressive optimizations</h3>
+<p>If you&#8217;re still craving for more, here are few extreme ideas. Some of these (e.g. omitting optional tags) have been <a href="http://code.google.com/speed/articles/optimizing-html.html">circulating around</a> for a while. Others I haven&#8217;t heard mentioned. Even though these might seem way too obtrusive, note that <strong>none of them really invalidate a document</strong>. That is if document is in HTML, not XHTML. But you&#8217;re <a href="http://hixie.ch/advocacy/xhtml">serving documents as HTML</a> anyway, don&#8217;t you? ;)</p>
+
+<ol style="margin-left:2em">
+  <li>Remove HTML comments</li>
+  <li>Remove/collapse whitespace</li>
+  <li>Remove optional closing tags (<code>&lt;p&gt;foo&lt;/p&gt;</code> &rarr; <code>&lt;p&gt;foo</code>)</li>
+  <li>Remove quotes around attribute values, when allowed (<code>&lt;p class="foo"&gt;</code> &rarr; <code>&lt;p class=foo&gt;</code>)  </li>
+  <li>Remove optional values from boolean attributes (<code>&lt;option selected="selected"&gt;</code> &rarr; <code>&lt;option selected&gt;</code>)</li>
+  <li>Munge inline styles, inline scripts and event attributes (if it&#8217;s not possible to remove them)</li>
+  <li>Munge classes and ids (needs to be in sync with scripts and style declarations)</li>
+  <li>Strip scheme names off of URLs (<code>http://example.com</code> &rarr; <code>//example.com</code>)</li>
+</ol>
+
+<h3 id="but_we_have_compression">But we have compression!</h3>
+
+<p>Do all of these optimizations even matter when document is compressed? Doesn&#8217;t gzip eliminate most of the markup overhead? After all, it&#8217;s a textual format we&#8217;re talking about!</p>
+
+<p><strong>It still matters.</strong></p>
+
+<p>First of all, it&#8217;s good to remember that <a href="http://www.stevesouders.com/blog/2009/11/11/whos-not-getting-gzip/">not everyone is getting gzip</a>. This is very sad, but the good thing is that in such cases HTML optimization plays even more significant role.</p>
+
+<p>Second, even if document is served compressed, there are still savings of 5-10KB <strong>after compression</strong> (on an average document). Savings are even bigger with large documents. This might not seem like a lot, but in reality <a href="http://www.phpied.com/the-performance-business-pitch/">every byte counts</a>.</p>
+
+<p>As an example of compressing large document, I munged unofficial HTML version of <a href="http://bclary.com/2004/11/07/">ECMA-262, 3rd edition specs</a>, which originally weighed about 750KB (131KB gzipped), to 606KB (115KB gzipped). That&#8217;s a saving of <strong>16 KB after gzipping</strong>, simply by removing whitespace, comments, attribute quotes and optional tags. Optimized version looks the same as the old one.</p>
+
+<p>Finally, optimizations like stripping whitespace and comments actually make resulting document tree lighter, potentially improving page rendering performance.</p>
+
+<h3 id="when_things_go_wrong">When things go wrong</h3>
+<p>As with any optimization, it&#8217;s very easy to get carried away. <a href="http://www.antssoft.com/htmlcompact/index.htm">HTML Compact</a> is a good example of HTML compression taken too far. This wonderful Windows app takes &#8220;unique&#8221; approach at compressing HTML&#8230; by writing it into a document via Javascript.</p>
+<p>Turning this perfectly clean document:</p>
+<pre lang="html"><code>
+  &lt;html>
+    &lt;head>
+      &lt;title>&lt;/title>
+    &lt;/head>
+    &lt;body>
+      &lt;div>
+        &lt;ul>
+          &lt;li>foo&lt;/li>&lt;li>bar&lt;/li>&lt;li>baz&lt;/li>
+          &lt;!-- few more dozens of list elements ... -->
+        &lt;/ul>
+      &lt;/div>
+    &lt;/body>
+  &lt;/html>
+</code></pre>
+<p>into this mess:</p>
+<pre lang="html"><code>
+&lt;!--hcpage status="compressed"-->
+&lt;html>
+  &lt;head>
+    &lt;SCRIPT LANGUAGE="JavaScript" SRC="hc_decoder.js">&lt;/SCRIPT>
+    &lt;title>&lt;/title>
+  &lt;/head>
+  &lt;BODY>
+    &lt;NOSCRIPT>To display this page you need a browser with JavaScript support.&lt;/NOSCRIPT>
+    &lt;SCRIPT LANGUAGE="JavaScript">
+      &lt;!--
+        hc_d0("Mv#d|\x3C:,&#038;c@w4YFAtD1 [... and so on, another couple hundreds of characters ...]");
+      //-->
+    &lt;/SCRIPT>
+  &lt;/BODY>
+&lt;/html>
+</code></pre>
+<p>Needless to say, this kind of &#8220;optimization&#8221; should never be performed in the public web. Unless the intention is to make documents inacessible to users and search engines. And it hurts me seeing those NOSCRIPT elements, which fall short in clients behind <strong>Javascript-blocking firewalls</strong>. Bad idea, bad execution.</p>
+<h3 id="antipatterns">Antipatterns</h3>
+<p>Previous snippet was a good example of optimization anti-pattern. There are, however, few more you should be aware of:</p>
+<h4 id="1_removing_doctype">1. Removing doctype</h4>
+<p><a href="http://www.alentum.com/ahc/">HTML Compresor</a> has an option &mdash; on by default &mdash; to strip doctype. I can&#8217;t think of a case where stripping it would be beneficial. On a contrary, missing doctype <strong>triggers quirks mode</strong>, and as a result, wreaks havoc on a page layout and behavior. Doctypes should be left alone, or instead, replaced with a shorter &mdash; HTML 5 &mdash; version.</p>
+<h4 id="2_replacing_strong_with_b_and_em_with_i">2. Replacing STRONG with B and EM with I</h4>
+<p>Another harmful option in the same HTML Compressor is to replace elements with their shorter &#8220;alternatives&#8221;. The problem here is that B is not really an alternative to STRONG. Neither is I a replacement to EM. STRONG and EM elements have <strong>semantic meaning &mdash; emphasis</strong>, whereas B and I are simply font-style elements; They affect text rendering, but carry no semantic meaning.</p>
+<p>Even though browsers usually display these elements identically, screen readers and search engines very much understand the difference.</p>
+<h4 id="3_removing_title_alt_attributes_and_label_elements">3. Removing title, alt attributes, and LABEL elements.</h4>
+<p>A good rule of thumb is to <strong>never optimize in exchange of accessibility</strong>. You might be tempted to remove that optional &#8220;alt&#8221; attribute on IMG elements, or &#8220;title&#8221; on anchors, but saving few dozens of bytes is really not worth often-critical accessibility loss.</p>
+<h3 id="tools">Tools</h3>
+<p>It&#8217;s more or less trivial to <strong>automate most of the tweaks</strong> from &#8220;additional optimizations&#8221; section. There already exist tools that strip comments, whitespaces, and remove quotes around attribute values. But these are still in their infancy and perform a very limited set of optimizations. We can definitely do better.</p>
+<p>A couple of months ago, <a href="http://mediumexposure.com/">hakunin</a> and I started working on a similar, <a href="http://github.com/maxim/html_press">Ruby-based compressor</a>, but never had a chance to finish it.</p>
+<p>So what do we have so far?</p>
+<ol>
+<li>
+<p style="margin-bottom:0"><a href="http://www.alentum.com/ahc/">Absolute HTML Compressor</a> (desktop, windows)</p>
+<p>Does great job, but only after turning off options like stripping doctype and replacing STRONG with I.</p>
+</li>
+<li>
+<p style="margin-bottom:0"><a href="http://www.antssoft.com/htmlcompact/index.htm">HTML Compact</a> (desktop, windows)</p>
+<p>Makes document inaccessible. <strong>Avoid</strong>.</p>
+</li>
+<li>
+<p style="margin-bottom:0"><a href="http://download.cnet.com/HTML-Compressor/3000-10247_4-10871401.html">HTML Compressor</a> (desktop, windows)</p>
+<p>Only removes whitespace, and even in whitespace-sensitive elements, such as PRE. <strong>Not very useful</strong>.</p>
+</li>
+<li>
+<p style="margin-bottom:0"><a href="http://mailmarkup.org/prettydiff/prettydiff.html">Pretty Diff</a> (web-based)</p>
+<p>Doesn&#8217;t have option to completely remove whitespaces (only collapses them). Doesn&#8217;t perform any optimizations except collapsing whitespace and removing newlines. Doesn&#8217;t respect whitespace-sensitive elements. <strong>Not very useful</strong>.</p>
+</li>
+<li>
+<p style="margin-bottom:0"><a href="http://code.google.com/p/htmlcompressor/">htmlcompressor</a> (java-based)</p>
+<p>Performs most of the optimizations described here (but doesn&#8217;t remove optional tags or shorten boolean attributes). Respects whitespace-sensitive elements. It is more or less <strong>best option</strong> at the moment.</p>
+</li>
+</ol>
+
+  <p>As you can see, current state of affairs is pretty disappointing. There seem to be no compression tools for Mac/Linux, and those for Windows are hardly useful.</p>
+
+  <h3 id="future_considerations">Future considerations</h3>
+
+  <p>Whereas munging and stripping can (and should) be done during production, markup smells is something that should <strong>never happen in the first place</strong>. Neither in production, nor in development. Not unless, for whatever reason, they are absolutely necessary.</p>
+
+  <p>
+    Unsurprisingly, the best optimization one can do is often a manual one: changing document structure to avoid repeating classes on multiple elements (and instead moving them to parent element), or eliminating chunks that are not immediately needed, and instead loading them dynamically. Replacing miriads of <code>&lt;br></code>&#8216;s or <code>&amp;nbsp;</code>&#8216;s used inefficiently for presentational purposes, or that old table-based layout are other good examples of manual cleaning.
+  </p>
+
+<p>As far as all the other little tweaks, I expect more compression tools to appear in the near future, pushing size-reduction boundaries even further.</p>
+
+<p>If you know more ways to optimize HTML, please share. I&#8217;d be glad to hear any questions, suggestions or corrections.</p>
+
+  <ol style="font-size:0.85em;border-top:1px dotted #aaa;padding-top:1em;margin-top:2em;padding-left:1.5em;">
+    <li id="media-attribute-tested-browsers">Tested browsers were:<br />
+      <strong>Firefox</strong> 1, 1.5, 2, 3, 3.5;<br />
+      <strong>Opera</strong> 7.54, 8.54, 9.27, 9.64, 10.10;<br />
+      <strong>Safari</strong> 2.0.4, 3.0.4, 4;<br />
+      <strong>Chrome</strong> 4 &mdash; on Mac OS X 10.6.2.<br />
+      <strong>Internet Explorer</strong> 6, 7, 8 on Windows XP Pro SP2, and<br />
+      <strong>Konqueror</strong> 4.3.2 on Ubuntu 9.10.
+    </li>
+  </ol>
+</div>

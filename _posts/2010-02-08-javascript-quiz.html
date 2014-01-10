@@ -1,0 +1,415 @@
+---
+layout: post
+title: Javascript quiz
+popular: popular
+tags:
+  - js
+---
+
+<h2>Javascript quiz</h2>
+
+<div id="javascript-quiz">
+  <style>
+    #javascript-quiz .answers { padding-left: 1em; margin-left: 0 }
+    #javascript-quiz .answers li { list-style: none !important; margin-left: 0; }
+    #javascript-quiz #quiz-result { background: #efe; padding: 1em; border: 1px solid #afa; }
+    #javascript-quiz .notes-about-code { margin-top: 1em; }
+    #javascript-quiz .notes-about-code li { margin-bottom: 0.5em; }
+    #javascript-quiz .quiz li { list-style-type: none; }
+  </style>
+
+  <p>I was recently reminded about <a href="http://dmitry.baranovskiy.com/post/91403200"> Dmitry Baranovsky's Javascript test</a>, when N. Zakas answered and <a href="http://www.nczonline.net/blog/2010/01/26/answering-baranovskiys-javascript-quiz/">explained it in a blog post</a>. First time I saw those questions explained was by <a href="http://groups.google.com/group/comp.lang.javascript/msg/ae4d0d92361497f6">Richard Cornford in comp.lang.javascript</a>, although not as thoroughly as by Nicholas.</p>
+
+  <p>I decided to come up with my own little quiz. I wanted to keep question not very obscure, practical, yet challenging. They would also cover wider range of topics.</p>
+
+  <h3>Host objects</h3>
+  <p>Contrary to Dmitry's test, quiz does <strong>not involve host objects</strong> (e.g. <code>window</code>), as their behavior is unspecified and can vary sporadically across implementations. We are talking about pure ECMAScript (3rd ed.) behavior. Now, it's worth pointing out that sometimes implementations <strong>deviate from the standard collectively</strong>, forming their own, de-facto standard. An example of this is <code>for-in</code> statement, where none of the popular implementations throw <code>TypeError</code> when expression evalutes to <code>null</code> or <code>undefined</code> — <code>for (var prop in null) { ... }</code> — and instead just silently ignore it. I tried to avoid these non-standard cases. Every question has a correct answer that can be reproduced in at least one of the major implementations.</p>
+
+  <h3>So what are we testing?</h3>
+  <p>Not a lot really. Quiz mainly focuses on knowledge of scoping, function expressions (and how they differ from function declarations), references, process of variable and function declaration, order of evaluation, and a couple more things like <code>delete</code> operator and object instantiation. These are all relatively simple concepts, which I think every professional Javascript developer should know. Most of these are applied in practice quite often. Ideally, even if you can't answer a question, you should be able to infer answer from specs (without executing the snippet). When creating these questions, I made sure I can answer each one of them off the top of my head, to keep things relatively simple.</p>
+
+  <p>Note, however, that <strong>not all questions are very practical</strong>, so don't worry if you can't answer some of them. We don't often use <code>with</code> statement, for example, so failing to know/remember its exact behavior is  understandable.</p>
+
+  <h3>Few notes about code</h3>
+  <ul class="notes-about-code">
+    <li>Assuming ECMAScript 3rd edition (not 5th)</li>
+    <li>Implementation quirks do not count (assuming standard behavior only)</li>
+    <li>Every snippet is run as a global code (not as <em>eval</em> or <em>function</em> one)</li>
+    <li>There are no other variables declared (and host environment is not extended with anything beyond what's defined in specs)</li>
+    <li>Answer should correspond to exact return value of entire expression/statement (or last line)</li>
+    <li>"Error" in answer indicates that overall snippet results in a runtime error</li>
+  </ul>
+
+  <h3>Quiz</h3>
+  <p>Please make sure you <strong>select answer in each question</strong>, as lack of answer is not checked and counts as failure. The final score is simply a number of wrong answers, less is better. Quiz requires Javascript to be enabled.</p>
+  <ol class="quiz">
+    <li>
+  1.
+<pre lang="javascript"><code>
+  (function(){
+    return typeof arguments;
+  })();
+</code></pre>
+      <ul class="answers">
+        <li>
+          <input type="radio" name="question-1" id="answer-1-1">
+          <label for="answer-1-1">"object"</label>
+        </li>
+        <li>
+          <input type="radio" name="question-1" id="answer-1-2">
+          <label for="answer-1-2">"array"</label>
+        </li>
+        <li>
+          <input type="radio" name="question-1" id="answer-1-3">
+          <label for="answer-1-3">"arguments"</label>
+        </li>
+        <li>
+          <input type="radio" name="question-1" id="answer-1-4">
+          <label for="answer-1-4">"undefined"</label>
+        </li>
+      </ul>
+    </li>
+    <li>
+  2.
+<pre lang="javascript"><code>
+  var f = function g(){ return 23; };
+  typeof g();
+</code></pre>
+      <ul class="answers">
+        <li>
+          <input type="radio" name="question-2" id="answer-2-1">
+          <label for="answer-2-1">"number"</label>
+        </li>
+        <li>
+          <input type="radio" name="question-2" id="answer-2-2">
+          <label for="answer-2-2">"undefined"</label>
+        </li>
+        <li>
+          <input type="radio" name="question-2" id="answer-2-3">
+          <label for="answer-2-3">"function"</label>
+        </li>
+        <li>
+          <input type="radio" name="question-2" id="answer-2-4">
+          <label for="answer-2-4">Error</label>
+        </li>
+      </ul>
+    </li>
+    <li>
+  3.
+<pre lang="javascript"><code>
+  (function(x){
+    delete x;
+    return x;
+  })(1);
+</code></pre>
+      <ul class="answers">
+        <li>
+          <input type="radio" name="question-3" id="answer-3-1">
+          <label for="answer-3-1">1</label>
+        </li>
+        <li>
+          <input type="radio" name="question-3" id="answer-3-2">
+          <label for="answer-3-2">null</label>
+        </li>
+        <li>
+          <input type="radio" name="question-3" id="answer-3-3">
+          <label for="answer-3-3">undefined</label>
+        </li>
+        <li>
+          <input type="radio" name="question-3" id="answer-3-4">
+          <label for="answer-3-4">Error</label>
+        </li>
+      </ul>
+    </li>
+    <li>
+  4.
+<pre lang="javascript"><code>
+  var y = 1, x = y = typeof x;
+  x;
+</code></pre>
+      <ul class="answers">
+        <li>
+          <input type="radio" name="question-4" id="answer-4-1">
+          <label for="answer-4-1">1</label>
+        </li>
+        <li>
+          <input type="radio" name="question-4" id="answer-4-2">
+          <label for="answer-4-2">"number"</label>
+        </li>
+        <li>
+          <input type="radio" name="question-4" id="answer-4-3">
+          <label for="answer-4-3">undefined</label>
+        </li>
+        <li>
+          <input type="radio" name="question-4" id="answer-4-4">
+          <label for="answer-4-4">"undefined"</label>
+        </li>
+      </ul>
+    </li>
+    <li>
+  5.
+<pre lang="javascript"><code>
+  (function f(f){
+    return typeof f();
+  })(function(){ return 1; });
+</code></pre>
+      <ul class="answers">
+        <li>
+          <input type="radio" name="question-5" id="answer-5-1">
+          <label for="answer-5-1">"number"</label>
+        </li>
+        <li>
+          <input type="radio" name="question-5" id="answer-5-2">
+          <label for="answer-5-2">"undefined"</label>
+        </li>
+        <li>
+          <input type="radio" name="question-5" id="answer-5-3">
+          <label for="answer-5-3">"function"</label>
+        </li>
+        <li>
+          <input type="radio" name="question-5" id="answer-5-4">
+          <label for="answer-5-4">Error</label>
+        </li>
+      </ul>
+    </li>
+    <li>
+  6.
+<pre lang="javascript"><code>
+  var foo = {
+    bar: function() { return this.baz; },
+    baz: 1
+  };
+  (function(){
+    return typeof arguments[0]();
+  })(foo.bar);
+</code></pre>
+      <ul class="answers">
+        <li>
+          <input type="radio" name="question-6" id="answer-6-1">
+          <label for="answer-6-1">"undefined"</label>
+        </li>
+        <li>
+          <input type="radio" name="question-6" id="answer-6-2">
+          <label for="answer-6-2">"object"</label>
+        </li>
+        <li>
+          <input type="radio" name="question-6" id="answer-6-3">
+          <label for="answer-6-3">"number"</label>
+        </li>
+        <li>
+          <input type="radio" name="question-6" id="answer-6-4">
+          <label for="answer-6-4">"function"</label>
+        </li>
+      </ul>
+    </li>
+    <li>
+  7.
+<pre lang="javascript"><code>
+  var foo = {
+    bar: function(){ return this.baz; },
+    baz: 1
+  }
+  typeof (f = foo.bar)();
+</code></pre>
+      <ul class="answers">
+        <li>
+          <input type="radio" name="question-7" id="answer-7-1">
+          <label for="answer-7-1">"undefined"</label>
+        </li>
+        <li>
+          <input type="radio" name="question-7" id="answer-7-2">
+          <label for="answer-7-2">"object"</label>
+        </li>
+        <li>
+          <input type="radio" name="question-7" id="answer-7-3">
+          <label for="answer-7-3">"number"</label>
+        </li>
+        <li>
+          <input type="radio" name="question-7" id="answer-7-4">
+          <label for="answer-7-4">"function"</label>
+        </li>
+      </ul>
+    </li>
+    <li>
+  8.
+<pre lang="javascript"><code>
+  var f = (function f(){ return "1"; }, function g(){ return 2; })();
+  typeof f;
+</code></pre>
+      <ul class="answers">
+        <li>
+          <input type="radio" name="question-8" id="answer-8-1">
+          <label for="answer-8-1">"string"</label>
+        </li>
+        <li>
+          <input type="radio" name="question-8" id="answer-8-2">
+          <label for="answer-8-2">"number"</label>
+        </li>
+        <li>
+          <input type="radio" name="question-8" id="answer-8-3">
+          <label for="answer-8-3">"function"</label>
+        </li>
+        <li>
+          <input type="radio" name="question-8" id="answer-8-4">
+          <label for="answer-8-4">"undefined"</label>
+        </li>
+      </ul>
+    </li>
+    <li>
+  9.
+<pre lang="javascript"><code>
+  var x = 1;
+  if (function f(){}) {
+    x += typeof f;
+  }
+  x;
+</code></pre>
+      <ul class="answers">
+        <li>
+          <input type="radio" name="question-9" id="answer-9-1">
+          <label for="answer-9-1">1</label>
+        </li>
+        <li>
+          <input type="radio" name="question-9" id="answer-9-2">
+          <label for="answer-9-2">"1function"</label>
+        </li>
+        <li>
+          <input type="radio" name="question-9" id="answer-9-3">
+          <label for="answer-9-3">"1undefined"</label>
+        </li>
+        <li>
+          <input type="radio" name="question-9" id="answer-9-4">
+          <label for="answer-9-4">NaN</label>
+        </li>
+      </ul>
+    </li>
+    <li>
+  10.
+<pre lang="javascript"><code>
+  var x = [typeof x, typeof y][1];
+  typeof typeof x;
+</code></pre>
+      <ul class="answers">
+        <li>
+          <input type="radio" name="quiz-10" id="answer-10-1">
+          <label for="answer-10-1">"number"</label>
+        </li>
+        <li>
+          <input type="radio" name="quiz-10" id="answer-10-2">
+          <label for="answer-10-2">"string"</label>
+        </li>
+        <li>
+          <input type="radio" name="quiz-10" id="answer-10-3">
+          <label for="answer-10-3">"undefined"</label>
+        </li>
+        <li>
+          <input type="radio" name="quiz-10" id="answer-10-4">
+          <label for="answer-10-4">"object"</label>
+        </li>
+      </ul>
+    </li>
+    <li>
+  11.
+<pre lang="javascript"><code>
+  (function(foo){
+    return typeof foo.bar;
+  })({ foo: { bar: 1 } });
+</code></pre>
+      <ul class="answers">
+        <li>
+          <input type="radio" name="quiz-11" id="answer-11-1">
+          <label for="answer-11-1">"undefined"</label>
+        </li>
+        <li>
+          <input type="radio" name="quiz-11" id="answer-11-2">
+          <label for="answer-11-2">"object"</label>
+        </li>
+        <li>
+          <input type="radio" name="quiz-11" id="answer-11-3">
+          <label for="answer-11-3">"number"</label>
+        </li>
+        <li>
+          <input type="radio" name="quiz-11" id="answer-11-4">
+          <label for="answer-11-4">Error</label>
+        </li>
+      </ul>
+    </li>
+    <li>
+  12.
+<pre lang="javascript"><code>
+  (function f(){
+    function f(){ return 1; }
+    return f();
+    function f(){ return 2; }
+  })();
+</code></pre>
+      <ul class="answers">
+        <li>
+          <input type="radio" name="answer-12" id="answer-12-1">
+          <label for="answer-12-1">1</label>
+        </li>
+        <li>
+          <input type="radio" name="answer-12" id="answer-12-2">
+          <label for="answer-12-2">2</label>
+        </li>
+        <li>
+          <input type="radio" name="answer-12" id="answer-12-3">
+          <label for="answer-12-3">Error (e.g. "Too much recursion")</label>
+        </li>
+        <li>
+          <input type="radio" name="answer-12" id="answer-12-4">
+          <label for="answer-12-4">undefined</label>
+        </li>
+      </ul>
+    </li>
+    <li>
+  13.
+<pre lang="javascript"><code>
+  function f(){ return f; }
+  new f() instanceof f;
+</code></pre>
+      <ul class="answers">
+        <li>
+          <input type="radio" name="answer-13" id="answer-13-2">
+          <label for="answer-13-2">true</label>
+        </li>
+        <li>
+          <input type="radio" name="answer-13" id="answer-13-1">
+          <label for="answer-13-1">false</label>
+        </li>
+      </ul>
+    </li>
+    <li>
+  14.
+<pre lang="javascript"><code>
+  with (function(x, undefined){}) length;
+</code></pre>
+      <ul class="answers">
+        <li>
+          <input type="radio" name="answer-14" id="answer-14-1">
+          <label for="answer-14-1">1</label>
+        </li>
+        <li>
+          <input type="radio" name="answer-14" id="answer-14-2">
+          <label for="answer-14-2">2</label>
+        </li>
+        <li>
+          <input type="radio" name="answer-14" id="answer-14-3">
+          <label for="answer-14-3">undefined</label>
+        </li>
+        <li>
+          <input type="radio" name="answer-14" id="answer-14-4">
+          <label for="answer-14-4">Error</label>
+        </li>
+      </ul>
+    </li>
+  </ol>
+
+  <p id="quiz-result"></p>
+
+  <button type="button" id="submitter">Let's see the score!</button>
+
+  <p>I hope you liked it. Please leave your score in the comments. I'll try to explain these questions sometime in a near future, unless someone else does it before me. Meanwhile, you can take a look at my articles on <a href="http://kangax.github.io/nfe">function expressions</a> and <a href="http://perfectionkills.com/understanding-delete/">delete operator</a>, understanding which would help you answer some of these questions, and more importantly, explain their answers.</p>
+
+  <script src="/js/quiz.js"></script>
+</div>

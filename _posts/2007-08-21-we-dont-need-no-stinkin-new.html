@@ -1,0 +1,56 @@
+---
+layout: post
+title: We dont need no stinkin new
+tags:
+  - prototype
+---
+
+<h2>We don't need no stinkin' "new"</h2>
+
+<p>There seems to be a bit of confusion among people not too familiar with Scriptaculous library. I often hear questions like &#8220;Why is <code>new Effect.BlindDown('myElement')</code> is not working? Am I not passing myElement correctly?&#8221;. No, the situation is much simpler.</p>
+
+<p>As of 1.7.1 Scriptaculous has 6 <em>Core Effects:</em></p>
+
+<ul>
+  <li><a href="http://wiki.script.aculo.us/scriptaculous/show/Effect.Morph" title="Effect.Morph">Effect.Morph </a></li>
+  <li><a href="http://wiki.script.aculo.us/scriptaculous/show/Effect.Opacity" title="Effect.Opacity">Effect.Opacity </a></li>
+  <li><a href="http://wiki.script.aculo.us/scriptaculous/show/Effect.Scale" title="Effect.Scale">Effect.Scale </a></li>
+  <li><a href="http://wiki.script.aculo.us/scriptaculous/show/Effect.Move" title="Effect.Move">Effect.Move </a></li>
+  <li><a href="http://wiki.script.aculo.us/scriptaculous/show/Effect.Highlight" title="Effect.Highlight">Effect.Highlight </a></li>
+  <li><a href="http://wiki.script.aculo.us/scriptaculous/show/Effect.Parallel" title="Effect.Parallel">Effect.Parallel</a></li>
+</ul>
+
+<p>All of the core effects should be INSTANTIATED. This means that we use &#8220;new&#8221; keyword in front of them:</p>
+
+<pre lang="javascript"><code>
+new Effect.Opacity('myElement');
+new Effect.Move('myElement');
+</code></pre>
+
+<p>Even though the correct syntax is clearly stated in wiki, it is sometimes not obvious and could be easily missed. These kind of things could make beginners bang their head against the wall for hours.</p>
+
+<p>On the other hand, there is an extensive set of <em>Combination effects:</em></p>
+
+<ul>
+  <li><a href="http://wiki.script.aculo.us/scriptaculous/show/Effect.Appear">Effect.Appear</a>, <a href="http://wiki.script.aculo.us/scriptaculous/show/Effect.Fade">Effect.Fade</a></li>
+  <li><a href="http://wiki.script.aculo.us/scriptaculous/show/Effect.Puff">Effect.Puff</a></li>
+  <li><a href="http://wiki.script.aculo.us/scriptaculous/show/Effect.DropOut">Effect.DropOut</a></li>
+  <li><a href="http://wiki.script.aculo.us/scriptaculous/show/Effect.Shake">Effect.Shake</a></li>
+  <li><a href="http://wiki.script.aculo.us/scriptaculous/show/Effect.SwitchOff">Effect.SwitchOff</a></li>
+  <li><a href="http://wiki.script.aculo.us/scriptaculous/show/Effect.BlindDown">Effect.BlindDown</a>, <a href="http://wiki.script.aculo.us/scriptaculous/show/Effect.BlindUp">Effect.BlindUp</a></li>
+  <li><a href="http://wiki.script.aculo.us/scriptaculous/show/Effect.SlideDown">Effect.SlideDown</a>, <a href="http://wiki.script.aculo.us/scriptaculous/show/Effect.SlideUp">Effect.SlideUp</a></li>
+  <li><a href="http://wiki.script.aculo.us/scriptaculous/show/Effect.Pulsate">Effect.Pulsate</a></li>
+  <li><a href="http://wiki.script.aculo.us/scriptaculous/show/Effect.Squish">Effect.Squish</a></li>
+  <li><a href="http://wiki.script.aculo.us/scriptaculous/show/Effect.Fold">Effect.Fold</a></li>
+  <li><a href="http://wiki.script.aculo.us/scriptaculous/show/Effect.Grow">Effect.Grow</a></li>
+  <li><a href="http://wiki.script.aculo.us/scriptaculous/show/Effect.Shrink">Effect.Shrink</a></li>
+</ul>
+
+<p>These do <strong>NOT</strong> need &#8220;new&#8221; keyword and essentially are just static methods of Effect object:</p>
+
+<pre lang="javascript"><code>
+Effect.Shrink('myElement');
+Effect.SlideDown('myElement');
+</code></pre>
+
+<p>I hope this clears all the confusion.</p>

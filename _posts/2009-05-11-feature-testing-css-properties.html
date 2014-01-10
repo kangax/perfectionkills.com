@@ -1,0 +1,147 @@
+---
+layout: post
+title: Feature testing CSS properties
+tags:
+  - css
+---
+
+<h2>Feature testing CSS properties</h2>
+
+<p>Contrary to many beliefs, detecting CSS properties support with Javascript is not very complicated. One of the CSS-related tests in <a href="http://kangax.github.io/cft/" title="Common Feature Tests">Common Feature Tests suite</a> is IS_CSS_BORDER_RADIUS_SUPPORTED which looks as simple as this:</p>
+
+<pre lang="javascript"><code>
+var IS_CSS_BORDER_RADIUS_SUPPORTED = (function() {
+  var docEl = document.documentElement, s;
+  if (docEl &#038;&#038; (s = docEl.style)) {
+      return typeof s.borderRadius == "string"
+        || typeof s.MozBorderRadius == "string"
+        || typeof s.WebkitBorderRadius == "string"
+        || typeof s.KhtmlBorderRadius == "string";
+  }
+  return null;
+})();</code></pre>
+
+<p>As you can see, testing a CSS property boils down to <strong>an inference drawn from the presence of the same named property in a <code>style</code> of an arbitrary element</strong>. If you wanted to test support for a “marginLeft” property, you would do it like so:</p>
+
+<pre lang="javascript"><code>
+var el = document.createElement('div');
+typeof el.style.marginLeft == 'string'; // true
+typeof el.style.marginLeft2 == 'string'; // false
+</code></pre>
+
+<p>An alternative (and less verbose) way involves replacing <code>typeof</code> operator with <code>in</code> operator:</p>
+
+<pre lang="javascript"><code>
+var el = document.createElement('div');
+'marginLeft' in el.style; // true
+'marginLeft2' in el.style; // false
+</code></pre>
+
+<p><code>in</code> was actually used in earlier versions of CFT but I find such inference too weak. <code>in</code> doesn&#8217;t check type of a property; it merely determines <strong>property existence</strong>, and would return <code>true</code> even if it had <code>undefined</code> (or any other, non-string) value.</p>
+
+<p>IS_CSS_BORDER_RADIUS_SUPPORTED doesn&#8217;t just test CSS3 &#8220;borderRadius&#8221; property. It also tries some of the known proprietary, vendor-specific variations &#8211; &#8220;MozBorderRadius&#8221;, &#8220;WebkitBorderRadius&#8221; and &#8220;KhtmlBorderRadius&#8221;. While tweaking this test a couple of days ago, I realized that if I wanted to test CSS3 &#8220;boxShadow&#8221; property, I would need to follow the same logic and &#8220;iterate&#8221; over the very same prefixes &#8211; &#8220;MozBoxShadow&#8221;, &#8220;WebkitBoxShadow&#8221; and so on. Such duplication was clearly not the way to go and a more generic function seemed like a better solution. </p>
+
+<h2 id="getstyleproperty">getStyleProperty</h2>
+
+<p>What it all led to was a very simple <code>getStyleProperty</code> helper:</p>
+
+<pre lang="javascript"><code>
+var getStyleProperty = (function(){
+
+  var prefixes = ['Moz', 'Webkit', 'Khtml', 'O', 'Ms'];
+
+  function getStyleProperty(propName, element) {
+    element = element || document.documentElement;
+    var style = element.style,
+        prefixed;
+
+    // test standard property first
+    if (typeof style[propName] == 'string') return propName;
+
+    // capitalize
+    propName = propName.charAt(0).toUpperCase() + propName.slice(1);
+
+    // test vendor specific properties
+    for (var i=0, l=prefixes.length; i&lt;l; i++) {
+      prefixed = prefixes[i] + propName;
+      if (typeof style[prefixed] == 'string') return prefixed;
+    }
+  }
+
+  return getStyleProperty;
+})();
+</code></pre>
+
+<p><code>getStyleProperty</code> follows the same logic and returns a first found CSS property on an arbitrary (or optionally specified) element. If you run <code>getStyleProperty('borderRadius')</code> in Mozilla-based browser, it would return &#8220;MozBorderRadius&#8221;; if it was a Webkit-based client, a &#8220;WebkitBorderRadius&#8221; would be returned. Finally, if no property was found, methods would exit with <code>undefined</code>. </p>
+
+<p>Simple as that.</p>
+
+<p>The way you would test a property is by comparing returned result&#8217;s type to &#8220;string&#8221;:</p>
+
+<pre lang="javascript"><code>
+if (typeof getStyleProperty('borderRadius') == 'string') {
+  // property is supported
+}
+</code></pre>
+
+<p>I didn&#8217;t want to recreate a prefixes array every time function is called and stored it in a closure. I also used function declaration inside that closure, rather than returning an anonymous function expression, so that <code>getStyleProperty</code> had a descriptive identifier. There&#8217;s a <code>document.documentElement</code> used as a generic element (in case none is provided as a second argument), but I could as well have created a new one with <code>document.createElement</code>. </p>
+
+<p>You&#8217;re obviously free to improvise with these subtleties as you find appropriate, as long as the actual testing mechanism is left intact.</p>
+
+<h2 id="performance_considerations">Performance considerations</h2>
+
+<p>I don&#8217;t consider execution speed very crucial for a method such as<code>getStyleProperty</code>, since it would most likely be executed once or twice and probably during the load time. Nevertheless, two basic optimizations come to mind. </p>
+
+<p>Caching a property is one of them. We can simply create a &#8220;private&#8221; object that maps original (passed into function) property to an actual (possibly prefixed) one and use that object as a cache:</p>
+
+<pre lang="javascript"><code>
+var getStyleProperty = (function(){
+
+  var prefixes = ['Moz', 'Webkit', 'Khtml', 'O', 'Ms'];
+  var _cache = { };
+
+  function getStyleProperty(propName, element) {
+    element = element || document.documentElement;
+    var style = element.style,
+        prefixed,
+        uPropName;
+
+    // check cache only when no element is given
+    if (arguments.length == 1 &#038;&#038; typeof _cache[propName] == 'string') {
+      return _cache[propName];
+    }
+    // test standard property first
+    if (typeof style[propName] == 'string') {
+      return (_cache[propName] = propName);
+    }
+
+    // capitalize
+    uPropName = propName.charAt(0).toUpperCase() + propName.slice(1);
+
+    // test vendor specific properties
+    for (var i=0, l=prefixes.length; i&lt;l; i++) {
+      prefixed = prefixes[i] + uPropName;
+      if (typeof style[prefixed] == 'string') {
+        return (_cache[propName] = prefixed);
+      }
+    }
+  }
+
+  return getStyleProperty;
+})();
+</code></pre>
+
+<p>Another optimization is to <strong>cache vendor prefix, such as &#8220;Moz&#8221; or &#8220;Webkit&#8221;</strong> rather than a specific property. An assumption we&#8217;re making here is that if one prefixed property is found in an element&#8217;s style, than that prefix can safely be prepended to any other property resulting in a &#8220;proper&#8221; string. I&#8217;m not sure if such inference is a good thing, since clients are obviously not limited to implementing only one type of vendor-specific properties; I can imagine Khtml-based clients implementing both &#8211; Khtml- and Webkit- properties. </p>
+<p>It might be safer to just stick to &#8220;regular&#8221; caching mechanism (if any at all), as in the previous snippet.</p>
+
+<h2 id="inference_downsides">Inference downsides</h2>
+
+<p>Theoretically speaking, the inference we are relying on for <code>getStyleProperty</code> is not all that strong. A mere existence of a CSS property <strong>doesn&#8217;t tell us about an actual implementation and its conformance to a specification</strong>. A browser might have &#8220;borderRadius&#8221; property with a proper string value; it could allow to assign to that property and even set its value to a specified one after assignment; yet, it could never make borders rounded. The problem is that many CSS3 declarations affect document in such way that it is <strong>impossible to detect their effect on a DOM</strong>. Border&#8217;s radius and box&#8217;s shadow, text&#8217;s stroke and text overflow (ending with an ellipsis) are all purely visual aspects. If &#8220;marginLeft&#8221; conformance can be checked by testing element&#8217;s offset (as it is represented in a DOM), most of the CSS3 properties don&#8217;t provide such luxury.</p>
+
+<p>This is an important thing to remember.</p>
+
+<h2 id="cft">CFT</h2>
+
+<p><code>getStyleProperty</code> is now part of CFT suite (<a href="http://github.com/kangax/cft/" title="CFT on github">source of which</a> you can find on github). There&#8217;s also a <a href="http://kangax.github.io/cft/style.html" title="getStyleProperty test page">simple test page</a> with some of the common CSS3 properties tested.</p>
+
+<p>As always, I&#8217;d love to hear any suggestions/corrections you have.</p>

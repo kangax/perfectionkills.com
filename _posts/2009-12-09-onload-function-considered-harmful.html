@@ -1,0 +1,107 @@
+---
+layout: post
+title: onload=function(){} considered harmful
+tags:
+  - js
+---
+
+<h2>onload=function(){} considered harmful</h2>
+
+<h3 id="harmful_pattern">Harmful pattern</h3>
+
+<p>There seems to be a new pattern <a href="http://www.google.com/codesearch?q=%28^|%3B%29\s*onload\s*%3D\s*function">appearing</a> <a href="http://webreflection.blogspot.com/2009/06/inputfocus-something-really-annoying.html">on</a> <a href="http://webreflection.blogspot.com/2009/10/dom-node-proxy.html">the</a> <a href="http://stackoverflow.com/questions/1818501/javascript-how-is-function-x-different-from-x-function">web</a> — attaching window load listener through undeclared assignment:</p>
+
+<pre lang="javascript"><code>
+  onload = function(){
+    /* ... */
+  };
+</code></pre>
+
+<p>I&#8217;d like to explain why it&#8217;s a <strong>good idea to avoid it</strong>.</p>
+
+<p>A conventional approach to perform this task is to explicitly assign to <code>window.onload</code> property. That is, not counting other means like DOM L2 methods — <code>addEventListener</code> (as well as proprietary <code>attachEvent</code>), or intrinsic event attributes — <code>&lt;body onload="..."&gt;</code>:</p>
+
+<pre lang="javascript"><code>
+  window.onload = function(){
+    /* ... */
+  };
+</code></pre>
+
+<h3 id="how_does_it_work">How does it work?</h3>
+
+<p>A tempting &#8220;short&#8221; version takes advantage of <strong>Javascript loose nature</strong> with regards to variable declarations. In Javascript, assigning to undeclared variable actually creates a property on a Global Object — global property. Since Global Object in browsers is usually a <code>window</code> object (or at least it often behaves that way), undeclared assignment essentially results in creation of property on <code>window</code>. As long as Global Object and <code>window</code> are the same entity, <code>window.onload = ...</code> and <code>onload = ...</code> should have identical results. At least, that&#8217;s how it is in theory, and in practice there are more implications, as you will see later on.</p>
+
+<p>So if two are identical, why would we ever prefer longer version?</p>
+
+<p>Because shorter one <strong>relies on undeclared assignment</strong>.</p>
+
+<h3 id="who_cares">Who cares?</h3>
+
+<p>Undeclared assignments have been frowned upon for a long time, and rightfully so. Global variables declared locally are hard to maintain and generally cause confusion. It&#8217;s not always clear whether such assignments are intentional or simply an oversight. It is why validators like JSLint have been emiting warnings when encountering them.</p>
+
+<h3 id="mshtml_peculiarities">MSHTML peculiarities</h3>
+
+<p>Another reason to avoid undeclared assignments is due to rather destructive behavior of MSHTML DOM. When undeclared assignment happens in IE, an obscure error is thrown if identifier is named as id or name of one of the elements in a document:</p>
+
+<pre lang="javascript"><code>
+  &lt;p id="foo">&lt;/p>
+  &lt;form name="bar" action="">&lt;p>&lt;/p>&lt;/form>
+
+  &lt;script type="text/javascript">
+    try {
+      foo = 1;
+    }
+    catch(e) {
+      document.write(e); // TypeError: Object doesn't support this property or method
+    }
+    try {
+      bar = 1;
+    }
+    catch(e) {
+      document.write(e); // ReferenceError: Illegal assignment
+    }
+  &lt;/script>
+</code></pre>
+
+<p>Note that plain <strong>variable declarations</strong> in global scope, or <strong>explicit assignments</strong> have no such problems:</p>
+
+<pre lang="javascript"><code>
+  &lt;p id="foo">&lt;/p>
+  &lt;form name="bar" action="">&lt;p>&lt;/p>&lt;/form>
+
+  &lt;script type="text/javascript">
+    var foo = 1; // declares (and initializes) global `foo` variable
+    window.foo = 1; // assigns to a "foo" property of `window` object
+    this.foo = 1; // assigns to a "foo" property of Global Object
+  &lt;/script>
+</code></pre>
+
+<h3 id="but_8220onload8221_is_different">But &#8220;onload&#8221; is different!</h3>
+
+<p>Technically speaking, the case with <code>onload = function(){ }</code> can be considered an exception. After all, an intention to create global <code>onload</code> property is rather clear there. It&#8217;s also unlikely that there will be an element with such id/name (<strong>although, you never know!</strong>). There&#8217;s, however, another problem rising up, and that <strong>problem is strict mode</strong> of <a href="http://www.ecma-international.org/publications/standards/Ecma-262.htm">ECMA-262 5th edition</a> — a standard for an upcoming version of ECMAScript language, approved officially only few days ago.</p>
+
+<h3 id="strict_what">Strict what?</h3>
+
+<p>The premise of strict mode is to provide higher security level for an ECMAScript program (or part of it): avoid features that are considered error-prone or inefficient; employ stricter error checking; provide increased performance. One of such &#8220;stricter error checks&#8221; happens to be the one with undeclared assignments, which simply <strong>throw error</strong>:</p>
+
+<pre lang="javascript"><code>
+  "use strict";
+  onload = function(){ // ReferenceError
+    /* ... */
+  };
+  window.onload = function(){ // Works as expected
+    /* ... */
+  };
+</code></pre>
+
+<p>Now, it&#8217;s worth mentioning that <strong>not all browsers would throw error</strong>. Some of them (e.g. WebKit) actually have properties corresponding to event handlers — such as &#8220;onload&#8221; — declared implicitly, before script execution occurs. Those that don&#8217;t — such as Firefox or Opera — would miserably fail.</p>
+
+<pre lang="javascript"><code>
+  "onload" in window; // true in WebKit, but not Firefox or Opera
+  window.onload; // `null` in WebKit, `undefined` in Firefox or Opera
+  onload; // `null` in WebKit, ReferenceError in Firefox or Opera
+</code></pre>
+
+<h3 id="does_it_really_matter">Does it really matter?</h3>
+
+<p>It&#8217;s good to understand that <strong>strict mode is not a requirement</strong>, but is merely an option. It is there to provide stricter rules for those who need it, and are willing to cope with (and enjoy) consequences. So if you are planning to make your code &#8220;strict&#8221;, don&#8217;t forget to avoid undeclared assignments — even as innocent-looking as &#8220;onload&#8221; ones.</p>

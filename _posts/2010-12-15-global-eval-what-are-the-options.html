@@ -1,0 +1,447 @@
+---
+layout: post
+title: Global eval. What are the options?
+popular: popular
+tags:
+  - js
+---
+
+<h2>Global eval. What are the options?</h2>
+
+<div id="global-eval-what-are-the-options">
+  <style>
+    #global-eval-what-are-the-options blockquote p { margin-bottom: 0; }
+    #global-eval-what-are-the-options h5 { font: bold 1.2em Georgia, serif; margin-bottom: 1em; }
+    #global-eval-what-are-the-options .one-liner-downsides { margin-bottom: 20px; }
+  </style>
+  <ul class="toc">
+    <li><a href="#how_eval_works">How eval works</a></li>
+    <li>
+      <a href="#evaling_in_global_scope">Eval&#8217;ing in global scope</a><ul>
+        <li><a href="#indirect_eval_call_theory">Indirect eval call. Theory.</a><ul>
+            <li><a href="#indirect_eval_call_examples">Indirect eval call examples.</a></li>
+          </ul>
+        </li><li><a href="#indirect_eval_call_in_practice">Indirect eval call. In practice.</a></li>
+        <li><a href="#windowexecscript">window.execScript</a></li>
+        <li><a href="#windoweval">window.eval</a><ul>
+            <li><a href="#eval_context_in_webkit">eval context in webkit</a></li>
+          </ul>
+        </li>
+        <li><a href="#new_function">new Function</a></li>
+        <li><a href="#settimeout">setTimeout</a></li>
+        <li><a href="#script_insertion">Script insertion</a></li>
+      </ul>
+    </li>
+    <li><a href="#the_problem_with_geval_windowexecscript_eval">The problem with `window.execScript || eval`</a></li>
+    <li><a href="#feature_testing_based_approach">Feature testing -based approach</a></li>
+    <li><a href="#global_eval_in_libraries">Global eval in libraries</a></li>
+    <li><a href="#summary">Summary</a></li>
+  </ul>
+
+  <p><a href="http://www.davidflanagan.com/">David Flanagan</a> recently <a href="http://www.davidflanagan.com/2010/12/global-eval-in.html">wrote about global eval() in Javascript</a>, proposing a simple one-liner like this:</p>
+
+<pre lang="javascript"><code>
+  var geval = this.execScript || eval;
+</code></pre>
+
+  <p>Even though it looked beautifully simple, it wasn&#8217;t the best cross-browser solution I could think of. Moreover, it&#8217;s not something I would recommend. Pondering a bit more on this subject, I realized that there are actually quite a few ways to evaluate code in global scope in Javascript. Some of those ways — e.g. indirect eval — are also not understood very well, and their implications are not immediately visible. David pointed out to me — in one of the comments — that &#8220;indirect eval&#8221; is not a well-known idiom except in close circles of implementors. And he was right. There was in fact tons of confusion on the subject of global eval, all over the web.</p>
+
+  <p>In hope of making the situation clearer, I&#8217;d like to go over &#8220;global eval&#8221; options, taking a look at how and why they work. I&#8217;ll also explain some of the problems with the above-mentioned one-line solution.</p>
+
+  <h3 id="how_eval_works">How eval works</h3>
+
+  <p>Before going further, let&#8217;s define &#8220;global eval&#8221; as a way to evaluate code in global scope. Simple as that.</p>
+
+  <p>The reason for all this fuss about evaluating code in global scope is because global, built-in <code>eval</code> function <strong>evaluates code in the scope of a caller</strong>:</p>
+
+<pre lang="javascript"><code>
+  var x = 'outer';
+  (function() {
+    var x = 'inner';
+    eval('x'); // "inner"
+  })();
+</code></pre>
+
+  <p>This behavior is described very clearly in both — ES3 and ES5:</p>
+
+<blockquote>
+[...]
+The scope chain is initialised to contain the same objects, in the same order, as the calling context's scope chain. This includes objects added to the calling context's scope chain by with statements and catch clauses.
+[...]
+</blockquote>
+
+  <p>&#8212; <a href="http://bclary.com/2004/11/07/#a-10.2.2">10.2.2 Eval Code</a> [ES3]</p>
+
+  <p>In ES5, things are a bit more <del>complicated</del> interesting. The behavior of <code>eval</code> depends on 2 things — whether it is a <strong>direct or indirect call</strong> and whether <strong>invocation happens in strict mode</strong>. Don&#8217;t worry if you don&#8217;t know what &#8220;indirect call&#8221; is — we&#8217;ll take a look at it very soon. When talking about non-strict, direct eval call (i.e. good old <code>eval(...)</code> invocation) the outcome is exactly the same as in ES3 — code is executed in the scope of a caller.</p>
+
+<blockquote>
+[...]
+b. Set the LexicalEnvironment to the same value as the LexicalEnvironment of the calling execution context.
+[...]
+</blockquote>
+
+  <p>&#8212; <a href="http://ecma262-5.com/ELS5_HTML.htm#Section_10.4.2">10.4.2 Entering Eval Code</a> [ES5]</p>
+
+  <h3 id="evaling_in_global_scope">Eval&#8217;ing in global scope</h3>
+
+  <p>So native <code>eval</code> doesn&#8217;t allow to execute code globally. What to do? Let&#8217;s first take a look at some of the options, then try to distill them into a cross-browser solution.</p>
+
+  <h4 id="indirect_eval_call_theory">Indirect eval call. Theory.</h4>
+
+  <p>I mentioned &#8220;indirect eval call&#8221; before, when explaining behavior of <code>eval</code> in ES5. The reason indirect eval is of interest is because in ES5 it actually <strong>does execute code globally</strong>. <a href="http://www.youtube.com/watch?v=EDkQZVJshgc">Bingo!</a> But what does it even mean — &#8220;indirect eval call&#8221;. Indirect eval call is simply any eval call that&#8217;s not a direct eval call. And direct eval call is defined as:</p>
+
+<blockquote>
+A direct call to the eval function is one that is expressed as a CallExpression that meets the following two conditions:
+<br>
+The Reference that is the result of evaluating the MemberExpression in the CallExpression has an environment record as its base value and its reference name is "eval".
+<br>
+The result of calling the abstract operation GetValue with that Reference as the argument is the standard builtin function defined in 15.1.2.1.
+</blockquote>
+
+  <p>&#8212; <a href="http://ecma262-5.com/ELS5_HTML.htm#Section_15.1.2.1.1">15.1.2.1.1 Direct Call to Eval</a> [ES5]</p>
+
+  <p>That might sound a bit cryptic, but it&#8217;s actually very simple. What specification is trying to tell is that <code>eval('1+1')</code> is a direct call, but <code>(1,eval)('1+1')</code> is not. If we were to dissect first expression — <code>eval('1+1')</code> — syntactically, we would see that it&#8217;s really just a CallExpression, which consists of a MemberExpression (<code>eval</code>) followed by Arguments (<code>'(1+1)'</code>), and in which MemberExpression consists of &#8220;eval&#8221; Identifier:</p>
+
+<pre lang="javascript"><code>
+    eval             ( '1+1' )
+  |______|
+  Identifier
+
+  |______|          |________|
+  MemberExpression  Arguments
+
+  |__________________________|
+  CallExpression
+</code></pre>
+
+  <p>This is, more or less, a signature of a direct call. ES3 has a slightly simpler definition, and the one that&#8217;s pretty much identical to the graphic above:</p>
+
+  <blockquote>
+    &#8220;[&#8230;] any way other than a direct call (that is, other than by the <strong>explicit use of its name as an Identifier which is the MemberExpression in a CallExpression</strong>) [&#8230;]&#8221;
+  </blockquote>
+
+  <p>&#8212; <a href="http://bclary.com/2004/11/07/#a-15.1.2.1">15.1.2.1 eval(x)</a> [ES3]</p>
+
+  <p>So <code>eval('1+1')</code> is a direct eval call, but (1,eval)(&#8216;1+1&#8217;) is not. Since the latter one is not a direct call, it is therefore an <strong>indirect eval call</strong>. Let&#8217;s take a look at it in more detail:</p>
+
+<pre lang="javascript"><code>
+  (     1        ,         eval  )        ( '1+1' )
+     |____|   |_____|    |_____|
+     Literal  Operator   Identifier
+
+     |_________________________|
+     Expression
+
+  |______________________________|
+  PrimaryExpression
+
+  |______________________________|        |________|
+  MemberExpression                        Arguments
+
+  |________________________________________________|
+  CallExpression
+</code></pre>
+
+  <p>In the above example, the part before Arguments (invocation parens) clearly doesn&#8217;t consist of just &#8220;eval&#8221; identifier. There&#8217;s a whole other expression, consisting of comma operator, numeric literal, and only then &#8220;eval&#8221; identifier. <code>1,eval</code> — based on how comma operator works — still evaluates to a standard, built-in <code>eval</code> function, but overall expression is no longer a direct call. It is therefore an <strong>indirect eval call</strong>.</p>
+
+  <h5 id="indirect_eval_call_examples">Indirect eval call examples</h5>
+
+  <p>If you&#8217;re still not quite able to recognize indirect eval calls, these are some of the examples:</p>
+
+<pre lang="javascript"><code>
+(1, eval)('...')
+(eval, eval)('...')
+(1 ? eval : 0)('...')
+(__ = eval)('...')
+var e = eval; e('...')
+(function(e) { e('...') })(eval)
+(function(e) { return e })(eval)('...')
+(function() { arguments[0]('...') })(eval)
+this.eval('...')
+this['eval']('...')
+[eval][0]('...')
+eval.call(this, '...')
+eval('eval')('...')
+</code></pre>
+
+  <p>According to ES5, all of these are indirect calls and <strong>should execute code in global scope</strong>. I&#8217;d love to go over each one of them in more detail, but that would be too much for this post.</p>
+
+  <p>Note the <code>var e = eval; e('...')</code> on 5th line. </p>
+
+  <p>You can see that this is essentially what David&#8217;s solution does — <code>var geval = window.execScript || eval</code>. When <code>geval</code> is executed, <code>geval</code> identifier resolves to a global, built-in <code>eval</code> function, but overall expression does not have &#8220;eval&#8221; as an Identifier in CallExpression. Instead, there&#8217;s &#8220;geval&#8221; identifier, <strong>making this an indirect call</strong> and evaluating code globally.</p>
+
+  <p>But we&#8217;ll get back to that one-liner later, and now let&#8217;s take a look at one last, but not least important point about indirect eval call.</p>
+
+  <p>Have you noticed how ES5 definition says that <code>eval</code> from CallExpression <strong>should evaluate to standard, built-in function</strong>? It means that taken out of context, <code>eval('1+1')</code> is <strong>not necessarily a direct call</strong>. Only when <code>eval</code> actually references standard, built-in function (wasn&#8217;t overwritten or shadowed), a call can be considered direct.</p>
+
+<pre lang="javascript"><code>
+  eval = (function(eval) {
+    return function(expr) {
+      return eval(expr);
+    };
+  })(eval);
+
+  eval('1+1'); // It looks like a direct call, but really is an indirect one.
+               // It's because `eval` resolves to a custom function, rather than standard, built-in one
+</code></pre>
+
+  <p>Now that we looked at a list of indirect calls, how about few examples of <strong>direct ones</strong>?</p>
+
+<pre lang="javascript"><code>
+  eval('...')
+  (eval)('...')
+  (((eval)))('...')
+  (function() { return eval('...') })()
+  eval('eval("...")')
+  (function(eval) { return eval('...'); })(eval)
+  with({ eval: eval }) eval('...')
+  with(window) eval('...')
+</code></pre>
+
+  <p>Looks pretty straightforward, doesn&#8217;t it?</p>
+
+  <p>But wait a second. Why is it that <code>(eval)('...')</code> and <code>(((eval)))('...')</code> are considered direct calls? Certainly, they don&#8217;t adhere to the signature we established earlier — Identifier &#8220;eval&#8221; within MemberExpression within CallExpression. What&#8217;s going on here? Shouldn&#8217;t the <strong>parenthesis around <code>eval</code></strong> make it an indirect call?</p>
+
+  <p>The answer to this tricky question is in the first paragraph of ES5 direct call definition — the fact that &#8220;eval&#8221; in CallExpression <strong>should be a Reference, not a value</strong>. During program execution, <code>eval</code> in <code>eval('1+1')</code> expression is nothing but a Reference, and needs to be evaluated to a value. Once it&#8217;s evaluated, the value is (most likely) a standard, built-in function object. What happens in previously dissected <code>(1,eval)('1+1')</code> indirect call, is that <code>(1,eval)</code> expression evaluates to a value, not a Reference. Since it doesn&#8217;t evaluate to a Reference, it can not be considered a direct eval call. </p>
+
+  <p>But what about <code>(eval)('1+1')</code>?</p>
+
+  <p>The reason <code>(eval)</code> is considered a direct eval call is because <code>(eval)</code> expression <strong>still evaluates to a Reference</strong>, not a value. Ditto for <code>((eval))</code>, <code>(((eval)))</code>, and so on. This happens because Grouping Operator — &#8220;(&#8221; and &#8220;)&#8221; — <strong>does not evaluate its expression</strong>. If a Reference is passed to a Grouping operator — &#8220;(&#8221; and &#8220;)&#8221; — it still evaluates to a Reference, not a value.</p>
+
+<pre lang="javascript"><code>
+  eval(); // &lt;-- expression to the left of invocation parens — "eval" — evaluates to a Reference
+  (eval)(); // &lt;-- expression to the left of invocation parens — "(eval)" — evaluates to a Reference
+  (((eval)))(); // &lt;-- expression to the left of invocation parens — "(((eval)))" — evaluates to a Reference
+  (1,eval)(); // &lt;-- expression to the left of invocation parens — "(1, eval)" — evaluates to a value
+  (eval = eval)(); // &lt;-- expression to the left of invocation parens — "(eval = eval)" — evaluates to a value
+</code></pre>
+
+  <p>Speaking in terms of ECMAScript, this is because both — comma operator (in <code>(1, eval)</code> example) and <code>=</code> operator (in <code>(eval = eval)</code> example) perform <code>GetValue</code> on its operands. As a result, <code>(1, eval)</code> and <code>(eval = eval)</code> evaluate to a value, whereas <code>eval</code> and <code>(eval)</code> — to a Reference.</p>
+
+  <p>Hopefully, it is now clear why <code>(eval)('...')</code> and <code>(function(eval){ return eval('...') })(eval)</code> are direct eval calls, but <code>(1, eval)('...')</code> and <code>this.eval('...')</code> aren&#8217;t.</p>
+
+  <h4 id="indirect_eval_call_in_practice">Indirect eval call. In practice.</h4>
+
+  <p>With all the theory of indirect <code>eval</code> behind us, let&#8217;s consider practical implications. We already know that ES5 specifies such calls to evaluate code in global scope. There are only 2 things left to consider — ES3 and reality. The fun part starts with ES3, which <a href="http://bclary.com/2004/11/07/#a-15.1.2.1">allows indirect eval calls to throw an error</a>. Not only does ES3 allow for an error, it says nothing about evaluating code in global scope. And what about reality? </p>
+
+  <p>It turns out that quite a lot of environments nowadays more or less <a href="http://kangax.github.com/jstests/indirect_eval_call_test/">follow ES5 behavior</a>, evaluating code in global scope. But unfortunately, not all of them. </p>
+
+  <p>IE&lt;=8 executes code in the scope of a caller, as if indirect call was direct one. Some versions of Konqueror (~4.3) and Safari &lt;=3.2 do the same thing as IE, evaluating code in the scope of a caller. Older Opera (~9.27) goes even further and actually does throw error, as permitted by a spec. All of this makes indirect <code>eval</code> call (on its own) not a good candidate for a cross-browser &#8220;global eval&#8221; solution. Not for another few years (when Opera &lt;=9.27, Safari &lt;=3.2 (which is probably still present in earlier iPhones), and other &#8220;misbehaving&#8221; browsers &#8220;disappear&#8221;).</p>
+
+  <p>Curiously, as of now, even the newest browsers deviate from ES5. Chrome 9, for example, considers this an indirect call — <code>(function(eval){ return eval('x'); })(eval)</code> — which it really isn&#8217;t; <code>eval</code> is a reference, it&#8217;s part of a MemberExpression within a CallExpression, and evaluates to a standard, built-in function.</p>
+
+  <p>Opera 11 and Firefox 4 — both browsers are still in beta for these versions — consider the following expression to be a direct call, even though it doesn&#8217;t satisfy all requirements of such (<code>eval</code> doesn&#8217;t resolve to a standard, built-in function in this case):</p>
+
+<pre lang="javascript"><code>
+  eval = (function(eval) {
+    return function(s) {
+      return eval(s)
+    };
+  })(eval);
+
+  eval('...');
+</code></pre>
+
+  <p>Full ES5 conformance is clearly yet to come (meanwhile, take a look at <a href="http://kangax.github.com/jstests/indirect-eval-testsuite/">my simple test suite</a>).</p>
+
+  <h4 id="windowexecscript">window.execScript</h4>
+
+  <p>Fortunately for us, there&#8217;s a proprietary <a href="http://msdn.microsoft.com/en-us/library/ms536420(v=VS.85).aspx"><code>window.execScript</code></a> function present in IE. It&#8217;s defined to &#8220;execute the specified script in the provided language&#8221; and allows to execute Javascript code in global scope. It&#8217;s not very surprising that Chrome has this function as well; most likely for compatibility reasons. As of today, <code>window.execScript</code> is still present in Chrome 9. </p>
+
+  <p>The way <code>window.execScript</code> differs from indirect eval call is that it <strong>doesn&#8217;t return a value</strong>. Actually, it does return value in Chrome, but that value is always <code>null</code>. </p>
+
+<pre lang="javascript"><code>
+  window.execScript('1+1'); // null in Chrome, undefined in IE
+  (1,eval)('1+1'); // 2
+</code></pre>
+
+  <h4 id="windoweval">window.eval</h4>
+
+  <p>Another, very popular way to execute code in global scope is using <code>window.eval</code>. What&#8217;s interesting about it, is that <code>window.eval('...')</code> is <strong>often believed to be somehow special</strong> when it comes to executing code globally. It&#8217;s as if <code>eval</code> called as a property of <code>window</code> object always executes in global scope. The truth is that <code>window.eval('...')</code> is nothing but a&#8230; <strong>indirect eval call</strong>, and is not much different than (1,eval)(&#8216;&#8230;&#8217;), <code>this.eval('...')</code>, or <code>(eval = eval)('...')</code> when it comes to evaluation. </p>
+
+  <p>Not understanding what&#8217;s going on, some people unfortunately <a href="http://weblogs.java.net/blog/driscoll/archive/2009/09/08/eval-javascript-global-context">come up with rather monstrous solutions</a> like <code>eval.call(window, '...')</code>,  <code>window.eval.call(window, '...')</code> and even scarier combinations. All of those are, once again, nothing but indirect eval calls. The reason code is executed in global scope is not because <code>eval</code> is called in context of <code>window</code>, but because <strong>it&#8217;s invoked as an indirect call</strong>. <code>eval</code> might as well be a property of <code>foo</code> object, and would still work identically:</p>
+
+<pre lang="javascript"><code>
+  var foo = {
+    eval: eval
+  };
+
+  foo.eval('...'); // behaviorally identical to `window.eval('...')`
+                   // both are indirect calls and so evaluate code in global scope
+</code></pre>
+
+  <p>More <a href="http://stackoverflow.com/questions/2566973/how-override-eval-function-in-javascript">confusion can be seen on StackOverflow</a>, where <code>eval</code> is labeled &#8220;magic&#8221;, and is claimed to somehow lose its magic when aliased — all the <strong>symptoms of direct vs. indirect calls</strong>.</p>
+
+  <h5 id="eval_context_in_webkit">eval context in webkit</h5>
+
+  <p>It&#8217;s worth mentioning that in some of the WebKit -based browsers — including latest Safari (5) and Chrome (9) — <strong><code>eval</code> throws error</strong> when called from within certain context (a.k.a. &#8220;this&#8221; object). And by &#8220;certain context&#8221; I mean anything that&#8217;s not a window/global object (or at least it seems that way). The error is <cite>EvalError: The &#8220;this&#8221; object passed to eval must be the global object from which eval originated</cite>. This is probably done for security reasons.</p>
+
+<pre lang="javascript"><code>
+  window.eval('1+1'); // works
+  eval.call(window, '1+1'); // works
+  eval.call(null, '1+1'); // works, since eval is invoked with "this" object referencing global object
+
+  eval.call({ }, '1+1'); // EvalError (wrong "this" object)
+  [eval][0]('1+1'); // EvalError (wrong "this" object)
+  with({ eval: eval }) eval('1+1'); // EvalError (wrong "this" object)
+</code></pre>
+
+  <p>Since all of those calls are indirect ones, such error is allowed by ES3 (see, for example, EvalError — <a href="http://bclary.com/2004/11/07/#a-15.11.6.1">15.11.6.1</a>)</p>
+
+  <h4 id="new_function">new Function</h4>
+
+  <p>Sometimes I see suggestions to use <code>new Function</code> (or just <code>Function</code>) to evaluate code globally:</p>
+
+<pre lang="javascript"><code>
+  Function('return 1+1')(); // 2
+</code></pre>
+
+  <p>This is somewhat misleading.</p>
+
+  <p>The code executed from within function created by <code>Function</code> constructor doesn&#8217;t really execute in global scope. However, it doesn&#8217;t execute in local scope either, which is what probably leads to confusion. <code>Function</code> constructor creates a function whose scope chain consists of nothing but a global scope (preceded with function&#8217;s own Activation Object, of course). Any code contained in a function created via <code>Function</code> constructor <strong>evaluates in a scope of that function, not in a global scope</strong>. However, it&#8217;s <em>almost as if</em> code executes globally, since global object is the very next object in the scope chain.</p>
+
+  <p>What are the implications of this difference?</p>
+
+  <p>Well, for once, any function/variable declarations are performed using created function&#8217;s Activation Object as Variable Object. In other words, they are declared local to created function, rather than in a global scope:</p>
+
+<pre lang="javascript"><code>
+  function globalEval(expression) {
+    return Function(expression)();
+  }
+
+  var x = 'outer';
+  (function() {
+    var x = 'inner';
+    globalEval('alert(x)'); // alerts "outer"
+  })();
+
+  // but!
+
+  globalEval('var foo = 1');
+  typeof foo; // "undefined" (`foo` was declared within function created by `Function`, not in the global scope)
+</code></pre>
+
+  <p>Another interesting peculiarity of evaluating code via <code>Function('...')()</code> is <strong>identifiers leakage</strong>. An example of this is "arguments" identifier which resolves to an <code>arguments</code> object, when evaluating code via <code>Function('...')()</code>:</p>
+
+<pre lang="javascript"><code>
+  eval('alert(arguments)'); // ReferenceError
+  Function('alert(arguments)')(); // alerts representation of an `arguments` object
+</code></pre>
+
+  <p><code>Function</code> -executed code is a good solution if you wish to avoid executing code locally, but it won&#8217;t execute it globally either.</p>
+
+  <h4 id="settimeout">setTimeout</h4>
+
+  <p>Non-standard (but finally <a href="http://www.whatwg.org/specs/web-apps/current-work/?slow-browser#dom-windowtimers-settimeout">codified in currently draft HTML5</a>) <code>setTimeout</code> is another way to execute code globally — when given code as a string, rather than as a function. The problem with <code>setTimeout</code>, of course, is that it&#8217;s asynchronous and that — similarly to <code>window.execScript</code> — it doesn&#8217;t return the result of evaluation.</p>
+
+  <p>Unfortunately, looking through HTML5 specs, I couldn&#8217;t find any mention of the fact that <code>setTimeout</code> should evaluate code in global scope. Hopefully, I missed it; it should certainly be specified.</p>
+
+  <h4 id="script_insertion">Script insertion</h4>
+
+  <p>Finally, in browser environment, there&#8217;s always an option of injecting a script element into a document. Contents of that script element are then parsed and executed as a Program in global scope:</p>
+
+<pre lang="javascript"><code>
+  var el = document.createElement('script');
+  el.appendChild(document.createTextNode('1+1'));
+  document.body.appendChild(el);
+</code></pre>
+
+  <p>As with <code>window.execScript</code> and <code>setTimeout</code> -based solutions, this one doesn&#8217;t allow to get meaningful return value (unless some kind of workaround is applied). Script insertion is used by current jQuery (1.4.4) in <code>jQuery.globalEval</code>. It fails to provide a return value, but works in more cross-browser manner than &#8220;indirect eval + window.execScript&#8221; combination. For example, it works in Safari &lt;=3.2 and in older Opera, in which indirect eval calls fail.</p>
+
+  <h3 id="the_problem_with_geval_windowexecscript_eval">The problem with <code>window.execScript || eval</code></h3>
+
+  <p>Let&#8217;s get back to this very appealing one-liner, taking a look at some of its problems. Although it seems great in theory, its 2 main downsides can be summarized as:</p>
+
+  <ul class="one-liner-downsides">
+  <li>Indirect <code>eval</code> is not sufficiently cross-browser; lack of feature-testing</li>
+  <li>Non-standard <code>execScript</code> is preferred to standard <code>eval</code></li>
+  </ul>
+
+  <p>As you&#8217;ve seen before, indirect eval is still quirky across some of the existing browsers. There are also environments where it hasn&#8217;t even been tested in — mobile browsers, non-standard platforms, older, rare or unknown browsers, etc. Relying on the fact that indirect eval executes code globally — just because that&#8217;s what happens in some of the newer, popular browsers — is rather careless. A much saner strategy is to actually feature test indirect eval call behavior before attempting to use it.</p>
+
+  <p>Another problem of one-liner is that <code>window.execScript</code> is tested for existence first, and only when it doesn&#8217;t exist, <code>eval</code> is chosen as a fallback. One of the rules of interoperability is that <strong>standard features should be preferred over non-standard ones</strong>. For example, since <code>window.execScript</code> exists in Chrome, one-liner will end up &#8220;using&#8221; non-standard (and less-capable) <code>window.execScript</code> rather than standard <code>eval</code>.</p>
+
+  <p>Finally, the assumption that if <code>window.execScript</code> doesn&#8217;t exist, then indirect eval must be executing code globally (which is what one-liner does) strikes me as rather unsafe.</p>
+
+  <p>There are more <a href="http://josephsmarr.com/2007/01/31/fixing-eval-to-use-global-scope-in-ie/">similarly non-optimal soutions online</a>, where folks seem to be taking trial-and-error approach, not realizing why things work the way they do. Rakesh Pai is <a href="http://blog.rakeshpai.me/2008/10/understanding-eval-scope-spoiler-its.html">bedazzled by the unexplainable difference</a> between <code>eval</code> and <code>window.eval</code> invocations:</p>
+
+  <blockquote style="margin-bottom: 20px">
+    I don&#8217;t know what Firefox is doing in case 2, and for some reason Safari Nightlies seem to be following it. Maybe it&#8217;s just beyond my understanding, but case 2 is not supposed to be different from case 1. Why does case 2 operate in global scope? If window.eval is different from eval, case 3 shouldn&#8217;t all have given errors. Someone please help me understand that $hit.
+  </blockquote>
+
+  <p>The fact that browsers do not fully conform to ES5 makes things even worse. For example, <code>with(window) eval('...')</code> is considered an indirect call in Chrome 9, even though as per ES5 it is very much a direct one — the &#8220;eval&#8221; Identifier is within MemberExpression of CallExpression; it&#8217;s a Reference, and it resolves to a standard, built-in <code>eval</code> function. </p>
+
+  <h3 id="feature_testing_based_approach">Feature testing -based approach</h3>
+
+  <p>Creating a more robust version of global eval is not hard. </p>
+
+  <p>The idea is similar — use indirect eval, with a fall back on <code>window.execScript</code>. The important difference, however, is that <strong>indirect eval is feature-tested</strong> and is only used when it&#8217;s safe to do so. One potential problem here is that <code>window.execScript</code> is not tested, but is instead assumed to execute code globally. If you find this assumption unsafe, it should be trivial to add feature-test for <code>window.execScript</code> as well.</p>
+
+<pre lang="javascript"><code>
+var globalEval = (function() {
+
+  var isIndirectEvalGlobal = (function(original, Object) {
+    try {
+      // Does `Object` resolve to a local variable, or to a global, built-in `Object`,
+      // reference to which we passed as a first argument?
+      return (1,eval)('Object') === original;
+    }
+    catch(err) {
+      // if indirect eval errors out (as allowed per ES3), then just bail out with `false`
+      return false;
+    }
+  })(Object, 123);
+
+  if (isIndirectEvalGlobal) {
+
+    // if indirect eval executes code globally, use it
+    return function(expression) {
+      return (1,eval)(expression);
+    };
+  }
+  else if (typeof window.execScript !== 'undefined') {
+
+    // if `window.execScript exists`, use it
+    return function(expression) {
+      return window.execScript(expression);
+    };
+  }
+
+  // otherwise, globalEval is `undefined` since nothing is returned
+})();
+</code></pre>
+
+  <p>The benefit of this kind of implementation is that <strong>it enables graceful degradation</strong>. You can easily find out if <code>globalEval</code> is available in a current environment (since <code>globalEval</code> would be <code>undefined</code> when none of the 2 solutions are available):</p>
+
+<pre lang="javascript"><code>
+  if (globalEval) {
+    /* code can be executed globally */
+  }
+  else {
+    /* use fallback scenario */
+  }
+</code></pre>
+
+  <p>Note that — as with any indirect eval / <code>window.execScript</code> approach — <code>globalEval</code> will differ in its ability to return a value, depending on which method was chosen.</p>
+
+  <h3 id="global_eval_in_libraries">Global eval in libraries</h3>
+
+  <p>So what do some of the popular Javascript libraries do? Which global eval solution do they chose?</p>
+
+  <p>As we&#8217;ve seen earlier, <strong>jQuery</strong> sacrifices return value for a more extensive browser support, using script insertion technique in its <code>jQuery.globalEval</code> method. </p>
+
+  <p><strong>Prototype.js</strong> doesn&#8217;t even try to evaluate scripts globally — it uses a good old, direct eval invocation. Instead, Prototype.js warns about ramification of local execution in the documentation. </p>
+
+  <p><strong>Dojo</strong> choses the infamous <code>window.eval</code> variation, but does something really messed up — it uses indirect eval if <code>eval</code> exists on a global object (which should be true in all ES3-compliant browsers), and falls back on regular eval invocation. This kind of fall back obviously results in code executed locally, which should also happen <em>silently</em>. Dojo&#8217;s <code>eval</code> behavior will vary wildly depending on the environment, and has a possibility of uncaught error. On a related, humorous note, I was just as stunned by comments around <code>dojo.eval</code> as <a href="http://mail.dojotoolkit.org/pipermail/dojo-interest/2010-February/043637.html">David Mark in this message</a>.</p>
+
+  <p><strong>Mootools</strong> uses <code>window.execScript</code> when present, falling back on script insertion (similar to jQuery). jQuery&#8217;s script insertion, however, is more robust than Mootools, as they actually test if it results in evaluation of code.</p>
+
+  <p><strong>Fuse.js</strong> choses a very elaborate and careful strategy. It tests if indirect eval works as expected (catching an error if any), uses it if it does; if indirect eval is defunct, Fuse falls back on script injection. Unlike jQuery or Mootools, it actually <strong>tries to return a value</strong> of a code executed via script injection. It does so by wrapping contents of code with eval. An interesting side effect of executing code globally via <code>eval</code> is that function and variable declarations <a href="http://perfectionkills.com/understanding-delete/#firebug_confusion">create <strong>deletable bindings</strong></a> (which is most likely an insignificant detail).</p>
+
+  <h3 id="summary">Summary</h3>
+
+  <p>So what can we learn from all this? </p>
+
+  <p>Hopefully, you now have a true understanding of why <code>eval</code> sometimes executes code in global scope. That <code>window.eval(...)</code> is not very special and is just another form of indirect eval. That behavior of indirect eval is specified differently in ES3 and ES5. That behavior of indirect eval in actual implementations is still often sporadic — partly due to transitioning from ES3 to ES5, partly because of uncaught bugs. You&#8217;ve seen that blindly relying on indirect eval is unsafe. That implementations of &#8220;global eval&#8221; relying on indirect eval should employ feature testing, as with so many other things in cross-browser scripting. Finally, that alternative techniques exist and are used by libraries, such as script injection.</p>
+
+</div>

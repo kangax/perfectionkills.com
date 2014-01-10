@@ -1,0 +1,45 @@
+---
+layout: post
+title: Detecting global variable leaks
+tags:
+  - js
+---
+
+<h2>Detecting global variable leaks</h2>
+
+<img src="/images/detect_global.png" alt="detect-global bookmarklet">
+
+<p>
+  I have recently stumbled upon a <a href="http://remysharp.com/2007/11/01/detect-global-variables/">blog post by Remy Sharp</a> on detecting global variable leaks. As you probably know, Javascript is notorious at making such leaks way too easy. The problem is mainly with undeclared assignments which result in global variable declarations when variables are not found in the scope chain.</p>
+
+<pre lang="javascript"><code>
+  (function(){
+    var x = 1; // &lt;== accidentally changed "," to ";"
+        y = 2; // &lt;== `y` is now a global variable
+  })();
+</code></pre>
+
+<p style="background: #ffd; border: 1px solid #ddd; padding: 0.5em;">
+  To be more precise, undeclared assignment actually results in global <strong>property assignment</strong>, not global <strong>variable declaration</strong>. The difference between two is rather subtle: variable declaration creates <strong>non-deletable</strong> property of a global object, whereas explicit or implicit property assignment creates deletable one. Another peculiarity can be observed in IE, where global property assignment is disallowed if there's an element in a document with the same-named ID or NAME value. Global variable declaration, on the other hand, quietly overwrites existing property in cases like this.
+</p>
+
+<p>
+  Remy solves the problem with a bookmarklet that creates a blank context (essentially a window in an empty iframe), then uses that clean context to get the difference with the main one. The list of found variables is dumped into a console.</p>
+
+<p>
+  It’s worth mentioning that <a href="http://www.jslint.com/">JSLint</a> already allows detecting undeclared assignments, but JSLint can hurt feelings so we won’t use it. Well, actually JSLint performs so many validations, that it’s not always possible to detect undeclared assignments in huge scripts of legacy applications (like the one I wanted to examine). Running a test such as in this bookmarklet can be “applied on” any script.</p>
+
+<p>
+  The bookmarklet worked like a charm, but as soon as I plugged it into one of our applications, I was greeted with dozens of Prototype and Scriptaculous -related methods. On top of those, there were few google analytics and Mozilla -specific ones. Unfortunately, the original code was obfuscated and almost unreadable so I reproduced it from the scratch, this time making it possible to toggle certain property sets on and off. These property sets are - Prototype, Scriptaculous, Mozilla, Google Analytics and Firebug ones. The code is structured in such way that it should be easy to augment it with additional sets.</p>
+
+<p>
+  In the end, I found few leaks in one of our applications and even <a href="http://code.google.com/p/fbug/issues/detail?id=2190">one in firebug</a> (now fixed).</p>
+
+<p>
+As usual, the bookmarklet and its source are <a href="http://github.com/kangax/detect-global/tree/master">on github</a>.
+
+Feel free to fork it.
+</p>
+
+<strong>Edit [9/5/2009]</strong>
+<p>Clarified global variable declaration vs. global property assignment (thanks to Garrett Smith)</p>

@@ -1,0 +1,79 @@
+---
+layout: post
+title: Detecting built-in host methods
+tags:
+  - js
+---
+
+<h2>Detecting built-in host methods</h2>
+
+<h3>isNative</h3>
+
+<p>Diego Perini <a href="http://perfectionkills.com/instanceof-considered-harmful-or-how-to-write-a-robust-isarray/#comment-39287">mentions</a> that he often needs to detect whether a method is &#8220;native&#8221; (i.e. provided by the host environment) or is simply declared/overwritten by a third party script. He uses the following snippet:</p>
+<pre lang="javascript"><code>
+// detect native method in object
+// not same scope of isHostObject
+var isNative = function(object, method) {
+  return object &#038;&#038; method in object &#038;&#038;
+    typeof object[method] != 'string' &#038;&#038;
+    // IE &#038; W3C browser return "[native code]"
+    // Safari <= 2.0.4 will return "[function]"
+    (/\{\s*\[native code\]\s*\}|^\[function\]$/).test(object[method]);
+}
+</code></pre>
+
+<p>It's a good idea to understand what this method really does. And it does so-called function decompilation - a "technique" that's been quite unreliable, <a href="http://my.opera.com/hallvors/blog/show.dml/1665828">has already caused problems</a> and is only backed by a wishful thinking.</p>
+
+<h3>The problem</h3>
+
+<p>If you look closely, <code>isNative</code> actually doesn't test whether method is built-in; it first checks that a property exists either directly on an object, or in its prototype chain (<code>method in object</code>), is not a string (<code>typeof object[method] != "string"</code>), and that its string representation (i.e. result of its <code>toString</code> method) is either "[native code]" or "[function]". The last step is exactly what function decompilation is all about - parsing result of function's <code>toString</code> method. The explanation is a bit convoluted, but a simple example can demonstrate the issue better:</p>
+
+<pre lang="javascript"><code>
+window.test = {
+  toString: function() {
+    return '[function]';
+  }
+};
+isNative(window, 'test'); // true
+</code></pre>
+
+<p>Is <code>test</code> method really provided by the browser in this case? Obviously, it is not; It just happens to return "[function]" as a result of its <code>toString</code> method. The problem with such approach is not only that there is a chance of false positives (as you can see from the previous example); It is that there's no standard, specified behavior for host methods having "[native code]" or "[function]" strings in their string representations. Host method might as well just return "Hello world!" and the browser would still be ECMA/DOM1/2/3 compliant. That's because nothing in ECMA or DOM specs put requirements on the way resulting string should be. ECMA simply allows <code>Function.prototype.toString</code> to return implementation-dependent representation. As you can see from the comment by Diego, older Safari represents host methods as simple as "[function]". Mobile Opera employs its own representation (something without even beginning "function"), and Blackberry 9500 sometimes decides to be extra explicit : )</p>
+
+<pre lang="javascript"><code>
+XMLHttpRequest + '';
+// function XMLHttpRequest(){ [native code for XMLHttpRequest.XMLHttpRequest, arity=1] }
+</code></pre>
+
+<p>Does this remind you of <code>navigator.userAgent</code> sniffing? It sure does so for me - not only it is flawed in theory (as behavior is not specified) but even practical side is known to deviate from one browser to another. Testing for all existing combination sounds silly and might still "break" with the introduction of new browsers.</p>
+
+<h3>The solution</h3>
+
+<p>The solution I came up with is <strong>not perfect</strong>. It doesn't rely on any specified behavior either; That's because there doesn't seem to be any standard, describing what built-in host method should be like / act like / represent itself like. The most robust solution seems to be to test for a <strong>presence of a method in a different DOM context</strong>. For example, to check whether native <code>window.addEventListener</code> is present, we could use something along these lines:</p>
+
+<pre lang="javascript"><code>
+var isNativeWindowAddEventListenerPresent = (function(global){
+  // feature test following methods as needed
+  var el = document.createElement('iframe');
+  var root = document.body || document.documentElement;
+  root.appendChild(el);
+  var frame = global.frames[global.frames.length-1];
+  var result = (typeof frame.addEventListener != "undefined");
+  root.removeChild(el);
+  el = null;
+  return result;
+})(this);
+</code></pre>
+
+<p>In all browsers I tested, same-named methods from any of two non-modified DOM contexts behave identically. This means that if <code>window.addEventListener</code> is present in one non-modified context, it will be present in another non-modified context. It will also function identically. This seems to be a de-facto standard; unlike string representation, all browsers seem to be pretty consistent in this regard.</p>
+
+<h3>Downsides</h3>
+
+<p>There are few problems with this approach. First, not all browsers support <strong>multiple contexts</strong>. Latest Blackberry browser (v. 4.7, 9500 "Storm" model), for example, does not allow to access <code>window.frames</code> "collection", yet it's a pretty functional browser which supports most of the DOM L2 methods. Somewhat similar issue is that <a href="http://code.google.com/p/google-caja/">Caja project</a> does not support iframe creation at the moment (due to security restrictions, as I understand it). While Caja folks might support this in the future, the fact that some of the mobile browsers lack <code>window.frames</code> is very unfortunate.  </p>
+
+<p>Another downside is the <strong>execution speed</strong>. Creation and addition of iframe element to the document is relatively slow (comparing to such simple operations as string comparison or invocation of <code>RegExp.prototype.test</code> - as in original "toString" example). Using this approach in frequent, low-level methods is not a good idea. It's, nevertheless, a viable solution as a one-time check, during application/script initialization.   </p>
+
+<p>Finally, it's not quite easy to create a <strong>generic method</strong> that would utilize such non-modified context. Instead of passing just object/property pair (as in the original "toString" example), one would need to pass a string, and then try to somehow split that string into properties. A more reasonable solution could be to simply provide a method that returns a "clean" window object, but then there's a problem of removing and discarding iframe element (which, when removed, discards returned object useless).  </p>
+
+<p>Despite these annoyances, I find iframe approach the only reliable solution at the moment. I suggest to never rely on function decompilation, especially when it comes to host methods.   </p>
+
+<p>What do you think?</p>

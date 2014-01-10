@@ -1,0 +1,290 @@
+---
+layout: post
+title: Profiling CSS for fun and profit
+popular: popular
+tags:
+  - css
+---
+
+<div class="profiling-css">
+
+<h2>Profiling CSS for fun and profit</h2>
+
+<p>I&#8217;ve been recently working on optimizing performance of a so-called one-page web app. The application was highly dynamic, interactive, and was heavily stuffed with new CSS3 goodness. I&#8217;m not talking just border-radius and gradients. It was a full stack of shadows, gradients, transforms, sprinkled with transitions, smooth half-transparent colors, clever pseudo-element -based CSS tricks, and experimental CSS features.</p>
+
+<p>Aside from looking into bottlenecks on Javascript/DOM side, I decided to step into the CSS land. I wanted to see the kind of impact these nice UI elements have on performance. The old version of the app — the one without all the fluff — was much snappier, even though the JS logic behind it hasn&#8217;t changed all that drastically. I could see by scrolling and animations that things are just not as quick as they should be.</p>
+
+<p>Was styling to blame?</p>
+
+<p>Fortunately, just few days before, Opera folks <a href="http://my.opera.com/dragonfly/blog/style-profiler-preview">came out with an experimental &#8220;style profiler&#8221;</a> (followed by WebKit&#8217;s ticket+patch <a href="https://bugs.webkit.org/show_bug.cgi?id=74004">shortly after</a>). The profiler was meant to reveal the performance of CSS selector matching, document reflow, repaint, and even document and css parsing times.</p>
+
+<p>Perfect!</p>
+
+<p><img src="/images/profiler.png" width="900px"></p>
+
+<p>I wasn&#8217;t thrilled about profiling in one environment, and optimizing according to one engine (especially the engine that&#8217;s used only in one browser), but decided to give it a try. After all, the offending styles/rules would probably be similar in all engines/browsers. And this was pretty much the only thing out there. </p>
+
+<p>The only other somewhat similar tool was WebKit&#8217;s &#8220;timeline&#8221; tab in Developer Tools. But timeline wasn&#8217;t very friendly to work with. It wouldn&#8217;t show total time of reflow/repaint/selector matching, and the only way to extract that information was by exporting data as json and parsing it manually (I&#8217;ll get to that later).</p>
+
+<p>Below are some of my observations from profiling using both WebKit and Opera tools. <a href="#summary">TL;DR version is at the end.</a></p>
+
+<div style="background:#ffe;padding:5px;box-shadow:rgba(0,0,0,0.2) 0 0 3px">
+  <p>Before we start, I&#8217;d like to mention that most (if not all) of these notes apply best to large, complex applications. Documents that have thousands of elements and that are highly interactive will benefit the most. In my case, I reduced page load time by ~650ms (~500ms (!) on style recalculation alone, ~100ms on repaint, and ~50ms on reflow). The application became noticeably snappier, especially in older browsers like IE7.</p>
+  <p>For simpler pages/apps, there are plenty of other optimizations that should be looked into first.</p>
+</div>
+
+<h2 id="notes">Notes</h2>
+
+<ol>
+
+<li><p>The fastest rule is the one that doesn&#8217;t exist. There&#8217;s a common strategy to combine stylesheet &#8220;modules&#8221; into one file for production. This makes for one big collection of rules, where some (lots) of them are likely not used by particular part of the site/application. <strong>Getting rid of unused rules</strong> is one of the best things your can do to optimize CSS performance, as there&#8217;s less matching to be done in the first place. There are certain benefits of having one big file, of course, such as the reduced number of requests. But it should be possible to optimize at least critical parts of the app, by including only relevant styles. </p>
+
+<p>This isn&#8217;t a new discovery by any means. Page Speed <a href="http://code.google.com/speed/page-speed/docs/payload.html#RemoveUnusedCSS">has always been warning against this</a>. However, I was really surprised to see <strong>just how much</strong> this could really affect the rendering time. In my case, I shaved ~200-300ms of selector matching — according to Opera profiler — just by getting rid of unused CSS rules. Layout and paint times went down as well.</p></li>
+
+<li><p>Reducing reflows — another well-known optimization — plays big role here as well. Expensive styles are not so expensive when fewer reflows/repaints need to be performed by the browser. And even simple styles could slow things down if they&#8217;re applied a lot. Reducing reflows AND reducing complexity of CSS go hand in hand.</p></li>
+
+<li><p>Most expensive selectors tend to be universal ones (<code>"*"</code>), and those with multiple classes (<code>".foo.bar"</code>, <code>"foo .bar.baz qux"</code>, etc.). We already knew this, but it&#8217;s nice to get confirmation from profilers.</p></li>
+
+<li><p>Watch out for universal selectors (<code>"*"</code>) that are used for &#8220;no reason&#8221;. I found selectors like <code>"button &gt; *"</code>, even though throughout the site/app buttons only had <code>&lt;span&gt;</code>&#8217;s in them. Replacing <code>"button &gt; *"</code> with <code>"button &gt; span"</code> made for some amazing improvements in selector performance. The browser no longer needs to <strong>match every element</strong> (due to <a href="https://developer.mozilla.org/en/Writing_Efficient_CSS#How_the_Style_System_Matches_Rules">right-left matching</a>). It only needs to walk over &lt;span>&#8217;s — the number of which could be significantly smaller — and check if parent element is &lt;button>. You obviously need to be careful substituting <code>"*"</code> with specific tags, as it&#8217;s often hard to find all the places where this selector could be used. </p>
+
+<p>The big downside of this optimization is that you <strong>lose flexibility</strong>, as changing markup will now require changing CSS as well. You won&#8217;t be able to just replace one button implementation with another one in the future. I felt iffy doing this replacement, as it's essentially getting rid of useful abstraction for the sake of performance. As always, find the right compromise for your particular case, until engines start to optimize such selectors and we don't have to worry about them.</p></li>
+
+<li><p>I used this snippet to quickly find which elements to substitute <code>"*"</code> with.</p>
+
+<pre lang="javascript"><code>
+$$(selector).pluck('tagName').uniq(); // ["SPAN"]</code></pre>
+
+<p>This relies on <a href="http://www.prototypejs.org/api/enumerable/pluck"><code>Array#pluck</code></a> and <a href="http://prototypejs.org/api/array/uniq"><code>Array#uniq</code></a> extensions from Prototype.js. For plain version (with reliance on ES5 and selectors API), perhaps something like this would do:</p>
+
+<pre lang="javascript"><code>
+Object.keys([].slice.call(
+  document.querySelectorAll('button &gt; *'))
+    .reduce(function(memo, el){ memo[el.tagName] = 1; return memo; }, {}));
+</code></pre>
+</li>
+
+<li><p>In both Opera and WebKit, <code>[type="..."]</code> selectors seem to be more expensive than <code>input[type="..."]</code>. Probably due to browsers limiting attribute check to elements of specified tag (after all, <code>[type="..."]</code> IS a universal selector).</p></li>
+
+<li><p>In Opera, pseudo <code>"::selection"</code> and <code>":active"</code> are also among more expensive selectors — according to profiler. I can understand <code>":active"</code> being expensive, but not sure why <code>"::selection"</code> is. Perhaps a &#8220;bug&#8221; in Opera&#8217;s profiler/matcher. Or just the way engine works.</p></li>
+
+<li><p>In both Opera and WebKit, <code>"border-radius"</code> is <strong>among the most expensive CSS properties</strong> to affect rendering time. Even more than shadows and gradients. Note that it doesn&#8217;t affect <strong>layout</strong> time — as one would think — but mainly <strong>repaint</strong>.</p>
+
+<p>As you can see from <a href="https://github.com/kangax/perfectionkills.com/blob/master/css_perf/css_perf_test.html">this test page</a>, I created a document with 400 buttons.</p>
+
+<p><img src="/images/buttons.png" alt="Buttons" title="" /></p>
+
+<p>I started checking how various styles affect rendering performance (&#8220;repaint time&#8221; in profiler). The basic version of button only had these styles:</p>
+
+<pre lang="css"><code>
+background: #F6F6F6;
+border: 1px solid rgba(0, 0, 0, 0.3);
+font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+font-size: 14px;
+height: 32px;
+vertical-align: middle;
+padding: 7px 10px;
+float: left;
+margin: 5px;
+</code></pre>
+
+<p><img src="/images/btn_before.png" alt="Btn Before" title="" /></p>
+
+<p>The total repaint time of 400 buttons with these basic styles only took 6ms (in Opera). I then gradually added more styles, and recorded change in repaint time. The final version had these additional styles, and was taking 177ms to repaint — a 30x increase!</p>
+
+<pre lang="css"><code>
+text-shadow: rgba(255, 255, 255, 0.796875) 0px 1px 0px;
+box-shadow: rgb(255, 255, 255) 0px 1px 1px 0px inset, rgba(0, 0, 0, 0.0976563) 0px 2px 3px 0px;
+border-radius: 13px;
+background: -o-linear-gradient(bottom, #E0E0E0 50%, #FAFAFA 100%);
+opacity: 0.9;
+color: rgba(0,0,0,0.5);
+</code></pre>
+
+<p><img src="/images/btn_after.png" alt="Btn After" title="" /></p>
+
+<p>The exact breakdown of each one of those properties was as follows:</p>
+
+<script type="text/javascript" src="//ajax.googleapis.com/ajax/static/modules/gviz/1.0/chart.js"> {"dataSourceUrl":"//docs.google.com/spreadsheet/tq?key=0Aqj_mVmuz3Y8dEg0S2pmOW0xbll3OUhkcFN6TFJaaVE&transpose=0&headers=0&range=A2%3AB9&gid=0&pub=1","options":{"height":371,"width":600,"hAxis":{"viewWindowMode":"pretty","viewWindow":{}},"hasLabelsColumn":true,"isStacked":false},"state":{},"view":"{\"columns\":[0,1]}","chartType":"BarChart","chartName":"Chart 1"} </script>
+
+<p>The text-shadow and linear-gradient were among the least expensive ones. Opacity and transparent rgba() color were a little more expensive. Then there was box-shadow, with inset one (<code>0 1px 1px 0</code>) slightly faster than regular one (<code>0 2px 3px 0</code>). Finally, the unexpectedly high border-radius.</p>
+
+<p>I also tried transform with rotate parameter (just 1deg) and got really high numbers. Scrolling the page — with 400 slightly rotated buttons on it — was also noticeably jerky. I&#8217;m sure it&#8217;s not easy to arbitrarily transform an element on a page. Or maybe this is the case of lack of optimization? Out of curiosity, I checked different degrees of rotation and got this:</p>
+
+<script type="text/javascript" src="//ajax.googleapis.com/ajax/static/modules/gviz/1.0/chart.js"> {"dataSourceUrl":"//docs.google.com/spreadsheet/tq?key=0Aqj_mVmuz3Y8dGN2M21jWjR1akpnQVE0OFJrLXlhOVE&transpose=0&headers=0&range=A2%3AB7&gid=0&pub=1","options":{"hAxis":{"viewWindowMode":"pretty","viewWindow":{}},"hasLabelsColumn":true,"isStacked":false,"width":600,"height":371},"state":{},"view":"{\"columns\":[0,1]}","chartType":"BarChart","chartName":"Chart 1"} </script>
+
+<p>Note how even rotating element by 0.01 degree is very expensive. And as the angle increases, the performance seems to drop, although not linearly but apparently in a wavy fashion (peaking at 45deg, then falling at 90deg).</p>
+
+<p>There&#8217;s room for so many tests here — I&#8217;d be curious to see performance characteristics of various transform options (translate, scale, skew, etc.) in various browsers.</p></li>
+
+<li><p>In Opera, <strong>page zoom level affects layout performance</strong>. Decreasing zoom increases rendering time. This is quite understandable, as more stuff has to be rendered per same area. It might seem like an insignificant detail, but in order to keep tests consistent, it&#8217;s important to make sure zoom level doesn&#8217;t mess up your calculations. I had to redo all my tests after discovering this, just to make sure I&#8217;m not comparing oranges to grapefruits.</p>
+
+<p>Speaking of zoom, it could make sense to test decreased font and see how it affects overall performance of an app — is it still usable?</p></li>
+
+<li><p>In Opera, resizing browser window <strong>doesn&#8217;t affect rendering performance</strong>. It looks like layout/paint/style calculations are not affected by window size.</p></li>
+
+<li><p>In Chrome, resizing browser window <strong>does affect performance</strong>. Perhaps Chrome is smarter than Opera, and only renders visible areas.</p></li>
+
+<li><p>In Opera, <strong>page reloads negatively affect performance</strong>. The progression is visibly linear. You can see from the graph how rendering time slowly increases over 40 page reloads (each one of those red rectangles on the bottom correspond to page load followed by few second wait). Paint time becomes almost 3 times slower at the end. It looks almost like page is leaking. To err on a side of caution, I always used the average of first ~5 results to get &#8220;fresh&#8221; numbers.</p>
+
+<p><img src="/images/profiler_page_reload.png" alt="Profiler Page Reload" style="width:900px"></p>
+
+<p>Script used for testing (reloading page):</p>
+
+<pre lang="javascript"><code>
+window.onload = function() {
+  setTimeout(function() {
+    var match = location.href.match(/\?(\d+)$/);
+    var index = match ? parseInt(match[1]) : 0;
+    var numReloads = 10;
+    index++;
+    if (index &lt; numReloads) {
+      location.href = location.href.replace(/\?\d+$/, '') + '?' + index;
+    }
+  }, 5000);
+};
+</code></pre>
+
+<p>I haven't checked if page reloads affect performance in WebKit/Chrome.</p></li>
+
+<li><p>An interesting offending pattern I came across was a <a href="http://sass-lang.com/">SASS</a> chunk like this:</p>
+
+<pre lang="css"><code>
+a.remove &gt; * {
+  /* some styles */
+  .ie7 &amp; {
+    margin-right: 0.25em;
+  }
+}
+</code></pre>
+
+<p>..which would generate CSS like this:</p>
+
+<pre lang="css"><code>
+a.remove &gt; * { /* some styles */ }
+.ie7 a.remove &gt; * { margin-right: 0.25em }
+</code></pre>
+
+<p>Notice the additional IE7 selector, and how it has a universal rule. We know that universal rules are slow due to right-left matching, and so all browsers except IE7 (which .ie7 — probably on &lt;body> element — is supposed to target) are taking an unnecessary performance hit. This is obviously the worst case of IE7-targeted selector.</p>
+
+<p>Other ones were more innocent:</p>
+
+<pre lang="css"><code>
+.steps {
+  li {
+    /* some styles */
+    .ie7 &amp; {
+      zoom: 1;
+    }
+  }
+}
+</code></pre>
+
+<p>..which produces CSS like:</p>
+
+<pre lang="css"><code>
+.steps li { /* some styles */ }
+.ie7 .steps li { zoom: 1 }
+</code></pre>
+
+<p>But even in this case engine needs to check each <code>&lt;li&gt;</code> element (that&#8217;s within element with class &#8220;steps&#8221;) until it would &#8220;realize&#8221; that there&#8217;s no element with &#8220;ie7&#8221; class further up the tree.</p>
+
+<p>In my case, there was close to a hundred of such .ie7 and .ie8 -based selectors in a final stylesheet. Some of them were universal. The fix was simple — move all IE-related styles to a separate stylesheet, included via conditional comments. As a result, there were that many less selectors to parse, match and apply.</p>
+
+<p>Unfortunately, this kind of optimization <strong>comes with a price</strong>. I find that putting IE-related styles next to the original ones is actually a more maintainable solution. When changing/adding/removing something in the future, there&#8217;s only one place to change and so there&#8217;s less chance to forget IE-related fixes. Perhaps in the future tools like SASS could optimize declarations like these out of the main file and into conditionally-included ones.</p></li>
+
+<li><p>In Chrome (and WebKit), you can use &#8220;Timeline&#8221; tab in Developer tools to get similar information about repaint/reflow/style recalculation performance. Timeline tab allows you to export data as JSON. First time I&#8217;ve seen this done was by <a href="http://calendar.perfplanet.com/2011/pure-css3-images-hmm-maybe-later/">Marcel Duran</a> in this year&#8217;s <a href="http://calendar.perfplanet.com/2011">Performance Calendar</a>. Marcel used node.js and a <a href="https://github.com/marcelduran/sandbox.javascriptrules.com/blob/gh-pages/purecss3image/rendering/summary.js">script</a> to parse and extract data.</p>
+
+<p>Unfortunately, his script was including "Recalculate styles" time in the &#8220;layout&#8221; time — something I wanted to avoid. I also wanted to avoid page reloads (and getting average/median time). So I tweaked it to a much simpler version. It walks over entire data, filtering entries related to Repaint, Layout, and Style Calculation; then sums up total time for each of those entries:</p>
+
+<pre lang="javascript"><code>
+var LOGS = './logs/',
+    fs = require('fs'),
+    files =  fs.readdirSync(LOGS);
+
+files.forEach(function (file, index) {
+  var content = fs.readFileSync(LOGS + file),
+      log,
+      times = {
+        Layout: 0,
+        RecalculateStyles: 0,
+        Paint: 0
+      };
+
+  try {
+    log = JSON.parse(content);
+  }
+  catch(err) {
+    console.log('Error parsing', file, ' ', err.message);
+  }
+  if (!log || !log.length) return;
+
+  log.forEach(function (item) {
+    if (item.type in times) {
+      times[item.type] += item.endTime - item.startTime;
+    }
+  });
+
+  console.log('\nStats for', file);
+  console.log('\n  Layout\t\t', times.Layout.toFixed(2), 'ms');
+  console.log('  Recalculate Styles\t', times.RecalculateStyles.toFixed(2), 'ms');
+  console.log('  Paint\t\t\t', times.Paint.toFixed(2), 'ms\n');
+  console.log('  Total\t\t\t', (times.Layout + times.RecalculateStyles + times.Paint).toFixed(2), 'ms\n');
+});
+</code></pre>
+
+<p>After saving timeline data and running a script, you would get information like this:</p>
+
+<pre lang="javascript"><code>
+Layout                      6.64 ms
+Recalculate Styles          0.00 ms
+Paint                       114.69 ms
+
+Total                       121.33 ms
+</code></pre>
+
+<p>Using Chrome&#8217;s &#8220;Timeline&#8221; and this script, I ran original button test that I tested before in Opera and got this:</p>
+
+<script type="text/javascript" src="//ajax.googleapis.com/ajax/static/modules/gviz/1.0/chart.js"> {"dataSourceUrl":"//docs.google.com/spreadsheet/tq?key=0Aqj_mVmuz3Y8dHNncTEtTHRUZGlVazNaUmxHdWJhRXc&transpose=0&headers=0&range=A2%3AB7&gid=0&pub=1","options":{"hAxis":{"viewWindowMode":"pretty","viewWindow":{}},"hasLabelsColumn":true,"isStacked":false,"width":600,"height":371},"state":{},"view":"{\"columns\":[0,1]}","chartType":"BarChart","chartName":"Chart 1"} </script>
+
+<p>Similarly to Opera, border-radius was among least performant. However, linear-gradient was comparatively more expensive than that in Opera and box-shadow was much higher than text-shadow.</p>
+
+<p>One thing to note about Timeline is that it only provides "Layout" information, whereas Opera's profiler has "Reflow" AND "Layout". I'm not sure if reflow data analogous to Opera's is included in WebKit's "Layout" or if it's discarded. Something to find out in the future, in order to have correct testing results.</p></li>
+
+<li><p>When I was almost done with my findings, WebKit has added selector profiler similar to Opera&#8217;s one.</p>
+
+<p><img src="/images/SelectorProfile.png" width="900"></p>
+
+<p>I wasn&#8217;t able to do many tests with it, but noticed one interesting thing. Selector matching in WebKit was <strong>marginally faster</strong> than that of Opera. The same document — that one-page app I was working on (before optimizations) — took 1,144ms on selector matching in Opera, and only 18ms in WebKit. That&#8217;s a ~65x difference. Either something is off in calculations of one of the engines, or WebKit is really much much faster at selector matching. For what it&#8217;s worth, Chrome&#8217;s timeline was showing ~37ms for total style recalculation (much closer to WebKit), and ~52ms for repaint (compare to Opera&#8217;s 225ms &#8220;Paint&#8221; total; different but much closer). I wasn&#8217;t able to save &#8220;Timeline&#8221; data in WebKit, so couldn&#8217;t check reflow and repaint numbers there.</p></li>
+</ol>
+
+<h3 id="summary">Summary</h3>
+
+<ul>
+<li>Reduce total number of selectors (including IE-related styles: <code>.ie7 .foo .bar</code>)</li>
+<li>Avoid universal selectors (including unqualified attribute selectors: <code>[type="url"]</code>)</li>
+<li>Page zoom affects CSS performance in some browsers (e.g. Opera)</li>
+<li>Window size affects CSS performance in some browsers (e.g. Chrome)</li>
+<li>Page reloads can negatively affect CSS performance in some browsers (e.g. Opera)</li>
+<li>&#8220;border-radius&#8221; and &#8220;transform&#8221; are among most expensive properties (in at least WebKit &amp; Opera)</li>
+<li>&#8220;Timeline&#8221; tab in WebKit-based browsers can shed light on total recalc/reflow/repaint times</li>
+<li>Selector matching is much faster in WebKit</li>
+</ul>
+
+<h3 id="questions">Questions</h3>
+
+<p>As I end these notes, I have tons of other questions related to CSS performance:</p>
+
+<ul>
+<li>Quoted attribute values vs. unquoted ones (e.g. <code>[type=search]</code> vs <code>[type="search"]</code>). How does this affect performance of selector matching?</li>
+<li>What are the performance characteristics of <strong>multiple</strong> box-shadows/text-shadows/backgrounds? 1 text-shadow vs. 3 vs. 5.</li>
+<li>Performance of pseudo selectors (:before, :after).</li>
+<li>How do different border-radius values affect performance? Is higher radius more expensive? Does it grow linearly?</li>
+<li>Does !important declaration influence performance? How?</li>
+<li>Does hardware acceleration influence performance? How?</li>
+<li>Are styles similarly expensive in different combinations? (e.g. text-shadow with linear-gradient vs. text-shadow on one-color background)</li>
+</ul>
+
+<h3 id="future">Future</h3>
+
+<p>As our pages/apps become more interactive, the complexity of CSS increases, and browsers start to support more and more &#8220;advanced&#8221; CSS features, CSS performance will probably become even more important. The existing tools are only scratching the surface. We need the ones for mobile testing and tools in more browsers (IE, Firefox). I <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=713031">created a ticket for Mozilla</a>, so perhaps we&#8217;ll see something come out of it soon. I would love to see CSS performance data exposed via scripting, so that we could utilize it in tools like <a href="http://jsperf.com">jsperf.com</a> (<a href="http://cssperf.com">cssperf.com</a>?). Meanwhile, there's plenty of tests to be done with existing profilers. So what are you waiting for? ;)</p>
+</div>

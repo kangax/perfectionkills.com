@@ -1,0 +1,221 @@
+---
+layout: post
+title: A closer look at expression closures
+tags:
+  - js
+---
+
+<h2>A closer look at expression closures</h2>
+
+<style>
+  #expression-closure-tests li { margin-bottom: 30px; }
+  #expression-closure-tests li .q { margin-bottom: 0.5em; }
+  #expression-closure-traits li { list-style-position: inside; }
+</style>
+
+<p>I was recently <del>working</del> hacking on something in Firebug console and remembered about <a href="https://developer.mozilla.org/en/new_in_javascript_1.8#Expression_closures_(Merge_into_own_page.2fsection)">expression closures</a> — a language addition, introduced in <a href="https://developer.mozilla.org/en/new_in_javascript_1.8">Mozilla&#8217;s JavaScript 1.8</a>. The concise explanation on MDC captures the essence of expression closures:</p>
+
+<cite>This addition is nothing more than a shorthand for writing simple functions, giving the language something similar to a typical Lambda notation. [&#8230;] This syntax allows you to leave off the braces and &#8216;return&#8217; statement &#8211; making them implicit. There is no added benefit to writing code in this manner, other than having it be syntactically shorter.</cite>
+
+<p>And that&#8217;s exactly what I used it for — to quickly experiment with something, shortening function expressions to save on typing.</p>
+
+<p>MDC also gives a simple example, showcasing a function written using expression closure:</p>
+
+<pre lang="javascript"><code>
+  // Regular syntax
+  function() { return x * x }
+
+  // Expression closure
+  function(x) x * x
+</code></pre>
+
+<p>As you can see, expression closure is essentially a more concise way to create a function. Based on MDC, expression closure allows us to drop &#8220;return&#8221; and braces denoting function body.</p>
+
+<p>The information on MDC, however, was so tiny that I became curious about some of the finer details of how expression closures (EC from now on) work. Can they only be used to create function expressions? How about function declarations? What about <strong>named</strong> function expressions? Is <code>function() ...</code> always identical to <code>function(){return ...}</code> no matter what&#8217;s in the <code>...</code> (function body)? And what are these &#8220;simple functions&#8221; MDC is talking about?</p>
+
+<p>There was no answer to any of these questions, so I decided to quickly investigate this funky language addition a bit deeper. These are some of my findings; you&#8217;ll see that certain behavior isn&#8217;t always obvious.</p>
+
+<p>Letting the code speaks for itself, here&#8217;s is a list of questions followed by simple tests, attempting to answer those questions. Feel free to skip to the <a href="#main_features">next section</a> for a shorter overview of these findings.</p>
+
+<h3 id="tests">Tests</h3>
+
+<ol id="expression-closure-tests">
+<li>
+<p class="q">Can EC be used to create function declarations (not just function expressions)?</p>
+<p>Yes.</p>
+<pre lang="javascript"><code>
+function f(x, y) x + y
+typeof f; // "function"
+</code></pre>
+</li>
+<li>
+<p class="q">What about named function expressions?</p>
+<p>Works as expected.</p>
+<pre lang="javascript"><code>
+typeof (function f(x, y) x + y); // "function"
+</code></pre>
+</li>
+<li>
+<p class="q">How does EC affect function representation?</p>
+<p>As usual, but does not include curly braces (or &#8220;return&#8221; keyword)!</p>
+<pre lang="javascript"><code>
+String(function (x) x + x ); // "function (x) x + x;"
+</code></pre>
+</li>
+<li>
+<p class="q">What about non-standard `name` property?</p>
+<p>Works as expected.</p>
+<pre lang="javascript"><code>
+function foo(x, y) x + y;
+foo.name; // "foo"
+</code></pre>
+</li>
+<li>
+<p class="q">How about immediately invoked function expression?</p>
+<p>Works fine.</p>
+<pre lang="javascript"><code>
+(function(x, y) x + y)(1, 2); // 3
+</code></pre>
+</li>
+<li>
+<p class="q">What about immediately invoked function expression without wrapping parens?</p>
+<p>Not so fast!</p>
+<pre lang="javascript"><code>
+var f1 = (function(x, y) x + y)(1, 2);
+var f2 = function(x, y) x + y (1, 2);
+
+f1; // 3
+f2; // function(x, y) x + y(1, 2)
+</code></pre>
+<p>As you can see, <code>(1, 2)</code> following <code>x + y</code> actually <b>applies to an inner expression</b>, so instead of calling outer function — and assigning returned value to <code>f2</code> &#8212; <code>f2</code> is being assigned a function that has <code>x + y(1, 2)</code> as its body. Something to be aware of.</p>
+</li>
+<li>
+<p class="q">How does EC work with ES5 accessor syntax (let&#8217;s try getter first)?</p>
+<p>Works!</p>
+<pre lang="javascript"><code>
+var obj = ({ get foo() 1 });
+obj.foo; // 1
+</code></pre>
+</li>
+<li>
+<p class="q">How about setter?</p>
+<p>Works!</p>
+<pre lang="javascript"><code>
+var _x;
+var obj = ({ set foo(x) _x = x });
+obj.foo = 5;
+
+_x; // 5
+</code></pre>
+</li>
+<li>
+<p class="q">How about both?</p>
+<p>Works as well! Well, why wouldn&#8217;t it&#8230;</p>
+<pre lang="javascript"><code>
+  var _x = 'initial value';
+  var obj = ({ get foo() _x, set foo(x) _x = x });
+  obj.foo; // 'initial value'
+
+  obj.foo = 'overwritten value';
+  obj.foo; // 'overwritten value'
+</code></pre>
+</li>
+<li>
+<p class="q">Can we confuse parser with a comma?</p>
+<p>Yes we can.</p>
+<pre lang="javascript"><code>
+  ({ set foo(x) bar = 1, baz = 2 }); // SyntaxError
+</code></pre>
+<p>In this case, we might want <code>bar = 1, baz = 2</code> as an expression inside a function, but instead, <b>comma is parsed as part of an object intializer</b>. Wrapping expression in parenthesis would solve this problem, of course.</p>
+<pre lang="javascript"><code>
+  ({ set foo(x) (bar = 1, baz = 2) });
+</code></pre>
+</li>
+<li>
+<p class="q">Are statements allowed in function body of a function created via EC?</p>
+<p>No.</p>
+<pre lang="javascript"><code>
+  var f = function() if (true) "foo"; // Error
+</code></pre>
+<p>This is pretty understandable, considering that expression after <code>function()</code> in EC is treated as an expression inside <code>return</code> statement. And <code>return</code> statement obviously can&#8217;t contain other statements (only expressions). Fortunately, there&#8217;s always a ternary operator to take care of cases like this:</p>
+<pre lang="javascript"><code>
+  var f = function() someCondition ? "foo" : "bar";
+</code></pre>
+</li>
+<li>
+<p class="q">Can body of a function created via EC be omitted?</p>
+<p>Nope.</p>
+<pre lang="javascript"><code>
+  function f() // Error
+</code></pre>
+<p>You would think that <code>function f()</code> should be identical to <code>function f(){ return }</code>, but no, empty function body is not allowed there. It&#8217;s not clear why this was made like this. Parsing complexities, perhaps?</p>
+</li>
+<li>
+<p class="q">What happens when we include more than 1 expression?</p>
+<p>Only first one is consumed.</p>
+<pre lang="javascript"><code>
+  function f() alert("1st statement"); alert("2nd statement"); // alerts "2nd statement"
+</code></pre>
+</li>
+<p>The above is parsed as <code>function f() alert("1st statement");</code> followed by <code>alert("2nd statement")</code>. Only first expression becomes an expression in the return statement of a function.</p>
+<li>
+<p class="q">What about automatic semicolon insertion rules?</p>
+<p>Same rules seem to apply.</p>
+<pre lang="javascript"><code>
+  function foo(x) x
+  (function() {
+    /* ... */
+  })()
+
+  foo; // function foo(x) x(function(){ /* ... */})()
+</code></pre>
+<p>A classic example of ASI — function declaration followed by newline and another expression makes for an unexpected behavior. Same rules apply here, and <code>foo</code> function — even though expressed via EC — ends up having function body of <code>x(function(){})()</code> (rather than just <code>x</code>).</p>
+</li>
+<li>
+<p class="q">Is &#8220;{&#8221; interpreted as a block or an object literal?</p>
+<p>As a block! Overall production essentially <b>matches regular function syntax</b>.</p>
+<pre lang="javascript"><code>
+  function foo(x) { top: 0, left: 0 } // SyntaxError
+</code></pre>
+<p>You would think that <code>function() { &#8230; }</code> is interpreted as <code>function(){ return { &#8230; } }</code> but the production rules of &#8220;regular&#8221; function syntax precede here, and <code>function foo() { top: 0, left: 0 }</code> results in an error. <code>{</code> and <code>}</code> are essentially parsed as a function body (and <code>top: 0, left: 0</code> as function body contents).</p>
+</li>
+<li>
+<p class="q">What if it&#8217;s an expression?</p>
+<p>Same thing. Treated as regular function syntax.</p>
+<pre lang="javascript"><code>
+  (function(x, y) { left: x, top: y }) // SyntaxError
+</code></pre>
+<p>
+    You need to be careful to wrap returning object with parenthesis, so that curly braces aren&#8217;t considered to be part of a function production. In this case — <code>left: x, top: y</code> results in an error. But if returned object only contains one value, or no value at all, the silent behavior can make for an unexpected behavior down the road:
+  </p>
+<pre lang="javascript"><code>
+  (function() { x: 1 } )(); // returns `undefined`
+  (function() ({ x: 1 }) )(); // Expression Closure; returns object with x=1
+
+  (function() {} )(); // returns `undefined`
+  (function() ({}) )(); // Expression Closure; returns object
+</code></pre>
+</li>
+<li>
+<p class="q">Can we make function explicitly strict?</p>
+<p>No.</p>
+<pre lang="javascript"><code>
+  function foo(x, y) "use strict"; 1 + 1;
+  typeof foo(); // "string" (not "number")
+</code></pre>
+<p>This obviously doesn&#8217;t work; &#8220;use strict&#8221; — which is a strict directive that&#8217;s supposed to make function behave as per ES5 strict mode rules — doesn&#8217;t behave in any special way. It&#8217;s simply treated as a string literal and so resulting function becomes identical to <code>function foo(){ return &#8220;use strict&#8221;; }</code> (followed by a useless <code>1 + 1</code> statement).</p>
+</li>
+</ol>
+<p>(<a href="http://kangax.github.com/jstests/expression_closures_test/">This file</a> was used for testing)</p>
+<h3 id="main_features">Main features</h3>
+<p>Well that was fun. To summarize some of the main traits:</p>
+<ol id="expression-closure-traits">
+<li>Function body should always be present</li>
+<li>Only first expression is consumed by an implicit return statement</li>
+<li>Can be used in place of both — function declaration and function expression (named or anonymous)</li>
+<li><code>function id<sub>opt</sub> (args<sub>opt</sub>) expr</code> is <strong>not fully identical</strong> to <code>function id<sub>opt</sub> (args<sub>opt</sub>) { return expr }</code> (depends on context)</li>
+<li>Precedence of call expression can be not obvious. For example: <code>(function()x+y)()</code> vs. <code>function()x+y()</code></li>
+</ol>
+<h3 id="practical">Practical?</h3>
+<p>To my knowledge, expression closures are currently only supported by Mozilla-based browsers. They also aren&#8217;t supported by tools like Google Closure Compiler or YUI Compressor, which certainly makes it challenging to use them in production.</p>
+<p>It&#8217;s not clear if more implementations will join Mozilla and add support for these shortcuts. Could they be part of an experimental <a href="http://www.aminutewithbrendan.com/pages/20110110">road to Harmony</a> (and its <a href="http://wiki.ecmascript.org/doku.php?id=strawman:shorter_function_syntax">shorter function syntax</a>) — the next version of the ECMAScript language? Do you already use expression closures in your work/experiments, or perhaps planning to? And would you change anything in their behavior?</p>

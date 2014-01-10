@@ -1,0 +1,110 @@
+---
+layout: post
+title: Proto.Lazy – do we really need lazy image loading?
+tags:
+  - prototype
+---
+
+<h2>Proto.Lazy – do we really need lazy image loading?</h2>
+
+<p>It looks like the <a href="http://www.appelsiini.net/2007/9/lazy-load-images-jquery-plugin">&#8220;Lazy load&#8221; plugin for jQuery</a> (released about a week ago) got quite of attention. I personally don&#8217;t find it much useful but the idea is pretty cool. Can we do something like this with prototype? Easy!  Let&#8217;s see how.</p>
+
+<p>One of the things I found to be challenging was calculating whether element is positioned within viewport. Prototype does not have such method (as far as I know) but it does provide us with something that makes it quite trivial.  Let&#8217;s look at <strong>ingredients</strong>:</p>
+
+<p><strong>Note:</strong> The following snippets require prototype 1.6rc0 or higher</p>
+
+<pre lang="javascript"><code>
+// returns viewport dimensions
+// alternatively there are explicit getHeight() and getWidth() methods
+document.viewport.getDimensions(); // {width: 1024, height: 768}
+
+// returns scroll offsets of viewport (how much the page was scrolled)
+document.viewport.getScrollOffsets(); // [0, 10]
+
+// returns element's position relative to a PAGE
+element.cumulativeOffset(); // [120, 560]
+
+// getDimensions() - alternative for getHeight/getWidth (in the end I'll explain why use one over another):
+element.getDimensions(); // {width: 100, height: 310}
+</code></pre>
+
+<p>OK. Those only look scary, but are actually quite simple to use. </p>
+
+<p>I decided to wrap the entire script into &#8220;Proto&#8221; namespace to be nice with window object (you are wrapping your stuff into namespace, aren&#8217;t you?) and define &#8220;Lazy&#8221; class in that namespace. Two actions will trigger image loading &#8211; window&#8217;s scroll and resize events (I&#8217;m not sure if original plugin checks window for resize but I think it makes more sense this way). Alternatively, if &#8220;event: &#8216;click&#8217;&#8221; option is set, pictures will be revealed on click (ignoring window&#8217;s events). Here&#8217;s a short breakdown of what&#8217;s going on:</p>
+
+<ul>
+  <li>Iterate over all images on a page.</li>
+  <li>If image is NOT within viewport at the moment, empty its &#8220;src&#8221; attribute and store it as a custom property of an element (this prevents it from being loaded).</li>
+  <li>If event: &#8216;click&#8217; is set, attach click handler to reveal image else:</li>
+  <li>Attach event handlers to window&#8217;s <strong>scroll</strong> and <strong>resize</strong> events</li>
+  <li>Once any of window events occur (scrolled or resized) check whether image is within viewport and if so, put its original &#8220;src&#8221; attribute back from custom property, delete that property.</li>
+</ul>
+
+<p>That&#8217;s all there is to it, 40 lines of happyness&#8230;</p>
+
+<pre lang="javascript"><code>
+if (Object.isUndefined(Proto)) {var Proto = {}}
+  Proto.Lazy = Class.create({
+    initialize: function(options) {
+      this.options = options || {};
+      $$('img').each(function(el){
+        if (!this.withinViewport(el)) {
+          el._src = el.src;
+          el.src = this.options.placeHolder || '';
+          if (this.options.event === 'click') {
+            el.observe('click', function(){
+              if (this._src) { this.src = this._src; delete this._src }
+            });
+          }
+        }
+      }.bind(this));
+
+      if (this.options.event !== 'click') {
+        Event.observe(window, 'scroll', this.load.bind(this));
+        Event.observe(window, 'resize', this.load.bind(this));
+      }
+    },
+    load: function(el) {
+      $$('img').each(function(el){
+        if (el._src &#038;&#038; this.withinViewport(el)) {
+          el.src = el._src;
+          delete el._src;
+        }
+      }.bind(this));
+    },
+    withinViewport: function(el) {
+      var elOffset = el.cumulativeOffset(),
+          vpOffset = document.viewport.getScrollOffsets(),
+          elDim = el.getDimensions(),
+          vpDim = document.viewport.getDimensions();
+      if (elOffset[1] + elDim.height < vpOffset[1] ||
+          elOffset[1] > vpOffset[1] + vpDim.height ||
+          elOffset[0] + elDim.width < vpOffset[0]  ||
+          elOffset[0] > vpOffset[0] + vpDim.width) {
+        return false;
+      }
+      return true;
+    }
+});
+</code></pre>
+
+<p>After including Proto.Lazy.js, all that&#8217;s left to do is instantiate object (preferably before images are loaded which is right after &#8216;contentloaded&#8217; event is fired):</p>
+
+<pre lang="javascript"><code>
+document.observe('contentloaded', function(){
+  new Proto.Lazy();
+  // new Proto.Lazy({ event: 'click' });
+  // new Proto.Lazy({ placeHolder: 'images/default.png' });
+});
+</code></pre>
+
+<p>Here&#8217;s a simple <a href="/demos/lazy-load/">demo</a> page.</p>
+
+<p>It&#8217;s pretty clear that <strong>withinViewport</strong> function should be fast, since it&#8217;s being called on EVERY scroll/resize event for EVERY image. That&#8217;s a LOT of calls, considering the dynamic nature of resize/scroll events. Knowing that <code>getHeight()</code> and <code>getWidth()</code> methods actually invoke <code>getDimensions()</code> method (and read corresponding property from returned object), we could save some time by calling <code>getDimesnions()</code> explicitly and store returned object for later use.</p>
+
+<p>I also have a feeling that image iteration could be done in a more efficient way. Maybe it would make sense to break out of a loop once first hidden image is found, since viewport is always occupying few closely positioned images. The problem though is that this would only work with images positioned linearly and in the same order as defined in a document.<br />
+In the end, I&#8217;m not quite sure how fast this implementation is (some tests with bunch of thumbnails would be nice to have) but it seems to be doing its job.</p>
+
+<p>I hope this was a good example of defining a class in prototype as well as working with viewport and element positioning. I also encourage everyone to try to think about speed issues when developing any kind of user interfaces (no, seriously, nothing is more annoying than slow and unresponsive app).</p>
+
+<p>Happy prototyping!</p>

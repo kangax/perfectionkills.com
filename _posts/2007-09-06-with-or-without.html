@@ -1,0 +1,56 @@
+---
+layout: post
+title: with or without?
+tags:
+  - js
+---
+
+<h2>`with` or without?</h2>
+
+<p>I remember back in the days there were these huge articles about refactoring Javascript to perform faster. &#8220;with&#8221; statements were considered a huge slow down&#8230;</p>
+
+<p>Just to satisfy my curiosity I rolled a quick test:</p>
+
+<pre lang="javascript"><code>
+Foo = {
+  Bar: {
+    Baz: {
+      Qux: {
+        Quux: function(){}
+      }
+    }
+  }
+};
+
+// Plain call
+console.time('test');
+for (var i=0; i&lt;100000; ++i) {
+  Foo.Bar.Baz.Qux.Quux();
+}
+console.timeEnd('test'); // 562 ms
+
+// "with" outside the loop
+console.time('test');
+with(Foo.Bar.Baz.Qux) {
+  for (var i=0; i&lt;100000; ++i) {
+    Quux();
+  }
+}
+console.timeEnd('test'); // 359 ms
+
+// with inside the loop
+console.time('test');
+for (var i=0; i&lt;100000; ++i) {
+  with(Foo.Bar.Baz.Qux) {
+    Quux();
+  }
+}
+console.timeEnd('test'); // 1891 ms
+
+// aliasing
+console.time('test');
+for (var i=0, q=Foo.Bar.Baz.Qux.Quux; i&lt;100000; ++i) {
+  q();
+}
+console.timeEnd('test'); // 422 ms
+</code></pre>

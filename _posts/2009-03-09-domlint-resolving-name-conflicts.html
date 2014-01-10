@@ -1,0 +1,66 @@
+---
+layout: post
+title: DOMLint — resolving name conflicts
+tags:
+  - js
+  - html
+---
+
+<h2>DOMLint — resolving name conflicts</h2>
+
+<p><img src="/images/domlint-snapshot.png" alt="DOMLint test suite" style="display:block;margin-bottom:2em"></p>
+
+<p>One stupid aspect of DOM is the way it allows to access certain elements as properties of their containing &#8220;parent&#8221; element. Form controls, for example, can be accessed by their &#8220;name&#8221; through property access of <code>&lt;form&gt;</code> element containing them:</p>
+
+<pre lang="javascript"><code>
+&lt;form>
+  &lt;input type="text" name="foo">
+&lt;/form>
+...
+document.forms[0].foo; // "[object HTMLInputElement]"
+</code></pre>
+
+<p>At first, this might seem like a great convenience &#8211; surely, it&#8217;s easier to write <code>formElement.foo</code> rather than a more verbose <code>formElement.elements.foo</code>. The joy of convenience, unfortunately, starts to fade out once you realize how badly DOM handles <strong>conflicts</strong> between these &#8220;magic&#8221; properties and <strong>actual properties of a parent element</strong> defined as part of its standard DOM interface. Form elements, for example, implement <code>HTMLFormElement</code> interface and that interface consists of 8 properties &#8211; <code>elements</code>, <code>length</code>, <code>name</code>, <code>acceptCharset</code>, <code>action</code>, <code>enctype</code>, <code>method</code>, <code>target</code> and 2 methods &#8211; <code>submit</code> and <code>reset</code>. The form doesn&#8217;t just have these properties. DOM says that <code>HTMLFormElement</code> should inherit from <code>HTMLElement</code>, which in its turn inherits from <code>Element</code> which inherits from <code>Node</code> and so on&#8230;</p>
+
+<p>What this means is that a very simple form element happens to have a bunch of very useful methods inherited through one of its numerous interfaces. </p>
+
+<p>What happens if we try to &#8220;magically&#8221; access an element whose name matches one of those &#8220;interface&#8221; properties? Do we get an element or a property/method? The horrible truth is that we usually <strong>get an element</strong>. Magical properties turn out to be too magical and shamelessly shadow all of those useful methods we might need to use:</p>
+
+<pre lang="javascript"><code>
+&lt;form>
+  &lt;input type="text" name="submit" value="Submit!">
+  &lt;input type="text" name="style">
+&lt;/form>
+...
+&lt;script type="text/javascript">
+  document.forms[0].submit; // "[object HTMLInputElement]"
+  document.forms[0].style; // "[object HTMLInputElement]"
+&lt;/script>
+</code></pre>
+<p>Just like that, having 2 simple elements with somewhat unfortunate names, we end up not being able to use a very crucial `submit` method, and a not less useful `style` property.</p>
+<p>Even creepier examples demonstrate that names on <strong>form elements themselves</strong> can cause the same mess:</p>
+<pre lang="javascript"><code>
+&lt;form name="getElementById">
+  ...
+&lt;/form>
+&lt;form name="body">
+  ...
+&lt;/form>
+...
+&lt;script type="text/javascript">
+  document.getElementById; // "[object HTMLFormElement]"
+  document.body; // "[object HTMLFormElement]"
+&lt;/script>
+</code></pre>
+<p>and -</p>
+<pre lang="javascript"><code>
+&lt;form name="window" onclick="console.log(window, setInterval)">
+  &lt;input name="setInterval">
+&lt;/form>
+// when clicked, logs [object HTMLFormElement], [object HTMLInputElement]
+</code></pre>
+<p>The latter example actually shows another annoyance &#8211; scopes of intrinsic event handlers being augmented with element object (as well as a document that an element is contained within).</p>
+<p>When working with legacy documents, such unsafe names can lead to quite nightmarish debugging sessions. This is why I created a simple test suite to catch the offenders. It&#8217;s called <a href="http://kangax.github.io/domlint/" title="DOMLint test suite">DOMLint</a> and is powered by a wonderful <a href="http://developer.yahoo.com/yql/" title="Yahoo! Query Language">YQL</a>. It is also <a href="http://github.com/kangax/domlint/tree/master" title="DOMLint on github">hosted on github</a>.</p>
+<p><a href="http://kangax.github.io/domlint/" title="DOMLint test suite">DOMLint</a> is a work in progress. It doesn&#8217;t yet catch as many of the unsafe names as it could. Finding all of the names is impossible, since many browsers implement proprietary members on global object, document or elements. It nevertheless covers many of the most common ones. Currently, the project page performs 6 tests including the one for <strong>Prototype.js conflicts</strong>. Each test is thoroughly explained and is accompanied by an example.</p>
+<p>I&#8217;d like to thank <a href="http://dhtmlkitchen.com/" title="DHTML Kitchen">Garrett Smith</a>, whose <a href="http://jibbering.com/faq/names/">Unsafe names</a> article made me aware of these issues and has eventually inspired to create a <a href="http://kangax.github.io/domlint/" title="DOMLint test suite">DOMLint</a>. Garrett goes into much more details on the subject and covers even more failing cases. I highly recommend reading it.</p>
+<p>I haven&#8217;t had time to find out whether YQL allows to send documents as text, so for now the tests are performed against a URL. If you have any suggestions or comments, I will be more than happy to hear them out.</p>

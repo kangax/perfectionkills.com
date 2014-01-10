@@ -1,0 +1,81 @@
+---
+layout: post
+title: Semantic constructors
+tags:
+  - prototype
+---
+
+<h2>Semantic constructors</h2>
+
+<p>One of the easiest ways to inspect an object is to type convert it to a string:</p>
+
+<pre lang="javascript"><code>
+function foo() {
+  return 'foo';
+}
+foo + ''; // "function foo(){ return 'foo'; }"
+// or
+foo.toString();
+// or
+String(foo);
+</code></pre>
+
+<p>When using Class.create from prototype.js, I often get annoyed by a meaningless result of constructor&#8217;s toString:</p>
+
+<pre lang="javascript"><code>
+var Person = Class.create({
+  initialize: function(name) {
+    this.name = name;
+  },
+  speak: function(msg) {
+    return this.name + ' says: ' + msg;
+  }
+});
+
+Person + ''; // "function klass() { this.initialize.apply(this, arguments); }"
+
+var Employee = Class.create(Person, {
+  initialize: function($super, dept) {
+    $super();
+    this.dept = dept;
+  }
+});
+
+Employee + ''; // "function klass() { this.initialize.apply(this, arguments); }"
+</code></pre>
+
+<p>As you can see, constructor&#8217;s default toString tells little about what&#8217;s going on under the hood. In fact, Class.create returns a generic constructor-function which only calls initialize method of a prototype. In other words it acts as a proxy.  One of the ways to see actual constructor&#8217;s code is to inspect &#8220;initialize&#8221; method directly:</p>
+
+<pre lang="javascript"><code>
+// nothing new here
+Person + ''; // "function klass() { this.initialize.apply(this, arguments); }"
+
+// and the actual code
+Person.prototype.initialize + ''; // "function (name) { this.name = name; }"
+</code></pre>
+
+<p>This is quite verbose, don&#8217;t you think? Let&#8217;s monkey patch Class.create a little:</p>
+
+<pre lang="javascript"><code>
+Class.create = (function(original) {
+  var fn = function() {
+    var result = original.apply(null, arguments);
+    result.toString = function() { return result.prototype.initialize.toString() };
+    return result;
+  };
+  fn.toString = function(){ return original.toString() };
+  return fn;
+})(Class.create);
+</code></pre>
+
+<p>We simply redefine original Class.create with an &#8220;enhanced&#8221; version. New version &#8220;binds&#8221; <code>toString</code> of prototype.initialize as <code>toString</code> of constructor-function. As a bonus, it also takes care of a &#8220;wrapped&#8221; Class.create.toString itself &#8211; trying to be as unobtrusive as possible:</p>
+
+<pre lang="javascript"><code>
+// monkey-patch Class.create first...
+
+// Person.toString now yields much more informative result
+Person + ''; // "function (name) { this.name = name; }"
+
+// Class.create code seems to be unchanged
+Class.create + ''; // outputs actual Class.create code
+</code></pre>

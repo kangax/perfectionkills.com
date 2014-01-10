@@ -1,0 +1,21 @@
+---
+layout: post
+title: Event delegation will save the world
+tags:
+  - prototype
+---
+
+<h2>Event delegation will save the world</h2>
+
+<p>If you ever wanted to know how many event handlers your Prototype.js-based application has, but were afraid to count, this <a href="javascript:alert($H(Event.cache).inject(0,function(m,p){m+=$H(p.value).values().flatten().size();return m}))" title="Bookmarklet to count event handlers">tiny bookmarklet</a> will gladly do that for you!</p>
+
+<p>Accidentally, the snippet demonstrates an absolutely wicked use of Prototype&#8217;s sacred technique of <code>inject</code> over <code>Hash</code>.</p>
+
+<pre lang="javascript"><code>
+$H(Event.cache).inject(0, function(m, p) {
+  m += $H(p.value).values().flatten().size();
+  return m;
+});
+</code></pre>
+
+<p>Enjoy.</p>

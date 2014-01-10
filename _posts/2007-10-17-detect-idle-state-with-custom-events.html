@@ -1,0 +1,113 @@
+---
+layout: post
+title: Detect idle state with custom events
+tags:
+  - js
+---
+
+<h2>Detect idle state with custom events</h2>
+
+<p>Some time ago, Andrew Sellick <a href="http://www.andrewsellick.com/67/simple-javascript-idle-state-using-prototype" title="idle state with prototype">posted his idle state snippet</a> based on prototype. The idea is to capture the moment when user has been idle for certain period of time. Idle means that there was no interaction with <strong>document</strong> or <strong>viewport</strong>.  You might be wondering why in the world would we need to capture user idle state. Well, I can definitely think of 2 good reasons:</p>
+
+<ul>
+  <li>We could pause periodical ajax requests happening on a background to prevent server overload</li>
+  <li>We could stop some resource intensive operations happening on a client side (i.e. animation or data processing)</li>
+</ul>
+
+<p>Ok, so detecting idle state could be useful, but how do we go about implementing it?</p>
+
+<p>Before diving into all the dirty details, I&#8217;d like to mention that Andrew&#8217;s code encaplsulates &#8220;onIdle&#8221; logic into a <strong>one single function</strong> &#8211; this is where we would have to stop our requests/calculations. Such approach is absolutely fine but to decouple things a little we could abstract them into <strong>custom events</strong>. This will allow us to subscribe anyone to <strong>independently</strong> observe idle/active state of the user and act accordingly. There are quite few <a href="http://www.dustindiaz.com/custom-events/">very</a>, <a href="http://joshdavis.wordpress.com/2007/04/10/custom-event-listeners/">good</a>, <a href="http://developer.yahoo.com/yui/event/#customevent">explanations</a> of custom events, just in case you&#8217;re not sure what they are, as well as <a href="http://www.someelement.com/2007/03/eventpublisher-custom-events-la-pubsub.html">prototype</a>, <a href="http://livepipe.net/projects/event_behavior/">based</a>, <a href="http://positionabsolute.net/blog/2007/06/event-dispatcher.php">extensions</a>. Prototype natively supports custom events since <a href="http://www.prototypejs.org/2007/8/15/prototype-1-6-0-release-candidate">version 1.6</a> (which is not yet officially released). The implementation still varies (i.e. there were <a href="http://groups.google.com/group/prototype-core/browse_thread/thread/55f4b798e36694fe">some drastic changes</a> in one of the last revisions) but overall works flawlessly. In the following example I am going to use a <strong>new way</strong> of defining events &#8211; prefixing them with pseudo namespace (which I think is more descriptive).</p>
+
+<p>Ok, so let&#8217;s see what these weird things are all about.</p>
+
+<h3 class="floated">1</h3>
+
+<p>First, we store events (and corresponding elements) that represent any kind of interaction in a two dimensional array. I think these should pretty much cover any user action.</p>
+
+<pre lang="javascript"><code>
+var events = [
+  [window, 'scroll'],
+  [window, 'resize'],
+  [document, 'mousemove'],
+  [document, 'keydown']
+];
+</code></pre>
+
+<h3 class="floated">2</h3>
+
+<p>Next, we are interating over this array, invoking <code>Event.observe</code> for each element/event pair. The observe handler is simply an anonymous function. This function will fire our custom <strong>&#8216;state:active&#8217;</strong> event passing <strong>idleTime</strong> parameter. We basically encapsulate few native DOM events into one custom. To make things clear, the event is essentially just an object. It has methods such as <code>.stop()</code> and <code>.findElement()</code> as well as properties such as <code>.target</code> and <code>.pageX</code>. When firing custom event we can pass an optional object along with it &#8211; storing any additional data that might be useful later on. This data is then accessible through <strong>event.memo</strong> and in our case quite conveniently stores idle time.</p>
+
+<pre lang="javascript"><code>
+events.each(function(e){
+  Event.observe(e[0], e[1], function(){
+    document.fire('state:active', {idleTime: new Time() - document._idleTime});
+    clearTimeout(document._idleTime);
+  });
+});
+</code></pre>
+
+<h3 class="floated">3</h3>
+
+<p>Now that we have taken care of &#8216;state:active&#8217; all that&#8217;s left to do is set a timer to fire the opposite event &#8211; <strong>&#8216;state:idle&#8217;</strong>. You can obviously change the time to anything you like. The trick here is that &#8216;state:idle&#8217; event will only get fired if timer doesn&#8217;t get cleared within 5 seconds (by any of the above specified user actions)</p>
+
+<pre lang="javascript"><code>
+document._timer = setTimeout(function(){
+  document.fire('state:idle')
+}, 5000);
+</code></pre>
+
+<h3 class="floated">4</h3>
+
+<p>What&#8217;s really cool is that we can now <strong>observe</strong> these custom events just like we would observe the regular ones! Note the use of memo.idleTime to retrieve data passed along with the object.</p>
+
+<pre lang="javascript"><code>
+document.observe('state:idle', onStateIdle).observe('state:active', onStateActive);
+
+onIdle = function() {
+  console.log('Oh no... where is everybody?');
+};
+onIdleEnd = function(e) {
+  console.log('Looks like user is still alive but have been idle for ', e.memo.idleTime, ' ms');
+};
+</code></pre>
+
+<p>We can now wrap this code into a self containing class to keep things clean and unobtrusive:</p>
+
+<pre lang="javascript"><code>
+var Notifier = Class.create({
+
+  _events: [[window, 'scroll'], [window, 'resize'], [document, 'mousemove'], [document, 'keydown']],
+  _timer: null,
+  _idleTime: null,
+
+  initialize: function(time) {
+    this.time = time;
+
+    this.initObservers();
+    this.setTimer();
+  },
+
+  initObservers: function() {
+    this._events.each(function(e) {
+      Event.observe(e[0], e[1], this.onInterrupt.bind(this))
+    }.bind(this))
+  },
+
+  onInterrupt: function() {
+    document.fire('state:active', { idleTime: new Date() - this._idleTime });
+    this.setTimer();
+  },
+
+  setTimer: function() {
+    clearTimeout(this._timer);
+    this._idleTime = new Date();
+    this._timer = setTimeout(function() {
+      document.fire('state:idle');
+    }, this.time)
+  }
+});
+</code></pre>
+
+<p>Here&#8217;s a little <a href="/demos/state-notifier/" title="state notifier demo">demo page</a> to see this in action.</p>
+
+<p>Enjoy your ride.</p>

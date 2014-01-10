@@ -1,0 +1,99 @@
+---
+layout: post
+title: Wrap it up
+tags:
+  - prototype
+---
+
+<h2>Wrap it up!</h2>
+
+<p>Today I want to talk about new function method, introduced in latest Prototype (1.6). Function#wrap is simply amazing when it comes to flexibility and elegance of code. You will never go back once started using it. Essentially, Function#wrap allows us to <strong>augment</strong> default function behavior by &#8220;wrapping&#8221; it with our own logic. Not only we could &#8220;wrap&#8221; it, but pretty much do anything we want &#8211; change in any way we need.</p>
+
+<p>Here&#8217;s what 1.6rc0 release notes say about it: </p>
+
+<blockquote>Function#wrap distills the essence of aspect-oriented programming into a single method, letting you easily build on existing functions by specifying before and after behavior, transforming the return value, or even preventing the original function from being called&#8230;</blockquote>
+
+<p>Don&#8217;t worry, it&#8217;s not that complicated and makes perfect sense when explained, so enough theory, let&#8217;s see what makes Function#wrap so good in pactice.</p>
+
+<h3>Stripping tags</h3>
+
+<p>stripTags is a quite useful String method (defined through String.prototype) which simply strips any tags from a given string. The basic syntax is:</p>
+
+<pre lang="javascript"><code>
+'&lt;a>Hello wonderful world!</a>'.stripTags(); //=> 'Hello wonderful world!'
+</code></pre>
+
+<p>This might be sufficient 90% of the time, but what if we want to strip only <strong>particular set of tags</strong>? It seems as if the only solution would be to write our own function or change prototype&#8217;s source code (which is a really terrible thing to do). This is where wrap comes into play. By wrapping the prototype&#8217;s stripTags we keep the same logic in the same place which is a <strong>good thing</strong>. One of the beauties of javascript&#8217;s dynamic nature is that we can define different behavior depending on whether any arguments were passed to the function or not. Let&#8217;s say we want out stripTags to be defined like so:</p>
+
+<pre lang="javascript"><code>
+// Looks just like regular stripTags and should act the same - strip all tags
+String.prototype.stripTags();
+
+// Should have augmented behavior to ONLY strip specified tags (tag1, tag2, ... , tagN)
+String.prototype.stripTags(tag1, tag2, ... , tagN);
+</code></pre>
+
+<p>Now, if we needed to strip all &lt;p&gt; and &lt;span&gt; tags, we would simply do:</p>
+
+<pre lang="javascript"><code>
+'&lt;a>ninjas gone wild... &lt;span>or javascript on steroids&lt;/span>&lt;/a>'.stripTags('p', 'span');
+// => '&lt;a>ninjas gone wild... or javascript on steroids&lt;/a>'
+</code></pre>
+
+<p>Ok, looking good so far. Let&#8217;s see how this is done, and then I&#8217;ll explain what exactly is going on:</p>
+
+<pre lang="javascript"><code>
+String.prototype.stripTags = String.prototype.stripTags.wrap(function(){
+  var args = $A(arguments), proceed = args.shift();
+  if (args.length > 0) {
+    return this.replace(new RegExp('<\/?(' + args.join('|') + ')[^>]*>', 'gi'), '');
+  }
+  return proceed();
+});
+</code></pre>
+
+<h3 class="floated">1</h3>
+
+<p> We change stripTags by assigning same function, but with &#8220;wrap&#8221; invoked on it. Function passed to &#8220;wrap&#8221; is where we define all the behavior. First argument of this anonymous function references original function (the one that we&#8217;re wrapping &#8211; in this case &#8211; stripTags). Other arguments correspond to those that are defined within our original function (in this case, though, stripTags does not have any named arguments)</p>
+
+<pre lang="javascript"><code>
+String.prototype.stripTags = String.prototype.stripTags.wrap(function(){
+...
+</code></pre>
+
+<h3 class="floated">2</h3>
+
+<p> What we have here is a common technique used internally in prototype when working with unknown number of arguments. First, we extend &#8220;arguments&#8221; variable with Array&#8217;s enumerable methods, then we reference first argument from that array, shifting it from the array at the same time. What we have now is our first argument (which, as you remember, references original function)  and the rest of the arguments, which in our case are just tag names.</p>
+
+<pre lang="javascript"><code>
+...
+var args = $A(arguments), proceed = args.shift();
+...
+</code></pre>
+
+<h3 class="floated">3</h3>
+
+<p> Here comes the modified part. If the function had any arguments passed into it, we replace the string using regular expression (which matches all those tags) and return modified string.</p>
+
+<pre lang="javascript"><code>
+...
+if (args.length > 0) {
+  return this.replace(new RegExp('<\/?(' + args.join('|') + ')[^>]*>', 'gi'), '');
+}
+...
+</code></pre>
+
+<h3 class="floated">4</h3>
+
+<p> If this is not the case &#8211; there are no arguments passed &#8211; we simply invoke original function, as if nothing had ever happened : )</p>
+
+<pre lang="javascript"><code>
+...
+return proceed();
+</code></pre>
+
+<p>That&#8217;s all there is to it. Simple, effective and sort of mind-blowing, don&#8217;t you think?</p>
+
+<p>Later, I will post some more examples on what becomes possible using this technique, but as for now, I hope this one clears some potentially confusing parts and you can start experimenting with it right now.</p>
+
+<p>Enjoy!</p>

@@ -1,0 +1,237 @@
+---
+layout: post
+title: Professional javascript review
+tags:
+  - js
+---
+
+<h2>Professional javascript: review</h2>
+
+<div class="professional-javascript">
+  <p>
+    <img src="/images/professional_js.jpg" style="float: right;"></p>
+
+  <p>Few months ago, I promised <a href="http://www.nczonline.net/">Nicholas Zakas</a> to review 2nd edition of his <a href="http://www.amazon.com/Professional-JavaScript-Developers-Wrox-Guides/dp/0764579088" title="Professional Javascript on amazon">&#8220;Professional Javascript for Web Developers&#8221; (published by Wrox)</a>. Nicholas was kind enough to send me a copy of a book, but the lack of time at that moment didn&#8217;t let me dive into reviewing it right away. Last week I have decided to finally get together and fulfill a long-standing promise.</p>
+
+  <p>Here it goes:</p>
+
+  <h2 id="what_i_liked">What I liked</h2>
+
+  <ul>
+  <li>Technically correct most of the time (many other books, for example, have much more errors and misconceptions).</li>
+  <li>Follows specs and standards closely, uses proper terminology.</li>
+  <li>Covers great variety of topics.</li>
+  <li>Promotes good practices, both — javascript and general programming ones.</li>
+  </ul>
+
+  <h2 id="what_i_didn8217t_like">What I didn&#8217;t like</h2>
+
+  <ul>
+  <li>Often oversimplified. Covers only about 85% of core language.</li>
+  <li>Browsers behavior and bugs are often talked about without specifying actual versions (*)</li>
+  <li>Uses unnecessary browser sniffing.</li>
+  <li>Information about ECMAScript 5 is heavily outdated.</li>
+  </ul>
+
+  <p>(*) Because of this, some statements turn out to be plain wrong. For example, there is — <em>&#8220;When defining an object via object literal notation, the Object constructor is never actually called (except in Firefox).&#8221;</em>. Yet, this only happens in earlier versions of Firefox (&lt;= 2, IIRC). Then there&#8217;s — <em>&#8220;The children collection is supported in all browsers except Firefox.&#8221;</em> — however, Firefox 3.5 does in fact have working <code>children</code>. Unfortunately, there are few more of such misleading assertions.</p>
+
+  <h2 id="general_nitpicks">General nitpicks</h2>
+
+  <ul>
+  <li>Not all examples work in Safari 2.x (although book claims they do)</li>
+  <li>Many methods are not written defensively (e.g. assuming that certain methods/properties exist before accessing them)</li>
+  <li>Use of <code>new Array()</code> instead of <code>[]</code> (probably for clarity)</li>
+  <li>Mix of HTML and XHTML (ideally, it would be nice to drop XHTML for <a href="http://hixie.ch/advocacy/xhtml" title="Sending XHTML as text/html Considered Harmful ">well known reasons</a>)</li>
+  <li>Variables are sometimes initialized with (redundant) <code>null</code></li>
+  </ul>
+
+  <h2 id="verdict">Verdict</h2>
+
+  <p>The book is a solid foundation for anyone serious about Javascript. Even though not perfect, it is probably one of the best ones on the market at the moment; The quality of so many other books is simply horrendous. I wish &#8220;Professional Javascript&#8221; would cover things in more details and employed defensive techniques, or even better — had defensive mindset. However, the fact that it doesn&#8217;t only leaves room for future improvement. I would rate it as <strong>7/10</strong>.</p>
+
+  <p>If anyone is interested in more detailed <del>ramblings</del> review, here it is — all broken down by chapters. Enjoy.</p>
+
+  <h2 id="chapter_2">Chapter 2</h2>
+
+  <p>Chapter 2 is about <strong>Javascript in HTML</strong>. It covers script and noscript elements, document modes and the way scripts are embedded into web pages. It&#8217;s nice to see good practices being promoted here: not using html comments in scripts, preferring external scripts to inline ones as well as script elements positioning in the document for best performance. One glaring mistake in this chapter is mention of &#8220;&lt;/script>&#8221; terminating script element, and how &#8220;&lt;/scr&#8221; + &#8220;ipt>&#8221;  should be used instead. This is not really true. What <a href="http://www.w3.org/TR/REC-html40/types.html#type-cdata">terminates script element in HTML4.01</a> is actually &#8220;&lt;/&#8221;; and to work around it, it&#8217;s usually recommended to break tags as &#8220;&lt;&#8221; + &#8220;/script>&#8221; or &#8220;&lt;\/script>&#8221;. </p>
+
+  <p>When explaining CDATA markers, I wish author mentioned that it is mime-type that affects document nature. Prepending document with XHTML doctype — contrary to a popular myth — doesn&#8217;t make document true XHTML. Serving it with application/xhtml+xml does. This is important because CDATA markers are now being blindly injected all over the web into documents served as HTML (but with XHTML doctype).</p>
+
+  <h2 id="chapter_3">Chapter 3</h2>
+
+  <p>Chapter 3 gives a brief, yet in-depth overview of <strong>language basics</strong>. It&#8217;s a pretty friendly introductory chapter. At times, it feels like a couple more things could be added to explanations. Section on number conversion, for example, mentions <code>Number</code> and <code>parseInt</code> but misses unary plus (<code>+</code>) operator. Same goes for string conversion — so commonly used <code>something + ''</code> solution is missing. </p>
+
+  <p>Some things in this chapter sound questionable. For example, it was strange to hear that <em>&#8220;Logically, a null value is an empty object pointer&#8221;</em>, that <em>&#8220;The value undefined is a derivative of null&#8221;</em> and that <em><code>var o = new Object; //legal, but not recommended</code></em>. I also didn&#8217;t agree with the assertion that <em>&#8221;[&#8230;] ECMAScript’s data types have dynamic aspects that make other data types unnecessary&#8221;</em> — proper hash table would certainly be a useful addition to a language (since prototypal nature of objects in ECMAScript makes it a rather non-trivial task). There&#8217;s an insignificant mistake about undeclared variable — <em>&#8220;Only one operation can be performed on an undeclared variable: you can call typeof on it.&#8221;</em> — is not technically true; <code>delete</code> operator will not throw <code>ReferenceError</code> either when given undeclared identifier.</p>
+
+  <p>Another thing I wish author gave more attention to is the notion of native vs. host objects. Instead, there&#8217;s only a very brief section about IE host objects — <em>&#8220;The Internet Explorer (IE) implementation of JavaScript has a slightly different approach to JavaScript objects. In IE, only developer-defined objects inherit from Object. All Browser Object Model (BOM) and Document Object Model (DOM) objects are represented differently and so may not have all of the properties and methods of Object.&#8221;</em> Unfortunately, IE is not the only browser whose environment has &#8220;misbehaving&#8221; host objects. It would be nice to see proper explanation of true nature of host objects and caution about how unpredictable they really are (and, more importantly, <strong>are allowed to be</strong>, by specification).</p>
+
+  <h2 id="chapter_4">Chapter 4</h2>
+
+  <p>Chapter 4 presents simple and clear explanation of variables, as well as so-often-crucial difference between objects and primitives. It&#8217;s nice to see argument passing (a source of so many confusions) explained correctly and thoroughly. Another pleasant surprise is Activation/Variable objects being referenced by their original names (contrary to what so many other authors like to do). Undeclared assignments are recommended against, however there&#8217;s no mention of related IE bugs, nor is there an explanation of the difference between variable declaration in global context and undeclared assignments (which might not be very important, after all). Explanation of garbage collection is a nice ending of the chapter.</p>
+
+  <p>On the down side, some things are only touched upon briefly and some are plain incorrect.</p>
+
+  <p>Note on <code>typeof</code> operator is overly generic and misleading — <em>&#8221;[&#8230;] When used on a regular expression, typeof incorrectly returns “function” as well.&#8221;</em> <code>typeof</code> does in fact return &#8220;function&#8221; for regex objects but only in <strong>some environments</strong> — definitely not everywhere. The reason this happens is because in those environments regex objects actually implement internal [[Call]] method. By specification, native objects implementing [[Call]] should return &#8220;function&#8221; when applied <code>typeof</code> to, so implementations that do this are actually very much conforming.</p>
+
+  <p>Another incorrect statement is — <em>&#8220;Even though there are only two types of execution contexts [&#8230;]&#8221;</em>. Third overlooked type of execution context is, of course, eval one. Since eval context is not mentioned, its semantics are not mentioned either (however, eval code is being discussed later when talking about global <code>eval</code> method).</p>
+
+  <p>Finally, author talks about scope augmentation and how both <code>with</code> and <code>catch</code> affect execution context — <em>&#8220;Certain statements cause a temporary addition to the front of the scope chain that is later removed after code execution. There are two times when this occurs [&#8230;]&#8221;</em>. What&#8217;s unfortunately missing here is mention of named function expressions which result in scope augmentation as well. That is a third — perfectly valid — scenario of scope augmentation.</p>
+
+  <h2 id="chapter_5">Chapter 5</h2>
+
+  <p>Chapter 5 is about <strong>reference types — Object, Array, Date, RegExp, etc</strong>. As always, each type is discussed in great detail and with plenty of corresponding examples. It&#8217;s an excellent overview of these language types. The chapter also emphasizes what to avoid, such as trailing commas after last value in array and object literals. However, there are few ambiguous statements and, as with other parts of the book, some things seem to be a bit oversimplified.</p>
+
+  <p>As an example, author says — <em>&#8220;There are two ways to create an instance of Object&#8221;</em>. What goes unnoticed is that those are <strong>two explicit ways</strong> to create an object, and that there&#8217;s also an implicit one via function contsructor, e.g.: <code>new (function(){ this.foo = 'bar'; });</code>.</p>
+
+  <p>A slight ambiguity is encountered when talking about object literals — <em>&#8220;In this example, the left curly brace ({) signifies the beginning of an object literal because it occurs after an assignment operator (in any other context, the left curly brace indicates the beginning of a block statement).&#8221;</em> This phrase can be understood as if braces constitute object literal only when it is on the right hand side of assignment expression (as in this case). It would be better if instead author mentioned that braces constitute object literal <strong>when in expression context</strong> (and block — when in statement context); few examples of expression and statement contexts would be helpful too.</p>
+
+  <p>There&#8217;s no mention of number literals being valid production in property names of object literals (i.e. — { 5: &#8216;foo&#8217; }); It was surprising not to see the discussion of dot property access vs bracket-based one (&#8220;[&#8221; and &#8220;]&#8221;) — something that I find to be rather important. One notable difference, of course, is that with bracket accessor it is possible to access properties whose names are not valid identifiers, such as &#8220;class&#8221; or &#8220;foo-bar&#8221;. When discussing arrays and their methods, it would be nice to see a mention of Array#sort not guaranteed to be stable.</p>
+
+  <p>I found section on function expressions vs. function declarations to be very short and simplistic. Although author rightfully describes difference between two in terms of when functions are instantiated (declaration — during variable declaration phase, expression — during actual execution), there are <a href="http://kangax.github.io/nfe">many interesting things that are left untouched</a>: named function expressions and their semantics, use of function declarations in statements and how it should be avoided, infamous NFE bugs in JScript and why naming functions could be beneficial for profiling and debugging. Finally, there&#8217;s a rather vague and overgeneralized statement about Safari not understanding named function expressions.</p>
+
+  <p>I didn&#8217;t like that <code>this</code> value was being called scope, as scope can be misinterpreted with what&#8217;s otherwise known as execution context. I would rather see <code>this</code> being called simply as &#8220;this value&#8221;. </p>
+
+  <p>Unfortunately, there was also no mention of JScript bugs with <code>Number.protoype.toFixed</code> and <code>String.prototype.split</code> with regex and capturing groups.</p>
+
+  <p>Another misleading assertion was — <em>&#8220;Though ECMA-262 doesn’t indicate a way to access the Global object directly [&#8230;]&#8221;</em>. It&#8217;s not clear why Mr. Zakas didn&#8217;t provide and explain rather ubiquitous way of accessing Global object from within any context — <code>(function(){ return this; })();</code> — especially crucial in non-browser environments, which might not have global <code>window</code> property.</p>
+
+  <h2 id="chapter_6">Chapter 6</h2>
+
+  <p>Chapter 6 describes <strong>OOP in Javascript</strong>. It was nice to see author talk about constructors rather than classes, compare various ways of creating reusable objects and explain popular conventions, such as capitalizing constructors. I was a bit disappointed to hear a somewhat vague — <em>&#8221;[&#8230;] the this object always points to the Global object (window in web browsers) when a function is called in the global scope.&#8221;</em>. Even though technically correct, in my opinion, it would be better to say that function&#8217;s <code>this</code> value references Global object <strong>when function is called as a function</strong>, no matter from which scope — global or local.</p>
+
+  <p>The rest of the chapter delves into OOP in great detail, and is sprinkled generously with very helpful and descriptive diagrams. Speaking of prototypal inheritance, Zakas attributes a popular pattern of cloning to Douglas Crockford who wrote an article on this object in 2006. However, I&#8217;m not sure why there&#8217;s no attribution to Lasse Reichstein Nielsen who <a href="http://groups.google.com/group/comp.lang.javascript/msg/5d06e72e55d5bf11">presented it</a> 3 years earlier than Crockford, in 2003.</p>
+
+  <h2 id="chapter_7">Chapter 7</h2>
+
+  <p>Chapter 7 is about more complex aspects of ECMAScript — <strong>anonymous functions, recursion, closures, private variables</strong> and other related goodness. </p>
+
+  <p>Unfortunately, it starts somewhat badly by making few erroneous statements about function expressions. First, it says that <em>&#8220;function expressions create anonymous functions&#8221;</em> (not necessarily). Then it asserts that <code>function(arg0, arg1, arg2){ }</code> is a valid code (not always; it is <a href="http://kangax.github.io/nfe#expr-vs-decl">only &#8220;valid&#8221; in expression context</a> — such as in assignment or return statements; when in Global code or in function body, this is, of course, a SyntaxError). </p>
+
+  <p>Nevertheless, chapter goes on to explain closures quite thoroughly, paying attention to all of the details of how Activation objects are created and initialized, how they constitute scope chain and how this all relates to closures. A minor nitpick is that self-executing anonymous function in few examples are not wrapped with parenthesis; it would be nice if author mentioned <a href="http://peter.michaux.ca/articles/an-important-pair-of-parens">this &#8220;wrapping&#8221; as a good practice</a> and explained why not wrapping functions leads to confusion when scanning through large functions.</p>
+
+  <p>The rest of the chapter is informative and in-depth, but unfortunately presents yet another harmful example towards the end — when simulating private variables it <strong>uses undeclared assignment</strong> to define variable as global one and does so on purpose! This is especially bizarre, given that a bit earlier there&#8217;s a clear recommendation to avoid such &#8220;pattern&#8221;. Undeclared assignment could be easily avoided there, of course.</p>
+
+  <h2 id="chapter_8">Chapter 8</h2>
+
+  <p><strong>Browser Object Model</strong> is the topic of this chapter. It talks about window as well as its properties/methods, location, navigator and other &#8220;global&#8221; members provided by browsers. I have nothing but positive comments here. The only nitpick is with <code>getQueryStringArgs</code> abstraction, which suffers from object being used as a hash table (and have keys &#8220;conflict&#8221; with <code>Object.prototype.*</code> members).</p>
+
+  <h2 id="chapter_9">Chapter 9</h2>
+
+  <p>This chapter talks about <strong>client detection</strong>. Fortunately, author explains that capability/feature detection is a more robust approach to browser scripting. However, I feel that some things could be mentioned in more details and under a different angle. For example, there&#8217;s no recommendation to test standard methods before proprietary ones, when possible. Neither is there an explanation of <code>typeof</code> being <a href="http://peter.michaux.ca/articles/feature-detection-state-of-the-art-browser-scripting">more reliable way of testing host objects</a> presence and/or capabilities. A couple of feature test examples are both rather trivial; I was expecting to see more involved ones. There is however a rather entertaining coverage of userAgent string history and a comprehensive method of parsing that string. Overall, I wish there was more emphasis on the dangers and fragile nature of browser sniffing in this part of the book.</p>
+
+  <h2 id="chapter_10">Chapter 10</h2>
+
+  <p>Chapter 10 describes <strong>Document Object Model</strong> gradually and throughly. It focuses on properties and semantics of all Node types, and how to work with them. Relationships between nodes are presented very clearly through graphs. </p>
+
+  <p>I&#8217;m not a fan of <code>convertToArray</code> solution presented there, as it uses rather slow and unnecessary try-catch at run time instead of testing for IE quirk once. It&#8217;s also strange to hear rather bold statements such as — <em>&#8220;The Element type constructor and prototype are accessible in script in all browsers, including IE as of version 8.&#8221;</em> This is far from being true: at least Safari &lt;=2 and Opera &lt;8 don&#8217;t provide these &#8220;constructors&#8221;. It&#8217;s very possible that mobile browsers do not expose them either.</p>
+
+  <p>Quite shockingly, an example of <code>document.createElement</code> specifics in IE is presented with blatant and completely unnecessary browser sniff. It was ironic to see this &#8220;solution&#8221; after previous chapter discussed how feature detection should be preferred to browser sniffing whenever possible.</p>
+
+  <p>When talking about <code>children</code> there is no mention of bugs in older Safari. <code>contains</code> section, on the other hand, warns about Safari 2.x bugs, but spoils the moment by suggesting to sniff for browser (something that&#8217;s, again, <a href="http://kangax.github.io/cft#ELEMENT_CHILDREN_RETURNS_ELEMENT_NODES">unnecessary</a>). An implementation of <code>contains</code> that follows unfortunately turns sniffing advise into reality.</p>
+
+  <p>An implementation of <code>getInnerText</code> fortunately tests for features, but fails to mention <a href="http://stackoverflow.com/questions/1359469/innertext-works-in-ie-but-not-in-firefox/1359822#1359822">differences</a> between <code>textContent</code> and <code>innerText</code>.</p>
+
+  <p>Implementations of <code>loadScriptString</code> and <code>loadStyleString</code> that follow are excellent examples of proper abstractions, where features are tested and are tested in correct order (however, it would be nice to see alternative example which would avoid run-time try-catch in favor of single load-time test).</p>
+
+  <h2 id="chapter_11">Chapter 11</h2>
+
+  <p>This covers <strong>DOM Level 2 and 3</strong>; Styles, Traversal and Range modules. Everything presented here is informative and thought-through. Minor nitpick is vague statements about browser bugs and corresponding browser versions. There&#8217;s also a warning about <code>float</code> &#8212; <code>cssFloat</code> mapping, but nothing about <code>for</code> &#8212; <code>htmlFor</code> one. </p>
+
+  <p>I liked that most of cross-browser abstractions use feature detection in correct order. One notable example is <code>getBoundingClientRect</code> abstraction which actually shows non-trivial feature test for the first time. The only downside to that solution is that it uses (often slow-to-create) <code>arguments.callee</code> instead of a special variable in a closure — to store temporary <code>offset</code> value.</p>
+
+  <p>Chapter ends with a comprehensive overview of Ranges — both DOM and proprietary IE ones.</p>
+
+  <h2 id="chapter_12">Chapter 12</h2>
+
+  <p>This one talks about <strong>Events</strong>. Capturing, bubbling phases and event flow are illustrated nicely with diagrams. There are sections on DOM Level 0 and Level 2 event handlers, discussing both — DOM and IE event models. Other topics include event object, simulating events and memory considerations. </p>
+
+  <p>Unfortunately, scope chain <a href="http://www.jibbering.com/faq/names/event_handler.html">augmentation of intrinsic event handlers</a> is not mentioned. Event abstraction utility is rather simple. When describing events order for dblclick, there&#8217;s no mention of IE deviations; instead, these events are claimed to be fired in exact order (presented there) — something that&#8217;s <a href="http://unixpapa.com/js/mouse.html">rather misleading</a>. Nothing is being said about Opera lack of contextmenu event and when talking about event delegation, there&#8217;s no mention of focus/blur events.</p>
+
+  <p>It was very nice to see &#8220;beforeshow&#8221; / &#8220;beforehide&#8221; events discussed, together with effect of &#8220;unload&#8221; event handler on page caching. Event model specifics of less traditional devices/clients, such as Wii and iPhone, were touched upon as well.</p>
+
+  <p>&#8220;Removing event handlers&#8221; section is a little disappointing. It makes it sound as if Internet Explorer always leaks memory as pages are navigated, suggesting &#8220;unload&#8221; event as a remedy. Instead, it would be useful to see <strong>actual leak pattern</strong>, and explanation of <a href="http://www.jibbering.com/faq/faq_notes/closures.html#clMem">event handlers forming circular references</a> through closures. It would also make sense to mention that attaching event handlers &#8220;properly&#8221; allows to avoid both — unload cleanup (and so disabled bfcache) and leaks.</p>
+
+  <h2 id="chapter_13">Chapter 13</h2>
+
+  <p><strong>Scripting forms</strong> is about&#8230; forms, and everything related: from basic things like submitting them to more advanced like rich text editing and serialization. As always, there&#8217;s plenty of good recommendations, suggesting to avoid things like form resetting, accessing forms directly on a <code>document</code>, accessing form controls directly on forms, etc. </p>
+
+  <p>One rather important aspect I found missing here is the problem of <a href="http://www.jibbering.com/faq/names/index.html">unsafe names in forms</a>. Another insignificant nitpick is that  <code>getSelectedText</code> abstraction doesn&#8217;t feature test <code>selectionStart</code> on form control, before accessing it (it&#8217;s missing in Safari 2.0, for example). On a similar note, an example demonstrating tab forwarding is accessing a text field that might not exist. </p>
+
+  <p>This chapter presents a pretty solid function for form serialization, but it&#8217;s unfortunately a bit off and incorrectly serializes controls without names.</p>
+
+  <h2 id="chapter_14">Chapter 14</h2>
+
+  <p>This chapter dives into <strong>error handling in Javascript</strong>, as well as everything that has to do with debugging, including overview of debugging tools on various browsers. It&#8217;s an in-depth look at a great variety of error-handling aspects of cross-browser scripting.</p>
+
+  <p>Unfortunately, when talking about try-catch, author doesn&#8217;t mention rather important <a href="http://webbugtrack.blogspot.com/2007/11/bug-184-catch-to-try-catch-finally-in.html">IE deviations</a>. When describing <code>EvalError</code>, he doesn&#8217;t explain in which cases it might actually occur — something that specification makes very clear — <em>&#8220;if value of the eval property is used in any way other than a direct call (that is, other than by the explicit use of its name as an Identifier which is the MemberExpression  in a CallExpression), or if the eval property is assigned to, an EvalError exception may be thrown.&#8221;</em>. In fact, <code>EvalError</code> can be easily observed in, say, Firefox 3.5 where using <code>eval</code> in a new expression — <code>new eval()</code> — leads to exactly this type of exception.</p>
+
+  <p>Another potential source of confusion is with checking value for Array type in one of the examples. It&#8217;s being done via <code>instanceof</code> operator and without explanation of <a href="http://thinkweb2.com/projects/prototype/instanceof-considered-harmful-or-how-to-write-a-robust-isarray/">why it might not work</a> and what to do instead (note that iframe issue is mentioned later, in Chapter 20, however [[Class]]-based testing is not mentioned even there).</p>
+
+  <h2 id="chapter_15_16">Chapters 15 &amp; 16</h2>
+
+  <p>— are about <strong>XML in Javascript</strong>. One discusses XML DOM, XPath and XSLT support in browsers. The other one continues on the similar subject, delving into <strong>ECMAScript for XML (E4X)</strong>. Unfortunately, I&#8217;m not very familiar with these aspects of browser scripting, so can&#8217;t provide any useful feedback here. Overall, this section of a book looks like a solid foundation for anyone willing to master XML in Javascript.</p>
+
+  <h2 id="chapter_17">Chapter 17</h2>
+
+  <p>— is about <strong>Ajax</strong>. It talks about XHR objects, Cross-Domain requests, JSON, and Security — explaining each of those from the ground up. It was nice to see non-standard extensions mentioned — XHR&#8217;s <code>timeout</code> and &#8216;progress&#8217; events, Microsoft&#8217;s <code>XDomainRequest</code>, etc. One minor thing I didn&#8217;t like is that <code>createXHR</code> abstraction used (often expensive) <code>arguments.callee</code> instead of storing variable in a closure.</p>
+
+  <p>A slightly confusing explanation is given in <code>eval</code> section where phrases such as <em>&#8220;evaluate as data format&#8221;</em>, <em>&#8220;statement without name&#8221;</em>, and <em>&#8220;it identifies a value rather than a statement&#8221;</em> don&#8217;t make much sense; It looks like by &#8220;named statement&#8221; author really meant &#8220;labeled statement&#8221;, and by &#8220;identifies as a value&#8221; — &#8220;parsed as expression&#8221;.</p>
+
+  <h2 id="chapter_18">Chapter 18</h2>
+
+  <p>— is named <strong>&#8220;Advanced Techniques&#8221;</strong> and covers quite few interesting topics — scope-safe constructors, lazy function loading, binding and currying. It also explains timers quite extensively. </p>
+
+  <p>Strangely, a pattern of forking function declarations is not covered when talking about lazy-loading functions. That pattern is tremendously useful and is somewhat ubiquitous by now; I&#8217;m surprised it&#8217;s missing here. <code>bind</code> and <code>curry</code> abstractions are very simple (unoptimized), apparently only demonstrating general ideas behind them.</p>
+
+  <p>It would be nice to see more robust event abstraction: with error handling, so that integrity of event handlers is not compromised when one of them errors out. Drag and drop example is presented in a nice encapsulated way - using module pattern, however there is a slight mistake of using <code>indexOf</code> to check if element has certain class.</p>
+
+  <h2 id="chapter_19">Chapter 19</h2>
+
+  <p>— explains everything related to <strong>Client-Side storage</strong>: cookies, best practices on using them and some of the restrictions. A pretty solid cookie utility is presented there as well. Other things discussed are Internet Explorer user data and DOM Storage. </p>
+
+  <p>Unfortunately, it also describes <code>StorageItem</code> interface, which doesn&#8217;t exist in Web Storage specs any longer. Some of the <code>localStorage</code> <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=510234">bugs</a> and <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=509241">quirks</a> are not mentioned (quite obviously, since they didn&#8217;t even exist at the time of the writing). There&#8217;s no recommendation to prefer <code>getItem</code>/<code>setItem</code> to plain property accessors, since latter ones are rather destructive and are not generally safe. Compare:</p>
+
+<pre lang="javascript"><code>
+localStorage['clear'] = 'foo';
+localStorage.clear; // 'foo', not a `clear` method
+
+// vs.
+localStorage.setItem('clear', 'foo');
+localStorage.getItem('clear'); // 'foo'
+
+// the following is currently true in Firefox, but not WebKit (see: https://bugs.webkit.org/show_bug.cgi?id=30996)
+localStorage.clear; // `clear` method
+</code></pre>
+
+  <h2 id="chapter_20">Chapter 20</h2>
+
+  <p>— is about <strong>Best Practices</strong>. I almost fully agree with everything said here. The chapter is full of valuable advice, both — Javascript and general ones. Not only does it tell you what to do, but also explains why. This is important.</p>
+
+  <p>There were moments when I didn&#8217;t share same vision as Mr. Zakas, such as the one where he recommends to use comments in places where there are large amounts of code; I believe in a different approach — breaking code into smaller, more understandable chunks, rather than adding comments on top. Another oddity was with example demonstrating decoupling of application logic and event handlers. Ironically, <code>validateValue</code> would both — validate and perform destructive action, changing visibility of an element. This was very unintuitive and is something I would avoid.</p>
+
+  <p>When talking about performance, it wasn&#8217;t clear why variable access is considered to take O(1) operations, and property lookup — O(N). Both of these have to go through some jumps and hops internally — variable is resolved via scope chain, whereas property — via prototype chain (and only if not found directly on an object). It&#8217;s understandable that property lookups are slightly slower, since besides actual property lookup, there&#8217;s also an initial &#8220;base&#8221; variable resolution, but where O(1) and O(N) are coming from was a mystery.</p>
+
+  <h2 id="chapter_21">Chapter 21</h2>
+
+  <p>This chapter talks about <strong>Upcoming APIs</strong>, namely Selectors API and those from HTML5. Describing specifications that are in a state of draft is a risky business, which author rightfully mentions upfront. This section of a book is a nice cursory overview of most of the upcoming goodness — <code>querySelectorAll</code>, <code>getElementsByClassName</code>, <code>classList</code>, data attributes, cross-document messaging, media elements, canvas, offline support, history management, and others.</p>
+
+  <h2 id="chapter_22">Chapter 22</h2>
+
+  <p>The finale of the book is <strong>The Evolution of JavaScript</strong>. It first covers wide range of extensions to JavaScript, from 1.5 to 1.8 — constants, accessors, array extras, array and string generics, block-level scope with <code>let</code>, generators and iterators, as well as few others. The only minor nit here is that  examples of array extras had functions with unused parameters. </p>
+
+  <p>Unfortunately, a lot of information about ECMAScript 5 here is outdated. It&#8217;s even called by its previous name — ECMAScript 3.1.</p>
+
+  <ul>
+  <li>[[Flexible]] attribute used throughout the examples is now called [[Configurable]]</li>
+  <li>[[Getter]] and [[Setter]] attributes are called [[Get]] and [[Set]] accordingly</li>
+  <li>[[Const]] attribute no longer exists</li>
+  <li><code>Object.clone</code> no longer exists</li>
+  <li><code>Object.keys</code> doesn&#8217;t accept second (sort) argument</li>
+  <li>Function objects don&#8217;t have <code>name</code> or <code>parameters</code> properties</li>
+  <li><code>arguments</code> object is not an instance of <code>Array</code></li>
+  <li>Decimals do not exist</li>
+  <li>“use subset cautious”; doesn&#8217;t exist and is replaced with Use Strict Directive — &#8220;use strict&#8221;;</li>
+  </ul>
+
+  <p>There&#8217;s also a slight mistake in one of the examples when accessing <code>getPrototypeOf</code> as an instance method, rather than as static one of an <code>Object</code>.</p>
+</div>

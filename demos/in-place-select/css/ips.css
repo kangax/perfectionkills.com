@@ -1,0 +1,109 @@
+.ips_wrapper {
+  border: 1px solid #ddf;
+  position: relative;
+  cursor: text;
+  margin: 0;
+  padding: 0;
+  width: 200px;
+  display: block;
+}
+.ips_wrapper.over {
+  border: 1px solid #578bc5;
+}
+.ips_wrapper .ips_text {
+  margin: 3px 6px;
+  font-style: normal;
+  margin-left: 3px;
+  margin-right: 0;
+  padding: 0;
+  overflow: hidden;
+  color: #f55;
+  height: 18px;
+  display: block;
+  width: 100%;
+}
+.ips_input {
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  border: 1px solid #ccf;
+  padding: 3px 6px !important;
+  display: block;
+  bottom: -1px;
+}
+.hidden {
+  margin-left: -10000px;
+}
+.ips_trigger {
+  position: absolute;
+  top: 0;
+  right: 0;
+  text-align: center;
+  border-left: 1px solid #ddf;
+  width: 20px;
+  cursor: pointer;
+  color: #ccc;
+  height: 100%;
+  margin: 0;
+}
+.ips_trigger span {
+  margin: 3px auto;
+  display: block;
+  width: 14px;
+}
+.ips_wrapper.over .ips_trigger {
+  border-left: 1px solid #578bc5;
+}
+.ips_trigger.over {
+  color: #333;
+}
+.ips_options_list, .ips_options_list li {
+  margin: 0;
+  padding: 0;
+}
+.ips_options_list {
+  position: absolute;
+  background: #578bc5;
+  border: 1px solid #578bc5;
+  z-index: 100;
+  left: -1px;
+  width: 100%;
+  margin-top: 5px;
+}
+.ips_options_list li {
+  padding: 1px 1px 1px 26px;
+  background: #fff;
+  color: #578bc5;
+  font-size: 1em;
+  cursor: pointer;
+  overflow: hidden;
+  height: 18px;
+  list-style-type: none;
+  background: #fff url(../images/stars.png) 0 0 no-repeat;
+}
+.ips_options_list li.over {
+  background: #E8EFF7 url(../images/stars.png) 0 0 no-repeat;
+  color: #f55;
+}
+.ips_options_list li.off {
+  background: #fff url(../images/stars.png) 0 -18px no-repeat;
+}
+.ips_options_list li.off.over {
+  background: #E8EFF7 url(../images/stars.png) 0 -18px no-repeat;
+  color: #f55;
+}
+.ips_options_list li.half {
+  background: #fff url(../images/stars.png) 0 -36px no-repeat;
+}
+.ips_options_list li.half.over {
+  background: #E8EFF7 url(../images/stars.png) 0 -36px no-repeat;
+  color: #f55;
+}
+
+
+/* my stuff */
+
+.ips_wrapper {
+  margin: 1em;
+  font-family: Georgia;
+}

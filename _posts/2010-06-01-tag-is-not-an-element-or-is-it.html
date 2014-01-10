@@ -1,0 +1,127 @@
+---
+layout: post
+title: Tag is not an Element. Or is it?
+tags:
+  - html
+---
+
+<h2>Tag is not an Element. Or is it?</h2>
+
+<p>It&#8217;s interesting how widely some misconceptions spread around. The one I noticed recently is the &#8220;issue&#8221; of elements vs. tags. The problem is that people say tags when they mean elements, and do it so often that it&#8217;s not clear if the distinction is still relevant. </p>
+
+<p>Or if anyone even cares anymore.</p>
+
+<h3 id="elements_vs_tags">Elements vs. tags</h3>
+
+<p>If you look at section 3 of HTML 4.01 — <a href="http://www.w3.org/TR/REC-html40/intro/sgmltut.html">&#8220;on SGML and HTML&#8221;</a>, there&#8217;s an explicit note about elements not being tags. In HTML 4.01, <br><code>&lt;p&gt;foo bar&lt;/p&gt;</code> is an element, not a tag. An element consists of a <strong>start tag</strong>,  <strong>content</strong>, and an <strong>end tag</strong>. In case of <code>&lt;p&gt;foo bar&lt;/p&gt;</code>, <code>&lt;p&gt;</code> is a start tag, <code>foo bar</code> is content, and <code>&lt;/p&gt;</code> is an end tag. </p>
+
+<p>In other words, <strong>elements consist of tags</strong>.</p>
+
+<h3 id="optional_tags">Optional tags</h3>
+
+<p>The distinction between tags and elements becomes slightly less clear once we start dealing with elements that have optional tags, as defined by HTML 4.01. For example, <code>&lt;p&gt;</code> or <code>&lt;td&gt;</code> elements don&#8217;t have to have end tags. They could very well exist without them. When parser finds <code>&lt;p&gt;foo bar</code> in markup, it <strong>still creates an element</strong>. There&#8217;s no end <code>&lt;/p&gt;</code> tag, but parser doesn't really need it; start <code>&lt;p&gt;</code> tag already denotes what kind of element it is.</p>
+
+<pre lang="html"><code>
+  &lt;p>foo bar
+
+  &lt;tr>
+    &lt;td>baz
+    &lt;td>qux
+  &lt;/tr>
+</code></pre>
+
+<p>But that&#8217;s not all.</p>
+
+<p>Some elements, besides having optional end tags, have <a href="http://www.w3.org/TR/html4/intro/sgmltut.html#h-3.3.3">empty content model</a>, which means that they can&#8217;t have any content at all. And when an element is not allowed to have any content and has an optional tag, it&#8217;s called an empty element. Not only are end tags optional in such elements, but they <strong>must be completely omitted</strong>. These, unfortunately, are not some obscure elements, but are very much useful ones like <code>&lt;br&gt;</code>, <code>&lt;link&gt;</code>, <code>&lt;img&gt;</code>, <code>&lt;input&gt;</code>, <code>&lt;meta&gt;</code> and few others.</p>
+
+<p>What&#8217;s interesting is that <code>&lt;br&gt;</code> is still an element, only an element that <strong>consists of start tag only</strong>. It&#8217;s just that its content and end tag must never be present. The fact that <code>&lt;br&gt;</code>, <code>&lt;img&gt;</code> or other empty elements consist of start tags only, makes things rather confusing.</p>
+
+<p>And we&#8217;re not even talking about elements with both tags optional — <code>&lt;html&gt;</code>, <code>&lt;head&gt;</code>, <code>&lt;body&gt;</code>. Those could exist <strong>without any visible traces at all</strong>, and are only created based on the context.</p>
+
+<pre lang="html"><code>
+  &lt;html>
+    <!--
+            There's no HEAD start tag, no HEAD end tag, and no HEAD content here.
+            Yet, HEAD element is still created implicilty.
+            This happens because content model of HTML element is defined as `head, body`,
+            which means that both elements should be present in HTML element in that order.
+            As soon as BODY start tag is found, even if HEAD tags are not present,
+            HEAD element is created automatically.  -->
+    &lt;body>
+    ...
+    &lt;/body>
+  &lt;/html>
+</code></pre>
+
+<h3 id="which_confusion">Which confusion?</h3>
+
+<p>So which practical implications does this confusion actually have?</p>
+
+<p>For one, saying something like &#8220;insert an image after a &lt;p> tag&#8221; is ranging from &#8220;wrong&#8221; to &#8220;ambiguous&#8221;, since we can&#8217;t insert anything but a chunk of text after a &lt;p> tag, and &lt;p> tag can be either a start one (<code>&lt;p&gt;</code>) or an end one (<code>&lt;/p&gt;</code>). In this case, a better way would be to say — &#8220;insert an &lt;img&gt; tag after a start &lt;p&gt; tag&#8221;:</p>
+
+<pre lang="html"><code>
+  &lt;p>
+    &lt;img ...> <!-- IMG tag is inserted after a start P tag -->
+    ...
+  &lt;/p>
+</code></pre>
+
+<p>in which case <code>&lt;img&gt;</code> element would become a child of <code>&lt;p&gt;</code> element. Or we could say — &#8220;insert an &lt;img&gt; tag after an end &lt;p&gt; tag&#8221;:</p>
+
+<pre lang="html"><code>
+  &lt;p>
+    ...
+  &lt;/p>
+  &lt;img ...> <!-- IMG tag is inserted after an end P tag -->
+</code></pre>
+
+<p>in which case <code>&lt;img&gt;</code> element would be a sibling following <code>&lt;p&gt;</code> one.</p>
+
+<p>Of course, most of the time, what people really mean by &#8220;insert an image after a &lt;P&gt; tag&#8221; is a second version. It&#8217;s just that <strong>&#8220;element&#8221; is accidentally replaced with a &#8220;tag&#8221;</strong>. An even better way — and the one that avoids mention of tags in the first place — is to say &#8220;insert an &lt;IMG&gt; element after a &lt;P&gt; element&#8221;. This version leaves no room for incorrect interpretation.</p>
+
+<h3 id="global_confusion">Global confusion</h3>
+
+<p>What&#8217;s interesting about all this is not so much the finer points of difference between tags and elements, but just how widely this misconception prevails. Google search returns <a href="http://www.google.com/search?q=%22div+tag%22">480,000 results</a> for &#8220;div tag&#8221;, but only <a href="http://www.google.com/search?q=%22div+element%22">137,000</a> for &#8220;div element&#8221;. For an empty element, such as img, the difference is even scarier — "img tag" returns <a href="http://www.google.com/#q="img+tag"">959,000 results</a>, while "img element" only <a href="http://www.google.com/#q="img+element"">48,200</a>. An element is confused for a tag everywhere, from blogs, articles, and mailing lists to books, references, and frameworks.</p>
+
+
+<ul>
+  <li style="margin-bottom:0.5em;">Ruby on Rails uses &#8220;tag&#8221; in all of its helpers — <a href="http://api.rubyonrails.org/classes/ActionView/Helpers/TagHelper.html#M002244">tag</a>, <a href="http://api.rubyonrails.org/classes/ActionView/Helpers/AssetTagHelper.html#M002234">image_tag</a>, <a href="http://api.rubyonrails.org/classes/ActionView/Helpers/AssetTagHelper.html#M002231">stylesheet_link_tag</a>, etc. — where each of those methods actually insert an element into a document.
+  </li>
+  <li style="margin-bottom:0.5em;">w3schools <a href="http://www.w3schools.com/tags/tag_div.asp">uses &#8220;tag&#8221; throughout its entire reference</a> — &#8220;&lt;div> tag&#8221;, &#8220;&lt;abrr> tag&#8221;, etc. — to refer to elements.</li>
+  <li style="margin-bottom:0.5em;"><a href="http://hacks.mozilla.org/2009/07/video-more-than-just-a-tag/">hacks.mozilla.org uses tag</a> when talking about HTML5 video element.</li>
+  <li style="margin-bottom:0.5em;"><a href="http://ajaxian.com/archives/youtube-html5-video">Ajaxian mentions it</a> here and there.</li>
+  <li style="margin-bottom:0.5em;">Books like <a href="http://www.amazon.com/Performance-JavaScript-Faster-Application-Interfaces/dp/059680279X">&#8220;High Performance Javascript&#8221;</a> explain things in terms of tags, rather than elements.</li>
+  <li style="margin-bottom:0.5em;">and many, many others&#8230;</li>
+</ul>
+
+<h3 id="pedantry_or_important_distinction">Pedantry or important distinction?</h3>
+
+<p>Once you start thinking about the distinction, edges become somewhat blurry. Are all of the examples above really wrong? </p>
+
+<p>When describing <a href="http://api.rubyonrails.org/classes/ActionView/Helpers/AssetTagHelper.html#M002234">&#8220;image_tag&#8221;</a>, Ruby on Rails documentation says <cite>&#8220;Returns an html image tag &#8230;&#8221;</cite>. The returned string — &#8220;&lt;img ...&gt;&#8221; — can actually very well be considered an image (start) tag. Yes, the string represents an element, but since an element is empty, it&#8217;s also a string that consists of <code>&lt;img&gt;</code> tag only, and so can probably be called an &#8220;image&#8221; tag.</p>
+
+<p>At the same time, <a href="http://api.rubyonrails.org/classes/ActionView/Helpers/AssetTagHelper.html#M002225">&#8220;javascript_include_tag&#8221;</a> already crosses the line of correctness. It still uses <cite>&#8220;Returns an html <strong>script tag</strong>&#8221;</cite>, but already returns a string that can only be considered an element — &#8220;&lt;script type="text/javascript" src="..."&gt;&lt;/script&gt;&#8221;, since there&#8217;s now a start tag, content (empty), and an end tag.</p>
+
+<p>w3schools is just plain wrong <sup><a href="#w3schools-footnote">[1]</a></sup>, saying things like <cite>&#8220;The &lt;div&gt; tag defines a division or a section in an HTML document.&#8221;</cite> or <cite>&#8220;The &lt;div&gt; tag is often used to group block-elements to format them with styles.&#8221;</cite>. Tags do not define division, they represent elements, and it is elements that have certain semantic meaning; in this case — division.</p>
+
+<p>In some of the <a href="http://www.smashingmagazine.com/2009/08/04/designing-a-html-5-layout-from-scratch/">popular articles</a>, we can find phrases like <cite>&#8220;&#8230; the nearer ancestor of our &lt;footer&gt; tag is the &lt;body&gt; tag &#8230;&#8221;</cite>, in which case it&#8217;s pretty clear that &#8220;tag&#8221; is not the right word at all; Tags can not be ancestors, but elements can.</p>
+
+<p>However, saying that &#8220;browser supports &lt;video&gt; tag&#8221; is technically not wrong, since browsers supporting <code>&lt;video&gt;</code> element, most definitely can parse and understand <code>&lt;video&gt;</code> tags as well (it is by recognizing video tags that they are able to create video elements in DOM).</p>
+
+<p>Speaking of DOM&#8230;</p>
+
+<h3 id="what_about_dom">What about DOM?</h3>
+
+<p>Before I knew the difference between tags and elements, I would always think in terms of tags when talking about HTML, and in terms of elements when talking about DOM. It just made sense that HTML, being markup language, consists of tags, while HTML DOM — or rather, the document available for scripting — is a tree-like structure consisting of elements, and other kinds of nodes. I knew that browser parses HTML markup (and so tags), and then creates a tree-like structure to represent a document, in which case <strong>tags essentially become elements</strong>. The fact that elements are not just kinds of nodes, but are also chunks of text in markup seemed very strange when I first found out about it.</p>
+
+<p>It seems that this is exactly how most of the people think about tags vs. elements. Tags exist in HTML (text), and elements - in document (DOM). This would explain why tags prevail in discussions about HTML, or markup in general; and why elements are mostly mentioned in context of scripting, rendering, etc.</p>
+
+<p>Nevertheless, I believe that <strong>keeping terminology straight is important</strong>. Things should be called as they really are, to avoid the ambiguity that we've seen in the previous example. A method named something like <code>forEachTag</code> should not iterate over each element, and vice-versa; technical discussions, articles, and documentation should really strive to use proper terms.</p>
+
+<h3 id="what_now">What now?</h3>
+
+<p>The attempts at demystification were <a href="http://annevankesteren.nl/2004/05/tags-vs-elements">already made</a> in <a href="http://www.456bereastreet.com/archive/200508/html_tags_vs_elements_vs_attributes/">the past</a>, yet the effect is barely visible. So I wonder — why? Is it too unintuitive to speak in terms of elements in context of HTML, or is this a lack of explanation and exposure of the subject? Does the distinction even matter? Or does it matter in technical discussions only? Does it make sense to distinguish these two entities, or should we just try to infer the exact meaning based on the context, as it seems to be done right now? Are we all simply used to the word &#8220;tag&#8221;, and don&#8217;t care about the difference most of the time?</p>
+
+<p>What do you think?</p>
+
+<p id="w3schools-footnote" style="font-size:0.85em"><sup>[1]</sup> ...which is not surprising, considering the amount of other misconceptions on that site, such as classifying HTML comments as tags.</p>

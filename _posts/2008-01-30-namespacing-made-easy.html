@@ -1,0 +1,72 @@
+---
+layout: post
+title: Namespacing made easy
+tags:
+  - prototype
+---
+
+<h2>Namespacing made easy</h2>
+
+<p><a href="http://www.prototypejs.org/api/enumerable/inject" title="Enumerable#inject documentation">Enumerable#inject</a> is one scary method. It took me a while to understand the beauty of this <a href="http://en.wikipedia.org/wiki/Reduce_%28higher-order_function%29" title="Fold (higher-order function)">functional programming paradigm</a>.  Just in case you were ever wondering about its real life usage &#8211; here&#8217;s one of them.</p>
+
+<p>We all know that using namespaces is generally a wise thing to do. You don&#8217;t have to create a multi level object structure, but nesting your code under a pseudo-namespace is what makes maintenance, upgrades and migrations somewhat easier and error-prone.</p>
+
+<p>Few popular javascript libraries implement some sort of a utility function that automatically creates nested objects. What it means is that instead of writing it manually, you could let the helper handle it for you:</p>
+
+<pre lang="javascript"><code>
+// creating nested structure manually is painful
+var com = {
+  thinkweb2: {
+    projects: {
+      _prototype: 'a deeply nested property...'
+    }
+  }
+};
+
+com.thinkweb2.projects._prototype // => 'a deeply nested property...'
+</code></pre>
+
+<p>Well, it appears that inject can handle such task in only <strong>3 lines of code</strong>:</p>
+
+<pre lang="javascript"><code>
+'com.thinkweb2.projects.prototype'.split('.').inject(window, function(parent, child) {
+  var o = parent[child] = { }; return o;
+});
+
+Object.inspect(com.thinkweb2.projects.prototype); // => "[object Object]"
+</code></pre>
+
+<p>Not bad &#8211; a completely generic namespacing snippet.</p>
+
+<p>What&#8217;s happening here is not a black magic. Inject accepts initial object as a first argument (in this case &#8211; window object) and iterator function as the second argument. It then calls iterator function on each item from the collection (in our case it&#8217;s simply a string split into an array). Iterator function receives <strong>accumulated result</strong> as a first argument and current value as a second. Iterator performs an action (creates a nested object) and returns accumulated result (the newly created parent object) to be used in following iterations.  </p>
+
+<p>Alternatively, we could wrap this all nicely and define as a String.prototype method:</p>
+
+<pre lang="javascript"><code>
+String.prototype.namespace = function(separator) {
+  this.split(separator || '.').inject(window, function(parent, child) {
+    var o = parent[child] = { }; return o;
+  });
+};
+
+foo.bar.baz.quux = 'Nothing special...'; // => ERROR: foo is not defined
+
+// Default separator is '.'
+'foo.bar.baz.quux'.namespace();
+
+foo.bar.baz.quux = 'Nothing special...'; // => "Nothing special..."
+
+// Or using a custom one
+'MY_AWESOME_APPLICATION::util::DOM::dimensions'.namespace('::');
+
+'dimensions' in MY_AWESOME_APPLICATION.util.DOM; // => true
+</code></pre>
+
+<p>Note how we use &#8220;separator&#8221; argument (or defaulting to &#8216;.&#8217;) making the function somewhat more flexible.</p>
+
+<p>P.S.<br />
+Heavy namespacing could lead to unnecessary complexity.<br />
+Lack of it &#8211; to buggy behavior.<br />
+In the end, the only thing that matters is what works best for you.</p>
+
+<p>Enjoy!</p>

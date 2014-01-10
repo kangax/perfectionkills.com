@@ -1,0 +1,128 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+	<head>
+		
+		<title>State notifier using prototype and custom events</title>
+		
+		<meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+		<meta name="keywords" content="prototype, state, notifier" />
+		<meta name="description" content="" />
+		
+		<style type="text/css" media="screen">
+			body {
+				background: #555;
+			}
+			#bd-wrapper {
+				width: 720px;
+				margin: 1em auto;
+				background: #333;
+				color: #fdd;
+				padding: 1em;
+				
+			}
+			p {
+				color: #aaf;
+				font: 1em/1.5 Georgia, serif;
+			}
+			a {
+				color: #aaf;
+			}
+			pre {
+				font-size: 0.75em;
+				color: #aaa;
+				background: #444;
+				padding: 0.5em;
+			}
+		</style>
+		
+		<script src="http://www.prototypejs.org/assets/2007/10/16/prototype.js" type="text/javascript"></script>
+		<script src="notifier.js" type="text/javascript" charset="utf-8"></script>
+		
+		<script type="text/javascript" charset="utf-8">
+			document.observe('dom:loaded', function() {
+	
+				new Notifier(3000);
+				
+				document.observe('state:idle', onIdle).observe('state:active', onActive);
+				
+				var p = $$('p')[0],
+					info = $('info');
+				
+				function onIdle(e) {
+					p.setOpacity(0.2);
+					info.innerHTML = 'idled...'
+				}
+				function onActive(e) {
+					p.setOpacity(1);
+					info.innerHTML = 'active... after: ' + e.memo.idleTime + ' ms';
+				}
+			})
+		</script>
+	
+	</head>
+	<body>
+		<div id="bd-wrapper">
+			<p>
+			This is a demo for idle state notifier using prototype.js.
+			Notifier is defined as a self containing class which fires <em>state:active</em> and <em>state:idle</em> custom events. 
+			You can read more about it in <a href="http://thinkweb2.com/projects/prototype/2007/10/17/detect-idle-state-with-custom-events/">this post</a>
+			</p>
+			<span id="info">let's see...</span>
+<pre>
+var Notifier = Class.create({
+	
+	_events: [[window, 'scroll'], [window, 'resize'], [document, 'mousemove'], [document, 'keydown']],
+	_timer: null,
+	_idleTime: null,
+	
+	initialize: function(time) {
+		this.time = time;
+		
+		this.initObservers();
+		this.setTimer();
+	},
+	
+	initObservers: function() {
+		this._events.each(function(e) {
+			Event.observe(e[0], e[1], this.onInterrupt.bind(this))
+		}.bind(this))
+	},
+	
+	onInterrupt: function() {
+		document.fire('state:active', { idleTime: new Date() - this._idleTime });
+		this.setTimer();
+	},
+	
+	setTimer: function() {
+		clearTimeout(this._timer);
+		this._idleTime = new Date();
+		this._timer = setTimeout(function() {
+			document.fire('state:idle');
+		}, this.time)
+	}
+})
+
+document.observe('dom:loaded', function() {
+	
+	new Notifier(2000);
+	
+	document.observe('state:idle', onIdle).observe('state:active', onActive);
+	
+	var p = $$('p')[0],
+		info = $('info');
+	
+	function onIdle(e) {
+		p.setOpacity(0.2);
+		info.innerHTML = 'idled...'
+	}
+	function onActive(e) {
+		p.setOpacity(1);
+		info.innerHTML = 'active... after: ' + e.memo.idleTime + ' ms';
+	}
+})
+</pre>
+		</div>
+	</body>
+</html>

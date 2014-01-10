@@ -1,0 +1,152 @@
+---
+layout: post
+title: Whitespace deviations
+tags:
+  - js
+---
+
+<h2>Whitespace deviations</h2>
+
+<p>I am reading a <a href="http://www.amazon.com/gp/product/0596520689">Regular Expression Cookbook</a> by Jan Goyvaerts and Steven Levithan. It's a truly excellent book on a subject, with an incredible level of attention to details. I am only half-way through the book, but have already learned few things about regular expressions - both general and javascript-related ones.</p>
+
+<p>One thing I noticed missing in the book was a mention of whitespace character class (<code>\s</code>) discrepancies in current ECMAScript implementations. Cookbook rightfully explains that <code>\s</code> in Javascript matches any character <strong>defined as whitespace by the Unicode standard</strong>. What it fails to mention is how horribly this rule is actually implemented in modern browsers. While most of the implementations correctly handle ASCII whitespace characters, such as - <code>U+0020</code> (Space), <code>U+000B</code> (Vertical Tab) and <code>U+000A</code> (Line Feed) -  there's much more chaos in anything above <code>U+2000</code> (EN QUAD) point.</p>
+
+<p>In practice such non-conformance can lead to surprising results when implementing something like <code>trim</code> function. If <code>trim</code> were to utilize <code>\s</code>, than it could miss quite common characters like <code>U+00A0</code> (No-Break Space); In fact, <code>trim</code> used in jQuery or Prototype uses exactly that - standard whitespace character class (<code>\s</code>) - and so fails with any of these troublesome characters. One of the solutions, of course, is to replace <code>\s</code> with a custom character class, e.g.: - <code>[\u0009\u000A\u000B\u000C\u000D\u0020\u00A0\u1680\u180E\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200A\u202F\u205F\u3000\u2028\u2029]</code>
+
+<p>This topic comes up once in a while on comp.lang.javascript and there have been some efforts to <a href="http://www.merlyn.demon.co.uk/js-valid.htm#RsT">document these discrepancies</a>. I wanted to make a simple table of modern browsers compliance and used a test <a href="http://groups.google.com/group/comp.lang.javascript/msg/4bd0e6e742b83f91">provided once by Richard Cornford</a> (also <a href="/rcornford_whitespace_test.html">available online</a> for anyone to try it out). </p>
+
+<p>Here’s a table demonstrating above mentioned deviations. It’s good to see Safari 4+ and Chrome 2+ conforming to specs fully. Hopefully, upcoming versions of Firefox will also take care of the remaining "failures".</p>
+
+<style>
+  table { font-size: 12px; font-family: monospace; }
+  th { font-weight: normal; }
+  td.pass { background-color: green; color: #fff; text-align: center; }
+  td.fail { background-color: red; color: #fff; text-align: center; }
+</style>
+
+<table style="margin-bottom: 1.5em;">
+  <thead>
+    <tr>
+      <th style="width:21em;">Code point / Browser</th>
+
+      <th>Firefox 2-3.5</th>
+      <th>Safari 2.0-3.2.1</th>
+      <th>Safari 4</th>
+      <th>Opera 9.25, 9.64</th>
+      <th>Opera 10</th>
+      <th style="width:4em;">IE 6-8</th>
+      <th>Chrome 2-3</th>
+      <th>Konqueror 4.2.2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>(0x0009) [ASCII Tab]</td>
+      <td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td>
+    </tr>
+    <tr>
+      <td>(0x000A) [ASCII Line Feed]</td>
+      <td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td>
+    </tr>
+    <tr>
+      <td>(0x000B) [ASCII Vertical Tab]</td>
+      <td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="fail">FAIL</td>
+    </tr>
+    <tr>
+      <td>(0x000C) [ASCII Form Feed]</td>
+      <td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td>
+    </tr>
+    <tr>
+      <td>(0x000D) [ASCII Carriage Return]</td>
+      <td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td>
+    </tr>
+    <tr>
+      <td>(0x0020) SPACE</td>
+      <td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td>
+    </tr>
+    <tr>
+      <td>(0x00A0) NO-BREAK SPACE</td>
+      <td class="pass">PASS</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="fail">FAIL</td>
+    </tr>
+    <tr>
+      <td>(0x1680) OGHAM SPACE MARK</td>
+      <td class="fail">FAIL</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="fail">FAIL</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="fail">FAIL</td>
+    </tr>
+    <tr>
+      <td>(0x180E) MONGOLIAN VOWEL SEPARATOR</td>
+      <td class="fail">FAIL</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="fail">FAIL</td><td class="fail">FAIL</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="fail">FAIL</td>
+    </tr>
+    <tr>
+      <td>(0x2000) EN QUAD</td>
+      <td class="pass">PASS</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="fail">FAIL</td>
+    </tr>
+    <tr>
+      <td>(0x2001) EM QUAD</td>
+      <td class="pass">PASS</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="fail">FAIL</td>
+    </tr>
+    <tr>
+      <td>(0x2002) EN SPACE</td>
+      <td class="pass">PASS</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="fail">FAIL</td>
+    </tr>
+    <tr>
+      <td>(0x2003) EM SPACE</td>
+      <td class="pass">PASS</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="fail">FAIL</td>
+    </tr>
+    <tr>
+      <td>(0x2004) THREE-PER-EM SPACE</td>
+      <td class="pass">PASS</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="fail">FAIL</td>
+    </tr>
+    <tr>
+      <td>(0x2005) FOUR-PER-EM SPACE</td>
+      <td class="pass">PASS</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="fail">FAIL</td>
+    </tr>
+    <tr>
+      <td>(0x2006) SIX-PER-EM SPACE</td>
+      <td class="pass">PASS</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="fail">FAIL</td>
+    </tr>
+    <tr>
+      <td>(0x2007) FIGURE SPACE</td>
+      <td class="pass">PASS</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="fail">FAIL</td>
+    </tr>
+    <tr>
+      <td>(0x2008) PUNCTUATION SPACE</td>
+      <td class="pass">PASS</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="fail">FAIL</td>
+    </tr>
+    <tr>
+      <td>(0x2009) THIN SPACE</td>
+      <td class="pass">PASS</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="fail">FAIL</td>
+    </tr>
+    <tr>
+      <td>(0x200A) HAIR SPACE</td>
+      <td class="pass">PASS</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="fail">FAIL</td>
+    </tr>
+    <tr>
+      <td>(0x2028) LINE SEPARATOR</td>
+      <td class="pass">PASS</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="fail">FAIL</td>
+    </tr>
+    <tr>
+      <td>(0x2029) PARAGRAPH SEPARATOR</td>
+      <td class="pass">PASS</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="fail">FAIL</td>
+    </tr>
+    <tr>
+      <td>(0x202F) NARROW NO-BREAK SPACE</td>
+      <td class="fail">FAIL</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="fail">FAIL</td>
+    </tr>
+    <tr>
+      <td>(0x205F) MEDIUM MATHEMATICAL SPACE</td>
+      <td class="fail">FAIL</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="fail">FAIL</td><td class="fail">FAIL</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="fail">FAIL</td>
+    </tr>
+    <tr>
+      <td>(0x3000) IDEOGRAPHIC SPACE</td>
+      <td class="pass">PASS</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="pass">PASS</td><td class="fail">FAIL</td><td class="pass">PASS</td><td class="fail">FAIL</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Tests for Firefox, Safari and Opera were performed on Mac OS X (10.5.8); IE and Chrome - on Windows XP Pro SP2 (via VMWare); and Konqueror - on Ubuntu 9.04 (via VMWare)</p>
+
+<strong>Edit (28/09/2009)</strong>
+<p>Clarified operating systems (and their versions) used for testing; Aligned characters in a table by code point; Updated Opera to 10RC, added Chrome 3 to results, combined FF columns into one, since they are the identical; Sorted table by code point. Thanks to Dr J R Stockton and Luke Smith for suggestions.</p>
+
+<strong>Edit (04/09/2009)</strong>
+<p>Updated Opera 10RC to Opera 10 (Thanks to Garrett Smith for test); tested and updated table with results of Safari 2.x and older 3.x versions; fixed a bug in a testcase where `char` identifier (one of future reserved words as per ES3) would prevent script parsing in Safari 2.x</p>

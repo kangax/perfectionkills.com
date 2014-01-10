@@ -1,0 +1,125 @@
+---
+layout: post
+title: Refactoring with Prototype
+tags:
+  - prototype
+---
+
+<h2>Refactoring with Prototype</h2>
+
+<p>I&#8217;m not surprised to see prototype code that sucks. Been there, done that (and I&#8217;m sure still doing it) &#8211; nobody is perfect. What surprises me though is how ridiculous some explanations (of writing crappy code) sound. <em style="display:inline; margin-left: 0">&#8220;I don&#8217;t really know javascript. I do PHP professionally&#8221;</em> is my favorite. Don&#8217;t get me wrong, I understand that experience and deep understanding of language is essential for writing smarter code. It could be a real challenge to wrap your mind around some of the dynamic concepts of such languages as javascript. That I can understand. What I don&#8217;t understand, though, is how people don&#8217;t follow some of the fundamental principles of programming. Do we really need to know javascript to prevent repetition,  unnecessary constructions or poor optimization? I seriously doubt it&#8230;</p>
+
+<p>I want to take a look at few examples of real life applications and see what we can do to make them&#8230; better. Aiming for a smaller footprint, faster execution and prettier code is what makes it a real challenge, so let&#8217;s dive in&#8230;</p>
+
+<h3>Repetition</h3>
+
+<pre lang="javascript"><code>
+function hideall() {
+  hidediv('dropdown1');
+  hidediv('dropdown2');
+  hidediv('dropdown3');
+  hidediv('dropdown4');
+  hidediv('dropdown5');
+  hidediv('dropdown6');
+  hidediv('dropdown7');
+}
+</code></pre>
+
+<p>Very basic, ugly (and unfortunately real) example. <span style="text-decoration: underline">The only part that varies here are numbers</span> so all we need to do is loop through them. Prototype provides us with a quite convenient utility function for generating ranges &#8211; <a href="http://www.prototypejs.org/api/utility/dollar-r" title="Object Range in prototype API">$R</a> takes 2 parameters &#8211; starting and ending values and creates a range object by calling <code>succ</code> method on each value. What&#8217;s really cool about this object is that it extends prototype&#8217;s Enumerable methods &#8211; iteration has never been easier:</p>
+
+<pre lang="javascript"><code>
+$R(1,7).each(function(n) {
+  hidediv('dropdown' + n);
+});
+</code></pre>
+
+<p>Not only we decreased the overall size of this snippet, but notice how more generic and flexible it has become.</p>
+
+<h3>Repetition 2</h3>
+
+<pre lang="javascript"><code>
+function resetnotes() {
+  $('left1').removeClassName('learn');
+  $('left1').removeClassName('play');
+  $('left1').removeClassName('grow');
+  $('left1').removeClassName('join');
+}
+</code></pre>
+
+<p>This one is similar but is even worse, as we&#8217;re calling <a href="http://www.prototypejs.org/api/utility/dollar" title="dollar function in prototype API">$</a> function multiple times, decreasing overall performance. <span style="text-decoration: underline">What varies here are plain strings</span> and that&#8217;s when <a href="http://www.prototypejs.org/api/utility/dollar-w" title="">$w</a> helper could come in handy. Inspired by Ruby, <code>$w</code> takes a string of space-separated values and creates an array out of it. Remember that arrays are automatically extended with Enumerable methods: </p>
+
+<pre lang="javascript"><code>
+// storing element's reference for faster access
+var left1 = $('left1');
+
+// creating array of strings and iterating over them
+$w('learn play grow join').each(function(s){
+  left1.removeClassName(s);
+});
+</code></pre>
+
+<p>Another solution would be to wrap (augment) <a href="http://www.prototypejs.org/api/element/removeClassName" title="removeClassName in prototype API">removeClassName</a> to accept multiple arguments (classNames).<br />
+I don&#8217;t suggest to use the following snippet in a production environment as I haven&#8217;t tested it thoroughly. The idea is to show you  basic way of augmenting prototype&#8217;s existent methods.</p>
+
+<pre lang="javascript"><code>
+Element.addMethods({
+  removeClassName: Element.Methods.removeClassName.wrap(function() {
+
+    var args = $A(arguments),
+        proceed = args.shift(),
+        element = $(args.shift());
+
+    if (args.length > 1) {
+
+      // this is our modified behavior (only if more than 1 argument was passed)
+      element.className = element.className
+        .replace(new RegExp("\s*(" + args.join('|') + ")\s*"), '');
+
+      return element;
+    }
+
+    // and this is a default one
+    return element.proceed();
+  });
+});
+</code></pre>
+
+<p><strong>Attention:</strong> Try not to fall into a trap of &#8220;generic-madness&#8221;. Yes, it&#8217;s beautiful. Yes, it encapsulates certain logic into its own layer and creates reusable chunks of code, but no matter how great it is, think twice before taking this approach. Does it pay to spend time creating another abstraction layer? Will it actually be used in the future? If it doesn&#8217;t simplify, just drop it. Keep it simple and move on.</p>
+
+<p>Using <a href="http://www.prototypejs.org/api/element/addMethods" title="addMethods in prototype API">Element.addMethods</a> we redefine prototype&#8217;s <code>removeClassName</code> to suit our needs. Notice how unobtrusive yet powerful this solution is. By wrapping already existent method with or own behaviour, we keep same logic in same place, and making sure augmented method does not break anything (Take a look at a <a href="http://perfectionkills.com/2007/09/14/wrap-it-up/" title="wrap it up">previous post about Function#wrap</a> if you&#8217;re not familiar with it)</p>
+
+<h3>Ternary operators</h3>
+
+<pre lang="javascript"><code>
+if (typeof this.prevbutton == 'object') {
+  $(prevmonth).appendChild(this.prevbutton);
+}
+else {
+  $(prevmonth).update(this.prevbutton);
+}
+</code></pre>
+
+<p>Using &#8220;if &#8230; else &#8230; &#8221; for only two conditions is usually a bad thing to do. Selecting one of two actions is even worse.<br />
+Ternary operator, on the other hand, is a perfect replacement for &#8220;if &#8230; else &#8230; &#8221; clause. Remember, that we can use bracket notation to call one of two object&#8217;s methods:</p>
+
+<pre lang="javascript"><code>
+$(prevmonth)[typeof(this.prevbutton) == 'object' ? 'appendChild' : 'update'](this.prevbutton);
+</code></pre>
+
+<h3>Chaining</h3>
+
+<pre lang="javascript"><code>
+$(nextmonth).addClassName('calcontrol');
+$(nextmonth).addClassName('calnextmonth');
+$(nextmonth).observe('click', this.nextmonth);
+</code></pre>
+
+<p>Taking advantage of chaining is easy &#8211; most of the methods in prototype return reference to the element they were invoked on. Another thing to note is that <a href="http://www.prototypejs.org/api/element/addClassName" title="addClassName in prototype API">addClassName</a> is simply appending it&#8217;s argument to the className of an element. There&#8217;s really no need invoking it more than once:</p>
+
+<pre lang="javascript"><code>
+$(nextmonth).addClassName('calcontrol calnextmonth').observe('click', this.nextmonth);
+</code></pre>
+
+<p>Those are very simple yet essential tips for writing more concise, elegant code and I would really want to see more people using them.</p>
+
+<p>Enjoy your ride and happy prototyping&#8230;</p>

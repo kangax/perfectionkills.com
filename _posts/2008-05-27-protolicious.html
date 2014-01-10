@@ -1,0 +1,179 @@
+---
+layout: post
+title: Protolicious
+tags:
+  - prototype
+---
+
+<h2>Protolicious</h2>
+
+<p>Prototype.js provides a rich set of solid components for building your web applications. Since most of those components are relatively <strong>low-level</strong>, prototype allows for an easy extension of basic functionality. For the past couple of months, I&#8217;ve been using few helpers that make painful tasks less painful. These helpers/extensions are published under the name of <a href="http://github.com/kangax/protolicious/tree/master/" title="Protolicious" target="_blank"><strong>Protolicious</strong></a> (MIT license).  Today, we&#8217;ll go over one of the modules from the suit &#8211; <strong><a href="http://github.com/kangax/protolicious/tree/master/function.extensions.js">Function Extensions</a></strong>.</p>
+
+<h3>Function#not</h3>
+
+<p><strong>Definition:</strong></p>
+
+<pre lang="javascript"><code>
+Function.prototype.not = function() {
+  var f = this;
+  return function() {
+    return !f.apply(f, arguments);
+  }
+};
+</code></pre>
+
+<p>This is a pretty common pattern of &#8220;inverting&#8221; return value of a function. <code>not</code> acts as a function &#8220;factory&#8221; &#8211; returning a function which returns &#8220;inverted&#8221; result of original one. It&#8217;s especially useful when working with iterators, since &#8220;!&#8221; operator does not invert return value but acts immediately &#8211; inverting function&#8217;s textual representation.  <strong>Example:</strong></p>
+
+<pre lang="javascript"><code>
+// Find all hidden elements (style.display == 'none')
+// The usual way
+$$('*').findAll(function(element) { return !element.visible() });
+
+// Using Function#not
+$$('*').findAll(Element.visible.not());</code></pre>
+
+<h3>Function#runOnce</h3>
+
+<p><strong>Definition:</strong></p>
+
+<pre lang="javascript"><code>
+Function.prototype.runOnce = function() {
+  this.apply(this, arguments);
+  return this;
+};</code></pre>
+
+<p><code>runOnce</code> is useful when working with event handlers. All it does is execute a function and return it. Sometimes certain behavior should not only be attached to elements, but also executed at the time it was initialized. It might seem trivial to wrap a function with &#8220;(&#8221; and &#8220;)&#8221; &#8211; forcing an expression to be evaluated &#8211; but the return value is then the one of a function, not the function itself. Another way is to call a handler before or after it has been attached. That works, unless a handler is an anonymous function. Otherwise, it needs to be named. Besides these minor pet peeves, I find <code>runOnce</code> looking much cleaner:  <strong>Example:</strong></p>
+
+<pre lang="javascript"><code>
+// the usual way
+myElement.toggle(); // run handler right away
+input.observe('change', myElement.toggle); // and then attach it
+
+// new way
+input.observe('change', myElement.toggle.runOnce()); // does same thing as above</code></pre>
+
+<h3>Function#toDelayed &amp; Function#toDeferred</h3>
+
+<p><strong>Definition:</strong></p>
+
+<pre lang="javascript"><code>
+Function.prototype.toDelayed = function(timeout) {
+  var __method = this;
+  return function() {
+    var args = $A(arguments);
+    setTimeout(function(){ __method.apply(__method, args) }, timeout * 1000);
+  }
+};
+
+Function.prototype.toDeferred = function() {
+  return this.toDelayed(0.01);
+};</code></pre>
+
+<p>Prototype 1.6 introduced 2 wonderful function methods &#8211; <a href="http://prototypejs.org/api/function/delay">Function#delay</a> and <a href="http://prototypejs.org/api/function/defer">Function#defer</a>. These wrappers are essentially just a syntactic sugar on top of <code>window.setTimeout</code>. They allow to invoke function in a specified period of time. When working with event handlers or &#8220;heavy&#8221; applications, delayed execution appears to be quite essential. I noticed that when observing certain form events (e.g. &#8220;change&#8221; or &#8220;reset&#8221;), observer function needs be deferred in order for a form element to catch up with the new changes. <code>toDelayed</code>/<code>toDeferred</code> are another pair of function factories which simply produce delayed/deferred representation of functions they were invoked on.  <strong>Example:</strong></p>
+
+<pre lang="javascript"><code>
+// handler works as expected when observing "click" event
+this.radioElements.invoke('observe', 'click', handler);
+
+// form's changes (resetting to an initial state) are not yet in affect by the time handler is called.
+// toDeferred solves this problem by creating a deferred function -
+// the one that will execute as soon as JS interpeter becomes available (and form's state changes)
+this.formElement.observe('reset', handler.toDeferred());</code></pre>
+
+<h3>Function.K</h3>
+
+<p><strong>Definition:</strong></p>
+
+<pre lang="javascript"><code>
+Function.K = function(k) {
+  return function() {
+    return k;
+  }
+};</code></pre>
+
+<p><code>Function.K</code> differs from other helpers in a way that it&#8217;s a static method on a Function object. Its goal is to accept an expression and return a function which returns that same expression. It could be used for currying, creating generic methods or encapsulating variables in a closure. Shared closure variables are a real show-stopper for unexperienced javascripters. Let&#8217;s see what the problem is all about and how <code>Function.K</code> could help us:  <strong>Example:</strong></p>
+
+<pre lang="javascript"><code>
+var methods = {
+  foo: function() { return 'foo' },
+  bar: function() { return 'bar' }
+};
+
+var uppercased = { };
+
+for (var name in methods) {
+  // "name" variable is shared among all functions that are assigned in a loop
+  // all methods in "uppercased" object return uppercased value from the last iteration of the loop
+  // that is usually an undesired behavior
+  uppercased[name] = function() { return name.toUpperCase() };
+};
+
+uppercased.foo(); // 'BAR' (unexpected behavior)
+</code></pre>
+
+<pre lang="javascript"><code>
+for (var name in methods) {
+  // Function.K "encloses" "name" variable into its own closure,
+  // breaking undesired reference "sharing" and resulting in a "correct" behavior
+  uppercased[name] = Function.K(name.toUpperCase());
+}
+
+uppercased.foo(); // 'FOO' (now works as expected)
+
+// an alternative workaround would be to explicitly wrap function and enclose variable:
+// that could certainly work, but looks a little cumbersome
+for (var name in methods) {
+  uppercased[name] = (function(name){ return function(){ return name.toUpperCase() } })(name);
+}
+</code></pre>
+
+<p>Besides &#8220;fixing&#8221; closures, <code>Function.K</code> could be used to create generic helpers:</p>
+
+<pre lang="javascript"><code>
+// creates a function which always returns "true"
+Prototype.trueFunction = Function.K(true);
+
+// creates a function which always returns "false"
+Prototype.falseFunction = Function.K(false);
+</code></pre>
+
+<h3>Function.prototype.addAdvice</h3>
+
+<p><strong>Definition:</strong></p>
+
+<pre lang="javascript"><code>
+Function.prototype.addAdvice = function(advices) {
+  return this.wrap(function() {
+    var args = $A(arguments), proceed = args.shift();
+    var a = advices, bf = a.before, ar = a.around, af = a.after;
+    bf &amp;&amp; bf.apply(proceed, args);
+    ar &amp;&amp; ar.apply(proceed, args);
+    var result = proceed.apply(proceed, args);
+    ar &amp;&amp; ar.apply(proceed, result);
+    af &amp;&amp; af.apply(proceed, result);
+    return result;
+  });
+};
+</code></pre>
+
+<p><code>addAdvice</code> method somewhat simulates &#8220;before&#8221;, &#8220;after&#8221; and &#8220;around&#8221; advices from <a href="http://en.wikipedia.org/wiki/Aspect-oriented_programming">Aspect Oriented Programming</a>. I find it useful mostly for logging purposes, but the scope of possible implementations is huge &#8211; profiling, error logging, augmenting functions with additional behavior based on certain conditions, and many many more. Here&#8217;s a simple example of augmenting function with &#8220;before&#8221; and &#8220;after&#8221; logging advices.  <strong>Example:</strong></p>
+
+<pre lang="javascript"><code>
+function sum(){
+  return $A(arguments).inject(0, function(result, value){ return result + value; });
+}
+
+sum = sum.addAdvice({
+  // before callback receives arguments which original function is invoked with
+  before: function() { console.log('receiving: ' + $A(arguments)) },
+  // after callback receives result value of a function
+  after: function() { console.log('returning: ' + $A(arguments)) }
+});
+
+sum(1,2,3);
+// logs: "receiving: 1,2,3"
+// logs: "returning: 6"
+</code></pre>
+
+<p>There&#8217;s a <a href="http://github.com/kangax/protolicious/tree/master/test/function.extensions.html">test suite for these helpers</a> &#8211; if you find any of the tests failing, don&#8217;t hesitate to let me know. I hope some of you find these helpers as useful as I find them. Have fun prototyping.
+</p>

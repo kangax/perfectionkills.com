@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="description" content="Javascript rants and findings, by kangax">
+
+    <title>{{ page.title }} — Perfection Kills</title>
+
+    <link rel="stylesheet" href="/css/master.css">
+
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="http://feeds.feedburner.com/PerfectionKills">
+    <link rel="pingback" href="http://perfectionkills.com/xmlrpc.php">
+  </head>
+  <body>
+    <div id="outer-wrapper">
+      <div id="wrapper">
+
+        {% include header.html %}
+
+        <div class="content">
+
+          <a href="/" class="back-to-front" title="Back to all posts">&larr; back</a>
+
+          <span class="post-num-words">
+            {{ page.content | number_of_words }} <span>words</span>
+          </span>
+
+          <span class="post-date">
+            {{ page.date | date: "%-d %B %Y" }}
+          </span>
+
+          <div id="carbonads-container">
+            <div class="carbonad">
+              <div id="carbon"></div>
+            </div>
+          </div>
+
+          {{ content }}
+
+          <div id="disqus_thread"></div>
+          <script>
+            var disqus_shortname = 'perfectionkillscom';
+            (function() {
+              var dsq = document.createElement('script'); dsq.async = true;
+              dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+              (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+            })();
+          </script>
+          <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+          <a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+        </div>
+
+      </div>
+    </div>
+    <script src="/js/master.js"></script>
+  </body>
+</html>

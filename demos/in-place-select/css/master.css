@@ -1,0 +1,65 @@
+body {
+  background: #eef;
+  font: 0.9em Verdana, sans-serif;
+  padding-left: 1em;
+  border-left: 10px solid #555;
+  margin: 0;
+}
+h2 {
+  font: bold 1.5em Georgia;
+  color: #555;
+  margin-bottom: 0;
+  margin-top: 0;
+  padding-top: 1em;
+}
+h4, p, dl, div {
+  font: 1em Georgia;
+  color: #555;
+  margin-top: 0.25em;
+}
+h4 {
+  font-size: 1.25em;
+  font-weight: bold;
+  margin-bottom: 0.5em;
+  margin-top: 1.5em;
+}
+h5 {
+  font-family: georgia;
+  color: #555;
+  margin-top: 0.25em;
+  margin-left: 1em;
+  font-weight: normal;
+}
+p {
+  margin: 0.5em;
+}
+dt {
+  float: left;
+  width: 250px;
+  text-align: right;
+  margin-right: 2em;
+}
+dd {
+  margin-left: 150px;
+}
+dt, dd {
+  padding: 5px 0;
+}
+pre {
+  font-family: courier;
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 0.3em;
+  color: #555;
+  
+}
+em {
+  color: #f55;
+}
+a {
+  color: #69f;
+}
+.ips_wrapper .ips_input {
+  width: 188px;
+  height: 18px;
+}

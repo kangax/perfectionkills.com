@@ -1,0 +1,26 @@
+---
+layout: post
+title: Feature detection all the way
+tags:
+  - js
+---
+
+<h2>Feature detection all the way</h2>
+
+<p>
+I have been working on a little personal project of mine for the past couple of months. It&#8217;s called <a href="http://kangax.github.io/cft">CFT</a> and stands for Common Feature Tests. There&#8217;s nothing really ground-breaking about it; CFT is simply a set of so-called feature tests for Javascript (or rather for any ECMAScript-compliant flavor &#8211; be it Microsoft&#8217;s JScript, Mozilla&#8217;s JavaScript or WebKit&#8217;s JavaScriptCore engines).
+</p>
+
+<p>
+These tests aim to detect all kinds of quirks that modern (and not so modern) browsers exhibit and detect those quirks in the most straight-forward way &#8211; using feature detection rather than browser sniffing.  There are <a href="http://www.jibbering.com/faq/faq_notes/not_browser_detect.html">quite</a> <a href="http://peter.michaux.ca/articles/feature-detection-state-of-the-art-browser-scripting">few</a> <a href="https://developer.mozilla.org/En/Browser_Feature_Detection">excellent</a> resources out there on a subject of &#8220;browser sniffing vs. feature detection&#8221;. It&#8217;s definitely worth checking them out.
+</p>
+
+<p>
+CFT started as an initiative to replace as many unnecessary browser sniffing from <a href="http://prototypejs.org/">Prototype.js</a> as possible (now that I&#8217;m part of the core, I feel bound to do something useful for the library :)). The suite was then extended with other tests that seemed not quite trivial to implement.
+</p>
+
+<p>
+I really hope CFT helps developers eliminate browser sniffing code plaguing their scripts. The project is under an MIT license and is <a href="http://github.com/kangax/cft/">hosted on github</a> (although is still in its infancy).
+</p>
+
+<p>As always, any bugs/suggestions are greatly appreciated.</p>

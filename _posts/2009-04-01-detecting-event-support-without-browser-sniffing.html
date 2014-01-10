@@ -1,0 +1,93 @@
+---
+layout: post
+title: Detecting event support without browser sniffing
+popular: popular
+tags:
+  - js
+---
+
+<h2>Detecting event support without browser sniffing</h2>
+
+<p>One of the pain points of feature testing in client-side scripting is that for <strong>event support</strong>. DOM doesn&#8217;t really specify any means to detect exactly which events browser understands and can work with. If you&#8217;d like to know if a browser supports, say, &#8220;dblclick&#8221; event, you&#8217;re pretty much out of luck. This is probably the reason why so many scripts on the web employ <strong>unreliable browser sniffing</strong> in such cases. One of the most common events that people sniff for are IE&#8217;s proprietary mouseenter/mouseleave, Opera&#8217;s impotent contextmenu, and input-related onbeforepaste, onbeforecut, etc. which are present in IE and WebKit, but not in Mozilla-based browsers.</p>
+
+<p>Since browser sniffing is completely unreliable (as well as unmaintainable and fragile), we need a better way to detect events.</p>
+
+<p>An obvious solution might be to employ an actual testing &#8211; create an element, attach an event listener, fire an event from that element and check if event listener gets executed. This solution is unfortunately quite brittle and is often too cumbersome. Simulating key events, for example, is currently hardly supported across browsers. Moreover, many events can be considered too obtrusive and interfere with user experience. It is also possible that events such as &#8220;scroll&#8221; and &#8220;resize&#8221; are prevented by popup-blockers and so can not be reliably tested.</p>
+
+<p>It&#8217;s not widely known, but there actually is a quite robust way to detect most of the DOM L2 events. The trick is that many modern browsers <strong>report property corresponding to an event name as being existent in an element</strong>:</p>
+
+<pre lang="javascript"><code>
+  'onclick' in document.documentElement; // true
+  'onclick2' in document.documentElement; // false
+</code></pre>
+
+<p>Unfortunately, this is not the case with Firefox. Besides, browsers that do support this, sometimes don&#8217;t allow to test an arbitrary event on an arbitrary element. <strong>An event must be checked on an element that could actually originate that event</strong>:</p>
+
+<pre lang="javascript"><code>
+  'onreset' in document.documentElement; // false
+  'onreset' in document.createElement('input'); // true
+</code></pre>
+
+<p>To work around Firefox, we can employ a slightly different strategy (recommended by <a href="http://www.cinsoft.net/mylib.html">David Mark</a>). The workaround is based on the fact that some of the browsers, including Firefox, actually create methods on an element <strong>when an attribute with the name corresponding to a &#8220;known&#8221; event is set on that element</strong>:</p>
+
+<pre lang="javascript"><code>
+  var el = document.createElement('div');
+
+  el.setAttribute('onclick', 'return;');
+  typeof el.onclick; // "function"
+
+  el.setAttribute('onclick2', 'return;');
+  typeof el.onclick2; // "undefined"
+</code></pre>
+
+<p>Combining these two approaches, we can create a somewhat robust way to detect an event support. A generic <code>isEventSupported</code> function would look like:</p>
+
+<pre lang="javascript"><code>
+  var isEventSupported = (function(){
+    var TAGNAMES = {
+      'select':'input','change':'input',
+      'submit':'form','reset':'form',
+      'error':'img','load':'img','abort':'img'
+    }
+    function isEventSupported(eventName) {
+      var el = document.createElement(TAGNAMES[eventName] || 'div');
+      eventName = 'on' + eventName;
+      var isSupported = (eventName in el);
+      if (!isSupported) {
+        el.setAttribute(eventName, 'return;');
+        isSupported = typeof el[eventName] == 'function';
+      }
+      el = null;
+      return isSupported;
+    }
+    return isEventSupported;
+  })();
+</code></pre>
+
+<p>You can now check for &#8220;contextmenu&#8221; support with &#8211; <code>isEventSupported("contextmenu")</code> &#8211; instead of an inferior &#8211; <code>navigator.userAgent.indexOf('Opera') > -1</code>. If Opera &#8220;fixes&#8221; &#8220;contextmenu&#8221; event in its future versions, there&#8217;s a big chance that <code>isEventSupported</code> will just evaluate to <code>true</code> and you won&#8217;t need to change a single line of code (to make whatever relies on &#8220;contextmenu&#8221; event &#8211; work)</p>
+
+<p>You can also use a stripped down version of this function, for detecting, say, only Mouse events:</p>
+
+<pre lang="javascript"><code>
+  function isMouseEventSupported(eventName) {
+    var el = document.createElement('div');
+    eventName = 'on' + eventName;
+    var isSupported = (eventName in el);
+    if (!isSupported) {
+      el.setAttribute(eventName, 'return;');
+      isSupported = typeof el[eventName] == 'function';
+    }
+    el = null;
+    return isSupported;
+  }
+</code></pre>
+
+<p>And then use &#8211; <code>isMouseEventSupported("mouseenter")</code> instead of a horrendous &#8211; <code>(!!window.attachEvent &#038;&#038; !window.opera)</code> :)</p>
+
+<p>The only oddity I noticed with this method was IE reporting <code>false</code> for &#8220;unload&#8221; event. &#8220;unload&#8221; can still be easily checked in a global <code>window</code> object &#8211; <code>"unload" in window</code> &#8211; returns <code>true</code> in all versions of IE that I tested (6-8). That expression can, of course, produce false positives if there&#8217;s a global &#8220;unload&#8221; variable, but, as a workaround, you can always try deleting the variable and see if <code>in</code> still returns <code>true</code>.</p>
+
+<p>A minor downside to this test is that it doesn&#8217;t allow to detect <a href="http://www.w3.org/TR/DOM-Level-2-Events/events.html#Events-eventgroupings-mutationevents-h3">Mutation Events</a>. Fortunately, detecting those is not very complex. You can find an example of <a href="http://github.com/dperini/nwevents/blob/ac33e52c1ed1c1c3a1bb1612384ca5b2f7a9b3ef/src/nwmatcher.js#L92">a perfect feature test for DOMAttrModified</a> in Diego Perini&#8217;s NWMatcher.</p>
+
+<p>I made <a href="http://kangax.github.com/iseventsupported/" title="">a simple test case</a>, listing all of the events specified in DOM L2 and corresponding results of running <code>isEventSupported</code> on them.</p>
+
+<p>Give it a try, and enjoy a feature testing!</p>

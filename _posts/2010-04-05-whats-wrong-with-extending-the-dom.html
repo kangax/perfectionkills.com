@@ -1,0 +1,260 @@
+---
+layout: post
+title: What's wrong with extending the DOM
+popular: popular
+tags:
+  - js
+---
+
+<h2>What's wrong with extending the DOM</h2>
+
+<p>I was recently surprised to find out how little the topic of DOM extensions is covered on the web. What&#8217;s disturbing is that <strong>downsides of this seemingly useful practice</strong> don&#8217;t seem to be well known, except in <a href="http://groups.google.com/group/comp.lang.javascript/topics">certain secluded circles</a>. The lack of information could well explain why there are scripts and libraries <strong>built today</strong> that still fall into this trap. I&#8217;d like to explain why extending DOM is <strong>generally a bad idea</strong>, by showing some of the problems associated with it. We&#8217;ll also look at possible alternatives to this harmful exercise.</p>
+
+<p>But first of all, what exactly is DOM extension? And how does it all work?</p>
+
+<h3 id="how_dom_extension_works">How DOM extension works</h3>
+
+<p>DOM extension is simply the process of adding custom methods/properties to DOM objects. Custom properties are those that don&#8217;t exist in a particular implementation. And what are the DOM objects? These are host objects implementing <code>Element</code>, <code>Event</code>, <code>Document</code>, or any of dozens of other DOM interfaces. During extension, methods/properties can be added to objects directly, or to their prototypes (but only in environments that have proper support for it).</p>
+
+<p>The most commonly extended objects are probably DOM elements (those that implement <a href="http://www.w3.org/TR/DOM-Level-2-Core/core.html#ID-745549614"><code>Element</code> interface</a>), popularized by Javascript libraries like Prototype and Mootools. Event objects (those that implement <a href="http://www.w3.org/TR/DOM-Level-2-Events/events.html#Events-Event"><code>Event</code> interface</a>), and documents (<a href="http://www.w3.org/TR/DOM-Level-2-Core/core.html#i-Document"><code>Document</code> interface</a>) are often extended as well.</p>
+
+<p>In environment that exposes prototype of Element objects, an example of DOM extension would look something like this:</p>
+
+<pre lang="javascript"><code>
+  Element.prototype.hide = function() {
+    this.style.display = 'none';
+  };
+  ...
+  var element = document.createElement('p');
+
+  element.style.display; // ''
+  element.hide();
+  element.style.display; // 'none'
+</code></pre>
+
+<p>As you can see, &#8220;hide&#8221; function is first assigned to a <code>hide</code> property of <code>Element.prototype</code>. It is then invoked directly on an element, and element&#8217;s &#8220;display&#8221; style is set to &#8220;none&#8221;.</p>
+
+<p>The reason this &#8220;works&#8221; is because object referred to by <code>Element.prototype</code> is actually one of the objects in <strong>prototype chain of P element</strong>. When <code>hide</code> property is resolved on it, it&#8217;s searched throughout the prototype chain until found on this <code>Element.prototype</code> object.</p>
+
+<p>In fact, if we were to examine prototype chain of P element in some of the modern browsers, it would usually look like this:</p>
+
+<pre lang="javascript"><code>
+  // "^" denotes connection between objects in prototype chain
+
+  document.createElement('p');
+    ^
+  HTMLParagraphElement.prototype
+    ^
+  HTMLElement.prototype
+    ^
+  Element.prototype
+    ^
+  Node.prototype
+    ^
+  Object.prototype
+    ^
+  null
+</code></pre>
+
+<p>Note how the nearest ancestor in the prototype chain of <code>P</code> element is object referred to by <code>HTMLParagraphElement.prototype</code>. This is an object specific to type of an element. For <code>P</code> element, it&#8217;s <code>HTMLParagraphElement.prototype</code>; for <code>DIV</code> element, it&#8217;s <code>HTMLDivElement.prototype</code>; for <code>A</code> element, it&#8217;s <code>HTMLAnchorElement.prototype</code>, and so on.</p>
+
+<p>But why such strange names, you might ask?</p>
+
+<p>These names actually correspond to <a href="http://www.w3.org/TR/DOM-Level-2-HTML/html.html#ID-798055546">interfaces defined in DOM Level 2 HTML Specification</a>. That same specification also defines inheritance between those interfaces. It says, for example, that <cite>&#8220;&#8230; HTMLParagraphElement interface have all properties and functions of the HTMLElement interface &#8230;&#8221;</cite> (<a href="http://www.w3.org/TR/DOM-Level-2-HTML/ecma-script-binding.html">source</a>) and that <cite>&#8220;&#8230; HTMLElement interface have all properties and functions of the Element interface &#8230;&#8221;</cite> (<a href="http://www.w3.org/TR/DOM-Level-2-HTML/ecma-script-binding.html">source</a>), and so on.</p>
+
+<p>Quite obviously, if we were to create a property on &#8220;prototype object&#8221; of paragraph element, that property would not be available on, say, anchor element:</p>
+
+<pre lang="javascript"><code>
+  HTMLParagraphElement.prototype.hide = function() {
+    this.style.display = 'none';
+  };
+  ...
+  typeof document.createElement('a').hide; // "undefined"
+  typeof document.createElement('p').hide; // "function"
+</code></pre>
+
+<p>This is because anchor element&#8217;s prototype chain never includes object refered to by <code>HTMLParagraphElement.prototype</code>, but instead includes that referred to by <code>HTMLAnchorElement.prototype</code>. To &#8220;fix&#8221; this, we can assign to property of object positioned further in the prototype chain, such as that referred to by <code>HTMLElement.prototype</code>, <code>Element.prototype</code> or <code>Node.prototype</code>.</p>
+
+<p>Similarly, creating a property on <code>Element.prototype</code> would not make it available on all nodes, but only on nodes of element type. If we wanted to have property on all nodes (e.g. text nodes, comment nodes, etc.), we would need to assign to property of <code>Node.prototype</code> instead. And speaking of text and comment nodes, this is how interface inheritance usually looks for them:</p>
+
+<pre lang="javascript"><code>
+  document.createTextNode('foo'); // < Text.prototype < CharacterData.prototype < Node.prototype
+  document.createComment('bar'); // < Comment.prototype < CharacterData.prototype < Node.prototype
+</code></pre>
+
+<p>Now, it's important to understand that <strong>exposure of these DOM object prototypes is not guaranteed</strong>. DOM Level 2 specification merely defines interfaces, and inheritance between those interfaces. It does not state that there should exist global <code>Element</code> property, referencing object that's a prototype of all objects implementing <code>Element</code> interface. Neither does it state that there should exist global <code>Node</code> property, referencing object that's a prototype of all objects implementing <code>Node</code> interface.</p>
+
+<p>Internet Explorer 7 (and below) is an example of such environment; it does not expose global <code>Node</code>, <code>Element</code>, <code>HTMLElement</code>, <code>HTMLParagraphElement</code>, or other properties. Another such browser is Safari 2.x (and most likely Safari 1.x).</p>
+
+<p>So what can we do in environments that <strong>don't expose these global "prototype" objects</strong>? A workaround is to extend DOM objects directly:</p>
+
+<pre lang="javascript"><code>
+  var element = document.createElement('p');
+  ...
+  element.hide = function() {
+    this.style.display = 'none';
+  };
+  ...
+  element.style.display; // ''
+  element.hide();
+  element.style.display; // 'none'
+</code></pre>
+
+<h3 id="what_went_wrong">What went wrong?</h3>
+
+<p>Being able to extend DOM elements through prototype objects sounds amazing. We are taking advantage of Javascript prototypal nature, and scripting DOM becomes very object-oriented. In fact, DOM extension seemed so temptingly useful that few years ago, <a href="http://prototypejs.org/">Prototype Javascript library</a> made it an essential part of its architecture. But what hides behind seemingly innocuous practice is a huge load of trouble. As we'll see in a moment, when it comes to cross-browser scripting, the downsides of this approach far outweigh any benefits. <strong>DOM extension is one of the biggest mistakes Prototype.js has ever done</strong>.</p>
+
+<p>So what are these problems?</p>
+
+<h3 id="lack_of_specification">Lack of specification</h3>
+
+<p>As I have already mentioned, exposure of "prototype objects" is not part of any specification. DOM Level 2 merely defines interfaces and their inheritance relations. In order for implementation to conform to DOM Level 2 fully, there's no need to expose those global <code>Node</code>, <code>Element</code>, <code>HTMLElement</code>, etc. objects. Neither is there a requirement to expose them in any other way. Given that there's always a possibility to extend DOM objects manually, this doesn't seem like a big issue. But the truth is that manual extension is a rather slow and inconvenient process (as we will see shortly). And the fact that fast, "prototype object" -based extension is merely somewhat of a de-facto standard among few browsers, makes this practice unreliable when it comes to future adoption or portability across non-convential platforms (e.g. mobile devices).</p>
+
+<h3 id="host_objects_have_no_rules">Host objects have no rules</h3>
+
+<p>Next problem with DOM extension is that <strong>DOM objects are host objects</strong>, and host objects are the worst bunch. By specification (ECMA-262 3rd. ed), host objects are allowed to do things, no other objects can even dream of. To quote relevant section <sup>[<a href="http://bclary.com/2004/11/07/#a-8.6.2">8.6.2</a>]</sup>:</p>
+
+<p><cite style="display: block; margin-left: 2em;">Host objects may implement these internal methods with any implementation-dependent behaviour, or it may be that a host object implements only some internal methods and not others.</cite></p>
+
+<p>The internal methods specification talks about are [[Get]], [[Put]], [[Delete]], etc. Note how it says that <strong>internal methods behavior is implementation-dependent</strong>. What this means is that it's absolutely normal for host object to throw error on invocation of, say, [[Get]] method. And unfortunatey, this isn't just a theory. In Internet Explorer, we can easily observe exactly this—an example of host object [[Get]] throwing error:</p>
+
+<pre lang="javascript"><code>
+  document.createElement('p').offsetParent; // "Unspecified error."
+  new ActiveXObject("MSXML2.XMLHTTP").send; // "Object doesn't support this property or method"
+</code></pre>
+
+<p>Extending DOM objects is kind of like walking in a minefield. By definition, you are working with something that's allowed to behave in unpredictable and completely erratic way. And not only things can blow up; there's also a possibility of silent failures, which is even worse scenario. An example of erratic behavior is <code>applet</code>, <code>object</code> and <code>embed</code> elements, which in certain cases <a href="http://github.com/jquery/jquery/commit/59802928566b6be3a66d65e77c2418fff37e6f5f">throw errors on assignment of properties</a>. Similar disaster happens with XML nodes:</p>
+
+<pre lang="javascript"><code>
+  var xmlDoc = new ActiveXObject("Microsoft.XMLDOM");
+  xmlDoc.loadXML('&lt;foo>bar</foo>');
+  xmlDoc.firstChild.foo = 'bar'; // "Object doesn't support this property or method"
+</code></pre>
+
+<p>There are <a href="http://jibbering.com/faq/notes/code-guidelines/#hostObjects">other cases of failures in IE</a>, such as <code>document.styleSheets[99999]</code> throwing "Invalid procedure call or argument" or <code>document.createElement('p').filters</code> throwing "Member not found." exceptions. But not only MSHTML DOM is the problem. Trying to overwrite "target" property of <code>event</code> object in Mozilla throws TypeError, complaining that property has only a getter (meaning that it's readonly and can not be set). Doing same thing in WebKit, results in silent failure, where "target" continues to refer to original object after assignment.</p>
+
+<p>When creating API for working with event objects, there's now a need to <strong>consider all of these readonly properties</strong>, instead of focusing on concise and descriptive names.</p>
+
+<p>A good rule of thumb is to <strong>avoid touching host objects</strong> as much as possible. Trying to base architecture on something that—by definition—can behave so sporadically is hardly a good idea.</p>
+
+<h3 id="chance_of_collisions">Chance of collisions</h3>
+
+<p>API based on DOM element extensions is <strong>hard to scale</strong>. It's hard to scale for developers of the library—when adding new or changing core API methods, and for library users—when adding domain-specific extensions. The root of the issue is a <strong>likely chance of collisions</strong>. DOM implementations in popular browsers usually all have properietary API's. What's worse is that these API's are not static, but constantly change as new browser versions come out. Some parts get deprecated; others are added or modified. As a result, set of properties and methods present on DOM objects is somewhat of a moving target. </p>
+
+<p>Given huge amount of environments in use today, it becomes impossible to tell if certain property is not already part of some DOM. And if it is, can it be overwritten? Or will it throw error when attempting to do so? Remember that it's a host object! And if we can quietly overwrite it, how would it affect other parts of DOM? Would everything still work as expected? If everything is fine in one version of such browser, is there a guarantee that next version doesn't introduce same-named property? The list of questions goes on.</p>
+
+<p>Some examples of proprietary extensions that broke Prototype are <a href="http://dev.rubyonrails.org/ticket/10189">wrap property on textareas in IE</a> (colliding with <a href="http://www.prototypejs.org/api/element/wrap">Element#wrap method</a>), and <a href="http://dev.rubyonrails.org/ticket/11251"><code>select</code> method on form control elements in Opera</a> (colliding with <a href="http://www.prototypejs.org/api/element/select">Element#select method</a>). Even though both of these cases are documented, having to remember these little exceptions is annoying.</p>
+
+<p>Proprietary extensions are not the only problem. HTML5 brings new methods and properties to the table. And most of the popular browsers have already started implementing them. At some point, <a href="http://www.whatwg.org/specs/web-forms/current-work">WebForms</a> defined <code>replace</code> property on input elements, which Opera decided to add to their browser. And once again, <a href="http://dev.rubyonrails.org/ticket/9261">it broke Prototype</a>, due to conflict with <a href="http://www.prototypejs.org/api/element/replace">Element#replace</a> method.</p>
+
+<p>But wait, there's more! </p>
+
+<p>Due to long-standing DOM Level 0 tradition, there's this "convenient" way to <a href="http://kangax.github.io/domlint/">access form controls off of form elements</a>, simply by their name. What this means is that instead of using standard <code>elements</code> collection, you can access form control like this:</p>
+
+<pre lang="html"><code>
+  &lt;form action="">
+    &lt;input name="foo">
+  &lt;/form>
+  ...
+  &lt;script type="text/javascript">
+    document.forms[0].foo; // non-standard access
+    // compare to
+    document.forms[0].elements.foo; // standard access
+  &lt;/script>
+</code></pre>
+
+<p>So, say you extend form elements with <code>login</code> method, which for example checks validation and submits login form. If you also happen to have form control with &#8220;login&#8221; name (which is pretty likely, if you ask me), what happens next is not pretty:</p>
+
+<pre lang="html"><code>
+  &lt;form action="">
+    &lt;input name="login">
+    ...
+  &lt;/form>
+  ...
+  &lt;script type="text/javascript">
+    HTMLFormElement.prototype.login = function(){
+      return 'logging in';
+    };
+    ...
+    $(myForm).login(); // boom!
+    // $(myForm).login references input element, not `login` method
+  &lt;/script>
+</code></pre>
+
+<p><strong>Every named form control shadows properties inherited through prototype chain</strong>. The chance of collisions and unexpected errors on form elements is even higher.</p>
+
+<p>Situation is somewhat similar with named <code>form</code> elements, where they can be <strong>accessed directly off <code>document</code></strong> by their names:</p>
+
+<pre lang="html"><code>
+  &lt;form name="foo">
+    ...
+  &lt;/form>
+  ...
+  &lt;script type="text/javascript">
+    document.foo; // [object HTMLFormElement]
+  &lt;/script>
+</code></pre>
+
+<p>When extending document objects, there&#8217;s now an additional risk of form names conflicting with extensions. And what if script is running in legacy applications with tons of rusty HTML, where changing/removing such names is not a trivial task?</p>
+
+<p>Employing some kind of <strong>prefixing strategy</strong> can alleviate the problem. But will probably also bring extra noise.</p>
+
+<p><a href="http://www.nczonline.net/blog/2010/03/02/maintainable-javascript-dont-modify-objects-you-down-own/">Not modifying objects you don&#8217;t own</a> is an ultimate recipe for avoiding collisions. Breaking this rule already got Prototype into trouble, when it <a href="http://ejohn.org/blog/getelementsbyclassname-pre-prototype-16/">overwrote <code>document.getElementsByClassName</code></a> with own, custom implementation. Following it also means playing nice with other scripts, running in the same environment&#8212;no matter if they modify DOM objects or not.</p>
+
+<h3 id="performance_overhead">Performance overhead</h3>
+
+<p>As we&#8217;ve seen before, browsers that don&#8217;t support element extensions&#8212;like IE 6, 7, Safari 2.x, etc.&#8212;require manual object extension. The problem is that manual extension is slow, inconvenient and doesn&#8217;t scale. It&#8217;s slow because object needs to be extended with what&#8217;s often a large number of methods/properties. And ironically, these browsers are the slowest ones around. It&#8217;s inconvenient because object needs to be <strong>first extended</strong> in order to be operated on. So instead of  <code>document.createElement('p').hide()</code>, you would need to do something like <code>$(document.createElement('p')).hide()</code>. This, by the way, is one of the most common stumbing blocks for beginners of Prototype. Finally, manual extension doesn&#8217;t scale well because adding API methods affects performance pretty much linearly. If there&#8217;s 100 methods on <code>Element.prototype</code>, there has to be 100 assignments made to an element in question; if there&#8217;s 200 methods, there has to be 200 assignments made to an element, and so on.</p>
+
+<p>Another performance hit is with event objects. Prototype follows similar approach with events and extends them with a certain set of methods. Unfortunately, some events in browsers&#8212;mousemove, mouseover, mouseout, resize, to name few&#8212;can fire literally dozens of times per second. Extending each one of them is an incredibly expensive process. And what for? Just to invoke what could be a single method on event obejct?</p>
+
+<p>Finally, once you start extending elements, library API most likely needs to <strong>return <em>extended</em> elements everywhere</strong>. As a result, querying methods like <code>$$</code> could end up extending every single element in a query. It&#8217;s easy to imagine performance overead of such process, when we&#8217;re talking about hundreds or thousands of elements.</p>
+
+<h3 id="ie_dom_is_a_mess">IE DOM is a mess</h3>
+
+<p>As shown in previous section, manual DOM extension is a mess. But <strong>manual DOM extension in IE is even worse</strong>, and here&#8217;s why.</p>
+
+<p>We all know that in IE, circular references between host and native objects leak, and are best avoided. But adding methods to DOM elements is a first step towards creation of such circular references. And since older versions of IE don&#8217;t expose &#8220;object prototypes&#8221;, there&#8217;s not much to do but extend elements directly. Circular references and leaks are almost inevitable. And in fact, Prototype suffered from them for most of its lifetime.</p>
+
+<p>Another problem is the way IE DOM maps properties and attributes to each other. The fact that attributes are in the same namespace as properties, increases chance of collisions and all kinds of unexpected inconsistencies. What happens if element has custom &#8220;show&#8221; attribute and is then extended by Prototype. You&#8217;ll be surprised, but show &#8220;attribute&#8221; would get overwritten by Prototype&#8217;s <code>Element#show</code> method. <code>extendedElement.getAttribute('show')</code> would return a reference to a function, not the value of &#8220;show&#8221; attribute. Similarly, <code>extendedElement.hasAttribute('hide')</code> would say &#8220;true&#8221;, even if there was never custom &#8220;hide&#8221; attribute on an element. Note that IE&lt;8 lacks <code>hasAttribute</code>, but we could still see attribute/property conflict: <code>typeof extendedElement.attributes['show'] != "undefined"</code>.</p>
+
+<p>Finally, one of the lesser-known downsides is the fact that adding properties to DOM elements causes reflow in IE, so mere extension of element becomes a quite expensive operation. This actually makes sense, given the deficient mapping of attributes and properties in its DOM.</p>
+
+<h3 id="bonus_browser_bugs">Bonus: browser bugs</h3>
+
+<p>If everything we&#8217;ve been over so far is not enough (in which case, you&#8217;re probably a masochist), here&#8217;s a couple more bugs to top it all of.</p>
+
+<p>In some versions of Safari 3.x, there&#8217;s a bug where navigating to a previous page via back button <a href="http://webkit.org/blog/427/webkit-page-cache-i-the-basics/#comment-25207">wipes off all host object extensions</a>. Unfortunately, the bug is undetectable, so to work around the issue, Prototype has to do something horrible. It sniffs browser for that version of WebKit, and explicitly disables bfcache by attaching &#8220;unload&#8221; event listener to <code>window</code>. Disabled bfcache means that <strong>browser has to re-fetch page</strong> when navigating via back/forward buttons, instead of restoring page from the cached state.</p>
+
+<p>Another bug is with <code>HTMLObjectElement.prototype</code> and <code>HTMLAppletElement.prototype</code> in IE8, and the way object and applet elements <strong>don&#8217;t inherit from those prototype objects</strong>. You can assign to a property of <code>HTMLObjectElement.prototype</code>, but that property is never &#8220;resolved&#8221; on object element. Ditto for applets. As a result, those elements always have to be extended manually, which is another overhead.</p>
+
+<p>IE8 also <a href="http://msdn.microsoft.com/en-us/library/dd282900%28VS.85%29.aspxs">exposes only a subset of prototype objects</a>, when compared to other popular implementations. For example, there&#8217;s <code>HTMLParagraphElement.prototype</code> (as well as other type-specific ones), and <code>Element.prototype</code>, but no <code>HTMLElement</code> (and so <code>HTMLElement.prototype</code>) or <code>Node</code> (and so <code>Node.prototype</code>). <code>Element.prototype</code> in IE8 also doesn&#8217;t inherit from <code>Object.prototype</code>. These are not bugs, per se, but is something to keep in mind nevertheless: there&#8217;s nothing good about trying to extend non-existent <code>Node</code>, for example.</p>
+
+<h3 id="wrappers_to_the_rescue">Wrappers to the rescue</h3>
+
+<p>One of the most common alternatives to this whole mess of DOM extension is <strong>object wrappers</strong>. This is the approach jQuery has taken from the start, and few other libraries followed later on. The idea is simple. Instead of extending elements or events directly, create a wrapper around them, and delegate methods accordingly. No collisions, no need to deal with host objects madness, easier to manage leaks and operate in dysfunctional MSHTML DOM, better performance, saner maintenance and painless scaling.</p>
+
+<p>And you still avoid procedural approach.</p>
+
+<h3 id="prototype_20">Prototype 2.0</h3>
+
+<p>The good news is that Prototype mistake is something that&#8217;s <strong>going away in the next major version of the library</strong>. As far as I&#8217;m concerned, all core developers understand the problems mentioned above, and that wrapper approach is the saner way to move forward. I&#8217;m not sure what the plans are in other DOM-extending libraries like Mootools. From what I can see they are already using wrappers with events, but still extend elements. I&#8217;m certinaly hoping they move away from this madness in a near future.</p>
+
+<h3 id="controlled_environments">Controlled environments</h3>
+
+<p>So far we looked at DOM extension from the point of view of <strong>cross-browser scripting library</strong>. In that context, it&#8217;s clear how troublesome this idea really is. But what about controlled environments? When script is only run in one or two environments, such as those based on Gecko, WebKit or any other modern non-MSHTML DOM. Perhaps it&#8217;s an intranet application, that&#8217;s accessed through certain browsers. Or a desktop, WebKit-based app.</p>
+
+<p>In that case, <strong>situtation is definitly better</strong>. Let&#8217;s look at the points listed above.</p>
+
+<p>Lack of specification <strong>becomes somewhat irrelevant</strong>, as there&#8217;s no need to worry about compatibility with other platforms, or future editions. Most of the non-MSHTML DOM environments expose DOM object prototypes for quite a while, and are unlikely to drop it in a near future. There&#8217;s still a possibility for change, however.</p>
+
+<p>Point about host objects unreliability also <strong>loses its weight</strong>, since DOM objects in Gecko or WebKit -based DOMs are much, much saner than those in MSHTML DOM. But there are still host objects, which should be treated with care. Besides, there are readonly properties covered before, which could easily cripple the flexibility of API.</p>
+
+<p>The point about collisions <strong>still holds weight</strong>. These environments support non-standard form controls access, have proprietary API, and are constantly implementing new HTML5 features. Modifying objects you don&#8217;t own is still a wicked idea and can lead to hard-to-find bugs and inconsistencies.</p>
+
+<p>Performance overhead is <strong>practically non-existent</strong>, as these DOM support prototype-based DOM extension. Performance can actually be even better, comparing to, say, wrappers approach, as there&#8217;s no need to create any additional objects in order to invoke methods (or access properties) off DOM objects.</p>
+
+<p>Extending DOM in controlled environment sure seems like a perfectly healthy thing to do. But even though the main problem is that with collisions, I would still advise to <strong>employ wrappers instead</strong>. It&#8217;s a safer way to move forward, and will save you from maintenance overhead in the future.</p>
+
+<h3 id="afterword">Afterword</h3>
+
+<p>Hopefuly, you can now clearly see all the truth behind what looks like an elegant approach. Next time you design a Javascript framework, just <strong>say no to DOM extensions</strong>. Say no, and save yourself from all the trouble of maintaining a cumbersome API and suffering unnecessary performance overheads. If on the other hand, you&#8217;re considering to employ Javascript library that extends DOM, stop for a second, and ask yourself if you&#8217;re willing to take a risk. Is ellusive convenience of DOM extension really worth all the trouble?</p>

@@ -1,0 +1,490 @@
+---
+layout: post
+title: Experimenting with HTML minifier
+popular: popular
+tags:
+  - html
+---
+
+<h2>Experimenting with HTML minifier</h2>
+
+<style>
+  #experimenting_with_html_minifier .footnotes { font-size: 0.85em; }
+  #experimenting_with_html_minifier ul ul { margin: 0.5em 0 0 0; }
+  #experimenting_with_html_minifier ul ul li { margin-bottom: 0.25em; }
+  #experimenting_with_html_minifier ul li { margin-bottom: 1em; }
+  #experimenting_with_html_minifier h4 { font-size: 1em; }
+</style>
+
+<div id="experimenting_with_html_minifier">
+  <ul id="toc" style="display:none;">
+    <li>
+      <a href="#how_it_works">How it works</a>
+      <ul>
+        <li>
+          <a href="#parser">Parser</a>
+        </li>
+        <li>
+          <a href="#minifier">Minifier</a>
+        </li>
+        <li>
+          <a href="#test_suite">Test suite</a>
+        </li>
+        <li>
+          <a href="#lint">Lint</a>
+        </li>
+      </ul>
+    </li>
+    <li>
+      <a href="#options">Options</a>
+      <ul>
+        <li><a href="#remove_comments">Remove comments</a></li>
+        <li><a href="#remove_comments_from_scripts_and_styles">Remove comments from scripts and styles</a></li>
+        <li><a href="#remove_cdata_sections">Remove CDATA sections</a></li>
+        <li><a href="#collapse_whitespace">Collapse whitespace</a></li>
+        <li><a href="#collapse_boolean_attributes">Collapse boolean attributes</a></li>
+        <li><a href="#remove_attribute_quotes">Remove attribute quotes</a></li>
+        <li><a href="#remove_redundant_attributes">Remove redundant attributes</a></li>
+        <li><a href="#use_short_doctype">Use short doctype</a></li>
+        <li><a href="#remove_empty_or_blank_attributes">Remove empty (or blank) attributes</a></li>
+        <li><a href="#remove_optional_tags">Remove optional tags</a></li>
+        <li><a href="#remove_empty_elements">Remove empty elements</a></li>
+        <li><a href="#validate_input_through_html_lint">Validate input through HTML lint</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#field_testing">Field-testing</a>
+    </li>
+    <li>
+      <a href="#cost_and_benefits">Cost and benefits</a>
+    </li>
+    <li>
+      <a href="#future">Future</a>
+    </li>
+  </ul>
+
+  <p>In <a href="http://perfectionkills.com/optimizing-html/">Optimizing HTML</a>, I mentioned that state of HTML minifiers is <a href="http://perfectionkills.com/optimizing-html/#tools">rather crude at the moment</a>. We have a large variety of JS and CSS minification tools, but almost no HTML ones. This is actually <strong>quite understandable</strong>. </p>
+
+  <p>First of all, minifiying scripts and stylesheets usually results in better savings, overall. Second, the nature of document markup is much more dynamic than that of scripts and styles. As a result, HTML minification has to be done &#8220;on demand&#8221;, and carries certain overhead. Only when this overhead is less then <strong>difference in time for delivering minified-vs-original document</strong>, there&#8217;s a benefit in minification. In some cases, though, savings in document size (and so bandwidth) can be more important than time spent on minification.</p>
+
+  <p>It&#8217;s no suprise that HTML minification is almost always a <strong>low-priority optimization</strong>. When it comes to client-side performance, there are certainly other <a href="http://stevesouders.com/hpws/rules.php">more important things</a> to pay attention to. Only when other aspects are taken into consideration, it is worth minifying document markup.</p>
+
+  <p>Few weeks ago, I decided to experiment with <strong>Javascript-based HTML minifier</strong> and created an online-based tool, with lint-like capabilities. After some tweaking, the script was able to parse and minify markup of almost any random website. The goal was to see how easy it is to implement something like this, learn HTML a bit more, and have fun in a process. Ultimately, I wanted to minify some of the popular websites and see if savings are worth all the trouble.</p>
+
+  <p>Today, I&#8217;d like to share <a href="http://kangax.github.com/html-minifier/">this tool</a> with you. I&#8217;ll quickly go over some of the initial features, explain how minifier works, and look into possible side effects of minification. Please note that <strong>the script is still in very early stage</strong>, and shouldn&#8217;t be used in production. If you are not interested in inner workings, feel free to skip to <a href="#field_testing">tests</a> or <a href="#cost_and_benefits">conclusions</a>.</p>
+
+  <p>
+    <a href="http://kangax.github.com/html-minifier/">
+      <img src="/images/minifier-screenshot.png" alt="Screenshot of HTMLMinifier">
+    </a>
+  </p>
+
+  <h3 id="how_it_works">How it works</h3>
+
+  <h4 id="parser">Parser</h4>
+
+  <p>At its core, minifier relies on <a href="http://ejohn.org/blog/pure-javascript-html-parser/">HTML parser by John Resig</a>. John&#8217;s parser was capable of handling quite complex documents, but would sometimes trip on some of the more obscure structures. For example, doctype declarations were not understood at all. Whenever attribute name contained characters like &#8220;-&#8221; (e.g. as in &#8220;http-equiv&#8221;), parser would fail. There were also some defficiencies in regular expressions for matching comments and CDATA sections: newlines inside them were not accounted for, so multiline comments simply weren&#8217;t matched. CDATA sections and comments inside elements with CDATA content model (e.g. SCRIPT and STYLE) were getting stripped for no apparent reason.</p>
+
+  <p>All of these are <a href="http://github.com/kangax/html-minifier/blob/gh-pages/src/htmlparser.js">now fixed</a>.</p>
+
+  <h4 id="minifier">Minifier</h4>
+
+  <p>Minifier is a very small &#8220;wrapper&#8221; on top of parser. As of now it&#8217;s only about 250 LOC. It takes input string and configuration object; passes this input string to parser, and builds final output according to specified options.</p>
+
+  <p>For example, we can tell it to <strong>remove comments</strong>:</p>
+
+<pre lang="javascript"><code>
+  var input = '&lt;!-- foo -->&lt;div>baz&lt;/div>&lt;!-- bar\n\n moo -->';
+  minify(input, { removeComments: true }); // '&lt;div>baz&lt;/div>'
+</code></pre>
+
+  <p>or to <strong>collapse boolean attributes</strong>:</p>
+
+<pre lang="javascript"><code>
+  var input = '&lt;input disabled="disabled">';
+  minify(input, { collapseBooleanAttributes: true }); // '&lt;input disabled>'
+</code></pre>
+
+  <h4 id="test_suite">Test suite</h4>
+
+  <p>One of the goals I had for this little project was to have a robust test suite. <strong>HTML minifier is fully unit tested</strong> with <a href="https://github.com/kangax/html-minifier/blob/gh-pages/tests/index.html">~100 tests at the moment</a>. This has few benefits: anyone can change, tweak or add things without worrying to break existing functionality. It takes literally seconds to tell if script is functional in certain browser (or even in non-browser implementation, such as node.js on a server)—simply by running a test suite. Finally, tests can serve as documentation for how minifier handles some of the edge cases.</p>
+
+  <h4 id="lint">Lint</h4>
+
+  <p>While working on minifier, I realized that oftentimes the most wasteful part of the markup is not white space, comments or boolean attributes, but inline styles, scripts, presentational or deprecated elements and attributes. None of these can be simply stripped, as that could affect state of the document and is just too obtrusive. What can be done, however, is reporting of these occurences to the user. HTMLLint is even a smaller script, whose job is exactly that—to log any deprecated or presentational elements/attributes encountered during parsing. Additionally, it detects event attributes (e.g. onclick, onmouseover, etc.). The rationale for this is that moving contents of event attributes to external script allows to <a href="http://perfectionkills.com/optimizing-html/#3_onclick_onmouseover_etc">take advantage of resource caching</a>.</p>
+
+  <h3 id="options">Options</h3>
+
+  <p>Before we begin, it's important to understand that <strong>minifier parses documents as HTML, not XHTML</strong>. This allows to employ such optimizations as "remove optional tags and quotes", "collapse boolean attributes", etc. Note that almost none of the options affect document validity, as per HTML 4.01. XHTML support might be added in the future, but considering that in context of pubilc web <a href="http://hixie.ch/advocacy/xhtml">it's mostly pointless at the moment</a>, I see little reason in doing so. Besides, minifying XHTML documents (given that they're actually served to clients properly, with "application/xhtml+xml") doesn't reduce size as much as if they were HTML.</p>
+
+  <p>The following is a list of current options in minifier. It is far from being exhaustive, and will most likely be extended in a future. Let&#8217;s look at each one of them quickly:</p>
+
+  <h4 id="remove_comments">Remove comments</h4>
+
+<pre lang="javascript"><code>
+  var input = '&lt;!-- some comment -->&lt;p>blah&lt;/p>';
+  var output = minify(input, { removeComments: true });
+
+  output; // '&lt;p>blah&lt;/p>'
+</code></pre>
+
+  <p>This one should be self-explanatory. Passing truthy <code>removeComments</code> tells minifier to strip HTML comments. Note that comments inside elements with CDATA content model, such as SCRIPT and STYLE, are left intact (but see next option).</p>
+
+<pre lang="javascript"><code>
+  var input = '&lt;script type="text/javascript">&lt;!-- some comment -->&lt;/script>';
+  var output = minify(input, { removeComments: true });
+
+  output; // '&lt;script type="text/javascript">&lt;!-- some comment -->&lt;/script>'
+</code></pre>
+
+  <h4 id="remove_comments_from_scripts_and_styles">Remove comments from scripts and styles</h4>
+
+  <p>When this option is enabled, HTML comments in scripts and styles are stripped as well:</p>
+
+<pre lang="javascript"><code>
+  var input = '&lt;script type="text/javascript">&lt;!--\n alert(1) -->&lt;/script>';
+  var output = minify(input, { removeCommentsFromCDATA: true });
+
+  output; // '&lt;script type="text/javascript">alert(1)&lt;/script>'
+</code></pre>
+
+  <p>It's worth pointing out that there's a slight difference in the way HTML comments are treated inside SCRIPT and STYLE elements. In scripts, comment start delimiter ("&lt;!-&lt;span>&lt;/span>-") tells parser to ignore everything until newline:</p>
+
+<pre lang="javascript"><code>
+  &lt;!-- alert(1); // alert never happens!
+  &lt;!--
+  alert(2); // but this one does!
+  // "&lt;!--" acts as a single-line JS comment ("//").
+</code></pre>
+
+  <p>In styles, however, "&lt;!-<span></span>-" is simply ignored when it's present in the beginning of input (I haven't tested what happens in other parts of a stylesheet). Contrary to script behavior, anything that follows "&lt;!-<span></span>-" <strong>still remains present</strong>:</p>
+
+<pre lang="css"><code>
+  &lt;!-- body { color: red; } -->
+
+  /*  treated as:
+      body { color: red; }
+  */
+</code></pre>
+
+  <p><a href="http://perfectionkills.com/optimizing-html/#1_html_comments_in_scripts">Explanation of why you might want to strip comments.</a></p>
+
+  <h4 id="remove_cdata_sections">Remove CDATA sections</h4>
+
+  <p>This option removes CDATA sections from script and style elements:</p>
+
+<pre lang="javascript"><code>
+  var input = '&lt;script>/* &lt;![CDATA[ \n\n */alert(1)/* ]]> */&lt;/script>';
+  var output = minify(input, { removeCDATASectionsFromCDATA: true });
+
+  output; // '&lt;script>alert(1)&lt;/script>'
+</code></pre>
+
+  <p><a href="http://perfectionkills.com/optimizing-html/#2_cdata_8230_sections">Explanation of why you might want to do this.</a></p>
+
+  <h4 id="collapse_whitespace">Collapse whitespace</h4>
+
+  <p>This options collapses white space that contributes to text nodes in a document tree. For example:</p>
+
+<pre lang="javascript"><code>
+  var input = '&lt;div> &lt;p>    foo &lt;/p>    &lt;/div>';
+  var output = minify(input, { collapseWhitespace: true });
+
+  output; // '&lt;div>&lt;p>foo&lt;/p>&lt;/div>'
+</code></pre>
+
+  <p>It doesn&#8217;t affect significant white space; e.g. in contents of elements like SCRIPT, STYLE, PRE or TEXTAREA. </p>
+
+<pre lang="javascript"><code>
+  var input = '&lt;script>    alert("foo     bar")&lt;/script>';
+  var output = minify(input, { collapseWhitespace: true });
+
+  output; // '&lt;script>alert("foo     bar")&lt;/script>'
+
+  input = '&lt;textarea>     x x   x &lt;/textarea>';
+  output = minify(input, { collapseWhitespace: true });
+
+  output; // '&lt;textarea>     x x   x &lt;/textarea>'
+</code></pre>
+
+  <p>Now, it&#8217;s worth mentioning that <strong>this modification can have side effects</strong>, and significantly change document representation. </p>
+
+  <p>For example, markup like <code>&lt;span>foo&lt;/span> &lt;span>bar&lt;/span></code> is usually displayed as &#8220;foo bar&#8221; in browsers, with one space character in between two words. White space in markup is represented as text node in document tree. This text node&#8217;s value is a white space (e.g. <code>U+0020</code>), and as long as two adjacent elements are <a href="http://www.w3.org/TR/CSS2/visuren.html#inline-level">inline-level</a>—as they are in this example—it is this white space that contributes to a gap in between &#8220;foo&#8221; and &#8220;bar&#8221;. As soon as we remove that white space (i.e. changing markup to <code>&lt;span>foo&lt;/span>&lt;span>bar&lt;/span></code>), representation changes from &#8220;foo bar&#8221; to &#8220;foobar&#8221;.</p>
+
+  <p>There are two ways to work around this issue.</p>
+
+  <p>First one is not to rely on such white space for document representation, and instead style elements to have margins and paddings as needed. In previous example, this could have been: <code>&lt;span class="foo">foo&lt;/span>&lt;span>bar&lt;/span></code> (where foo class would be declared with, say, <code>margin-right: 0.25em;</code>). At first, this might seem like an overkill. After all, adding class seems to defeat the purpose, resulting in larger output, when compared to a version with just one white space character. However, depending on a context, giving few elements a class for styling purposes, and then stripping white space <em>from the entire document</em>, can result in a smaller output.</p>
+
+  <p>Second option is to never <em>fully remove</em> white space characters, and instead always <strong>collapse them to one</strong> white space character. HTML 4.01 is actually <a href="http://www.w3.org/TR/html401/struct/text.html#whitespace">specified to do just that</a>, so there&#8217;s no harm in doing it upfront. Because of this, the following 2 snippets should render identically:</p>
+
+<pre lang="html"><code>
+&lt;span>foo&lt;/span>
+
+   &lt;span>bar&lt;/span>
+</code></pre>
+
+  <p>and:</p>
+
+<pre lang="html"><code>
+  &lt;span>foo&lt;/span> &lt;span>bar&lt;/span>
+</code></pre>
+
+  <p>...with one space in between &#8220;foo&#8221; and &#8220;bar&#8221;. Note how in first case, there&#8217;s an entire sequence of white space characters (including line breaks). </p>
+
+  <p>This second option&mdash;collapsing to one white space&mdash;has not yet been added to minifier.</p>
+
+  <p><strong>Another noticeable effect</strong> white space removal can have on a document is related to CSS <a href="http://www.w3.org/TR/CSS2/text.html#white-space-prop">white-space property</a>. As I mentioned earlier, by default, adjacent sequences of white space in most of the elements collapse into one space character. But <code>white-space</code> property changes it all. Some of its values result in different collapsing behavior. <code>white-space: pre</code>, for example, makes whitespace render exactly as it occurs in a markup.</p>
+
+  <p>As a result, snippet like this:</p>
+
+<pre lang="html"><code>
+&lt;span style="white-space:pre;">  foo     bar&lt;/span>
+</code></pre>
+
+  renders exactly as is, and becomes:
+
+<pre lang="html"><code>
+  foo     bar
+</code></pre>
+
+  <p>As of now, minifier <strong>doesn&#8217;t respect space-preserving white-space values</strong> (i.e. &#8220;pre&#8221; and &#8220;pre-wrap&#8221;). It doesn&#8217;t even understand them. Unfortunately, computing elements&#8217; styles and determining their white-space values would be just way too complex and impractical <sup><a href="#footnote1">[1]</a></sup>. On a bright side, it seems that white-space property is not used very often. In a future, it should be possible to add an option to minifier for specifying a way to prevent certain elements from having their content collapsed. A filtering can be based on a class, a simple selector, or maybe even by parsing element&#8217;s style attribute.</p>
+
+  <h4 id="collapse_boolean_attributes">Collapse boolean attributes</h4>
+
+  <p>HTML 4.01 has so-called <a href="http://www.w3.org/TR/html4/intro/sgmltut.html#h-3.3.4.2">boolean attributes</a>—&#8220;selected&#8221;, &#8220;disabled&#8221;, &#8220;checked&#8221;, etc. These may appear in a minimized (collapsed) form, where attribute value is fully ommited. For example, instead of writing <code>&lt;input disabled="disabled"></code>, we can simply write—<code>&lt;input disabled></code>.</p>
+
+  <p>Minifier has an option to perform this optimization, called <code>collapseBooleanAttributes</code>:</p>
+
+<pre lang="javascript"><code>
+  var input = '&lt;input value="foo" readonly="readonly">';
+  var output = minify(input, { collapseBooleanAttributes: true });
+
+  output; // '&lt;input value="foo" readonly>'
+</code></pre>
+
+  <p>A <strong>potential caveat here</strong> is that if you target elements <em>by attribute name and value</em>, things might break after applying this optimization. Granted, this kind of case seems rather unreal, but here&#8217;s an example. If we had these rules:</p>
+
+<pre lang="css"><code>
+  input[disabled] { color: red }
+  input[disabled="disabled"] { color: green }
+  input:disabled { color: blue }
+</code></pre>
+
+  <p>and markup like <code>&lt;input disabled="disabled"></code>, then after transforming it to <code>&lt;input disabled></code>, second rule—<code>input[disabled="disabled"]</code>—would stop matching an element. First and third ones, however, would still work as expected. I can&#8217;t imagine why someone would use this second version, and you probably won&#8217;t ever stumble upon issues like these, but it&#8217;s good to be aware of them.</p>
+
+  <h4 id="remove_attribute_quotes">Remove attribute quotes</h4>
+
+  <p>By default, SGML (which HTML originates from) requires that all attribute values be delimited using either double or single quotes. But in certain cases—when attribute values contain a specific set of characters—<a href="http://www.w3.org/TR/html401/intro/sgmltut.html#h-3.2.2">quotes can be omitted altogether</a>. Note that <strong>HTML specification recommends to always use quotes</strong>. There&#8217;s also an interesting explanation of <a href="http://www.cs.tut.fi/~jkorpela/qattr.html">why always quoting is a good idea</a> by Jukka Korpela (although none of the dangers he&#8217;s talking about apply here). Please, use this optimization with care.</p>
+
+  <p>Relevant option is <code>removeAttributeQuotes</code>, and it tells minifier to omit quotes when it is safe to do so:</p>
+
+<pre lang="javascript"><code>
+  var input = '&lt;p class="foo-bar" id="moo" title="blah blah">foo&lt;/p>';
+  var output = minify(input, { removeAttributeQuotes: true });
+
+  output; // '&lt;p class=foo-bar id=moo title="blah blah">foo&lt;/p>'
+</code></pre>
+
+  <h4 id="remove_redundant_attributes">Remove redundant attributes</h4>
+
+  <p>Some attributes in HTML 4.01 have default values. For example, input&#8217;s type attribute defaults to &#8220;text&#8221; and form&#8217;s method—to &#8220;get&#8221;. When enabling corresponding option in minifier (<code>removeRedundantAttributes</code>), these default attribute name-value pairs get stripped from the output. </p>
+
+  <p>There are also few other redundancies that are taken care of as part of this optimization.</p>
+
+  <p>One of them is removing deprecated language attribute on SCRIPT elements. It was <a href="http://perfectionkills.com/optimizing-html/#7_script_language_javascript">among markup smells I mentioned recently</a>. Another one is <a href="http://perfectionkills.com/optimizing-html/#5_a_id_name">coexisting &#8220;name&#8221; and &#8220;id&#8221; attributes on acnhors</a>. And finally, redundant <a href="http://perfectionkills.com/optimizing-html/#4_onclick_javascript">&#8220;javascript&#8221; labels in event handlers</a>.</p>
+
+  <h4 id="use_short_doctype">Use short doctype</h4>
+
+  <p>This optimization is the only one <strong>affecting document validity</strong>. That is if document is defined to be anything but HTML5 (such as HTML 4.01). When <code>useShortDoctype</code> option is enabled, existing doctype is replaced with its short (HTML5) version—<code>&lt;!DOCTYPE html></code>. As mentioned before, <a href="http://perfectionkills.com/optimizing-html/#6_doctype_html">this replacement is generally pretty safe</a>, but you should decide for yourself if this is something worth doing.</p>
+
+  <h4 id="remove_empty_or_blank_attributes">Remove empty (or blank) attributes</h4>
+
+  <p>The corresponding option is <code>removeEmptyAttributes</code>, and when enabled, all attributes with empty values are simply removed from the output. This includes blank values as well—those consisting of white space only.</p>
+
+<pre lang="javascript"><code>
+  var input = '&lt;p id="" STYLE=" " title="\n" >foo&lt;/p>';
+  var ouptut = minify(input, { removeEmptyAttributes: true });
+
+  output; // &lt;p>foo&lt;/p>
+</code></pre>
+
+  <p>Note that not all &#8220;empty&#8221; attributes are removed. For example, both &#8220;src&#8221; and &#8220;alt&#8221; attributes are required on IMG elements, so we can&#8217;t remove them, even if they&#8217;re empty. Right now, only <a href="http://www.w3.org/TR/html4/sgml/dtd.html#coreattrs">core attributes</a> (id, class, style, title), <a href="http://www.w3.org/TR/html4/sgml/dtd.html#i18n">i18n ones</a> (lang, dir) and <a href="http://www.w3.org/TR/html4/sgml/dtd.html#events">event ones</a> (onclick, ondblclick, etc.) are considered &#8220;safe&#8221; for removal.</p>
+
+  <p>The caveat here is that, similar to &#8220;collapse boolean attributes&#8221; option, <strong>this change can affect certain style or script behavior</strong>. For example, you might want to target all elements with class attribute—<code>*[class] { ... }</code>. This will apply to elements with empty class, such as <code>&lt;p class="">bar&lt;/p></code>, but obviously not to those without—<code>&lt;p>bar&lt;/p></code>. </p>
+
+  <p>This might not be a big issue, but take it into consideration.</p>
+
+  <h4 id="remove_optional_tags">Remove optional tags</h4>
+
+  <p>Some elements in HTML 4.01 are allowed to have their tags omitted. Optional tags are either <strong>end one</strong> (e.g. <code>&lt;/td></code>) or both—<strong>start and end ones</strong> (e.g. <code>&lt;tbody></code> and <code>&lt;/tbody></code>). Note that start tag can never be optional on its own.</p>
+
+  <p>Corresponding option in minifier is <code>removeOptionalTags</code>. Currently, it only strips end tags of HTML, HEAD, BODY, THEAD, TBODY and TFOOT elements. I don&#8217;t fully understand the process of creating document tree from &#8220;unclosed&#8221; markup, so I&#8217;m not sure when it&#8217;s safe to omit tags like <code>&lt;/p></code>.</p>
+
+  <p>For example, I can see how removing BODY start tag <strong>can have side effects</strong>. Let&#8217;s say we have a markup like this (with omitted HTML 4.01 doctype, for brevity):</p>
+
+<pre lang="html"><code>
+  &lt;head>
+    &lt;title>x&lt;/title>
+  &lt;/head>
+  &lt;body>&lt;script type="text/javascript">&lt;/script>
+    &lt;p>x&lt;/p>
+    &lt;script type="text/javascript">
+      document.write(document.body.childNodes[0].nodeName);
+    &lt;/script>
+  &lt;/body>
+</code></pre>
+
+  <p>and the same markup with HEAD and BODY tags removed:</p>
+
+<pre lang="html"><code>
+  &lt;title>x&lt;/title>
+  &lt;script type="text/javascript">&lt;/script>
+  &lt;p>x&lt;/p>
+  &lt;script type="text/javascript">
+    document.write(document.body.childNodes[0].nodeName);
+  &lt;/script>
+</code></pre>
+
+  <p>Note that second version is a perfectly valid document. It just has start and end tags of HEAD and BODY elements omitted. Now what seems to happen here, in a second version, is this: </p>
+
+  <p>Browser starts parsing, encounters TITLE tag, and given lack of starting HTML and HEAD tags, creates both elements implicitly (first, HTML, then HEAD as its immediate child). It then continues parsing, up until it stumbles upon P element, which, as per <a href="http://www.w3.org/TR/REC-html40/sgml/dtd.html">DTD</a>, can not be a child of HEAD. Browser is therefore forced to implicitly close HEAD element, start BODY element, and continue parsing further. P element becomes first child in BODY, and SCRIPT element becomes last child in HEAD.</p>
+
+  <p>Now, if we were to display both of these documents, first one would alert &#8220;SCRIPT&#8221; and second one—&#8220;P&#8221;. This is becase in original version, SCRIPT element is <em>defined explicitly</em> to be a child of BODY, and in modified version—child of HEAD (due to the way parsing works). The behavior of two documents is therefore not identical. We've got a "problem".</p>
+
+  <p>Just like with previous &#8220;gotchas&#8221;, I&#8217;m not sure how likely this type of scenario is to appear in real life. From what I can see, the only other element (besides SCRIPT), allowed as child of both—HEAD and BODY, is OBJECT. As for the future, it should be possible to make minifier strip other optional tags as well. But only in safe scenarios.</p>
+
+  <p>It&#8217;s also worth mentioning that unclosed elements <a href="http://perfectionkills.com/optimizing-html/#comment-57196">can result in slightly slower parsing times</a>. Unfortunately, there are no extensive benchmarks done on this topic, and results seem to vary across browsers.</p>
+
+  <h4 id="remove_empty_elements">Remove empty elements</h4>
+
+  <p>This optimization is probably <strong>one of the most obtrusive ones</strong>, which is why it is disabled by default. Think of it as an experimental addition, and employ with great care. There are dozens of valid use cases for occurence of empty elements in a document. They can be used as  placeholders for content inserted later with scripting; or for presentational purposes, such as to implement rounded corners, shadows, float clearing, etc. There are probably other cases, which I can&#8217;t think of at the moment.</p>
+
+  <p>When enabled, minifier simply removes all elements with empty contents (but not those with <strong>empty content model</strong>, such as IMG, LINK, or BR). </p>
+
+  <p>For example:</p>
+
+<pre lang="javascript"><code>
+  var input = '&lt;p>&lt;/p>';
+  var output = minify(input, { removeEmptyElements: true });
+
+  output; // ''
+
+  input = '&lt;div>blah&lt;span>&lt;/span>&lt;/div>';
+  var output = minify(input, { removeEmptyElements: true });
+
+  output; // '&lt;div>blah&lt;/div>';
+</code></pre>
+
+  <p>There are few things to be aware of. First of all, elements containing <em>only other empty elements</em> are not removed. For example:</p>
+
+<pre lang="javascript"><code>
+  var input = '&lt;div>&lt;div>&lt;div>&lt;/div>&lt;/div>&lt;/div>';
+  var output = minify(input, { removeEmptyElements: true });
+
+  output; // '&lt;div>&lt;div>&lt;/div>&lt;/div>'
+</code></pre>
+
+  <p>Note how only inner DIV element—the one with actual empty contents—is removed.</p>
+
+  <p>Second of all, only truly empty string is considered an empty content. This does <em>not</em> include spaces, newlines, or other white space characters:</p>
+
+<pre lang="javascript"><code>
+  var input = '&lt;p> &lt;/p>'; // note one space character in between
+  var output = minify(input, { removeEmptyElements: true });
+
+  output; // '&lt;p> &lt;/p>'
+</code></pre>
+
+  <p>Also note that comments are parsed as separate entities and so don&#8217;t affect &#8220;emptiness&#8221; of elements:</p>
+
+<pre lang="javascript"><code>
+  var input = '&lt;p>&lt;!-- comment -->&lt;/p>';
+  var output = minify(input, { removeEmptyElements: true });
+
+  output; // ''
+</code></pre>
+
+  <p>As with other optimizations, some of these limitations will likely be removed in the future.</p>
+
+  <h4 id="validate_input_through_html_lint">Validate input through HTML lint</h4>
+
+  <p>This option simply toggles linting. You can create new HTMLLint object and pass it to minifier. During minification, lint object silently logs all "suspicious" activity. It exposes <code>populate</code> method, which accepts element and inserts its log into this element:</p>
+
+<pre lang="javascript"><code>
+  var lint = new HTMLLint();
+  minify(' some input... ', { lint: lint });
+
+  lint.populate(document.getElementById('someElement'));
+</code></pre>
+
+  <h3 id="field_testing">Field-testing</h3>
+
+  <p>So how does minifier stand against real-life markup? Let&#8217;s take a look at minification results of some of the popular websites (note that when gzip'ing documents, <strong>6th level of compression (default)</strong> was used):</p>
+
+  <h4 id="amazoncom">Amazon.com</h4>
+
+  <p>Original size:  217KB (35.8KB gzipped)<br>
+  Minified size:  206.6KB (34.3KB gzipped)<br>
+  Savings:        <strong>10.4KB</strong> (1.5KB gzipped)</p>
+
+  <p>Minifying home page of <a href="http://amazon.com">amazon.com</a> saves about 10KB with uncompressed document, and only 1.5KB with compressed one. What&#8217;s interesting is that humongous 217KB is actually a result of miriad of inline styles and scripts scattered throughout a document. Replacing those with external scripts would be the best optimization. Getting rid of occasional style attributes would help too.</p>
+
+  <h4 id="diggcom">Digg.com</h4>
+
+  <p>Original size:   82KB (18.2KB gzipped)<br>
+  Minified size:   74.9KB (17.2KB gzipped)<br>
+  Savings:         <strong>7KB</strong> (1KB gzipped)</p>
+
+  <p>On <a href="http://digg.com">digg.com</a>, reduction is slightly smaller—7KB (1KB gzipped). The markup is not as cluttered as on amazon, but still has smells: inline scripts (and unnecessary comments in them), deprecated attributes, anchors defunct without scripting, etc. The benefits of minification are rather small here.</p>
+
+  <h4 id="ajaxiancom">Ajaxian.com</h4>
+
+  <p>Original size:  177.6KB (32.4KB gzipped)<br>
+  Minified size:  157.3KB (29.7KB gzipped)<br>
+  Savings:        <strong>20.3KB</strong> (2.7KB gzipped)</p>
+
+  <p>Trying out home page of <a href="http://ajaxian.com">ajaxian.com</a>, we see a difference of ~20KB—even better reduction in size. And again, compressed documents show savings of only 2.7KB. Speaking of compression, ajaxian.com shamelessly serves its 177KB-large document uncompressed. There&#8217;s also some redundant markup, like unnecessary &amp;nbsp;&#8217;s, excessive style attributes, lots of comments, and few inline scripts. Removing all of those, and turning on compression would be an ultimate optimization.</p>
+
+  <h4 id="linkedincom">Linkedin.com</h4>
+
+  <p>Original size:  128.8KB (19.8KB gzipped)<br>
+  Minified size:  89.4KB (17.1KB gzipped)<br>
+  Savings:        <strong>39.4KB</strong> (2.7KB gzipped)</p>
+
+  <p><a href="http://linkedin.com">linkedin.com</a> surprises with savings of almost 40KB (!) after minification. Looking at the source, we see that large number is explained by excessive amount of whitespace. This is a good example of how carelessly used whitespace can add up to huge number like this. And again, gzip saves the day; minifying compressed document reduces it only by 2.7KB.</p>
+
+  <h4 id="ecmascript_language_specification">ECMAScript language specification</h4>
+
+  <p>Original size:  703KB (122.5KB gzipped)<br>
+  Minified size:  572KB (106.4KB gzipped)<br>
+  Savings:        <strong>131KB</strong> (16KB gzipped)</p>
+
+  <p>Large static documents is where HTML minification truly shines, and <a href="http://bclary.com/2004/11/07/">HTML version of ECMAScript (3rd ed.) language specification</a> is a clear demonstration of it. Minifying document results in savings of 131KB (!) for an uncompressed document, and 16KB for compressed one. Since document is served statically, there&#8217;s hardly any reason not to apply minification here.</p>
+
+  <h3 id="cost_and_benefits">Cost and benefits</h3>
+
+  <p>It&#8217;s pretty obvious that the best candidates for html minification are <strong>large static documents</strong>. Or just static documents—FAQ&#8217;s, standalone articles, etc. Anything that can&#8217;t be compressed (e.g. if there are not enough access rights, to enable gzip on a server) would benefit from minification as well. Even when serving gzipped content, it&#8217;s worth remembering that <a href="http://www.stevesouders.com/blog/2009/11/11/whos-not-getting-gzip/">not everyone is getting gzip</a>. So clients that are being sent gzipped content could receive 2-3KB smaller file, whereas those receiving uncompressed content could end up with files up to whopping 10-20KB smaller than original ones.</p>
+
+  <p>One of the biggest problems I see, when it comes to dynamic minification, is the <strong>possibility of error</strong>. The core of the issue is that minification relies on parsing, and parsing HTML is <a href="http://www.codinghorror.com/blog/2009/11/parsing-html-the-cthulhu-way.html">a pretty tricky business</a>. Even though minifier applies a strict set of rules—removing quotes and optional tags only when it is absolutely safe to do so, a single misplaced character in start tag can trip parser and wreak havoc on an entire document. This is especially relevant when there&#8217;s an inclusion of user-generated content. </p>
+
+  <p>As an example, browsers usually understand <strong>empty end tags</strong> (allowed in HTML)—<code>&lt;p> test &lt;/></code>, but parser, which minifier is based on, would immediately choke here and stop. Another example is attributes containing &#8220;weird&#8221; characters—<code>&lt;a href="http://example.com""> test &lt;/a></code> (note trailing quote after an attribute). Many browsers happily parse this element, ignoring trailing quote. But parser, once again, falls short and bails out.</p>
+
+  <p>It&#8217;s certainly possible to tame errors and simply output original, uncompressed document. But this brings us to another downside—<strong>time spent on minification</strong>. Even when errors are not an issue, there&#8217;s an actual overhead of parsing and processing document tree. Minifying home page of amazon.com in pretty speedy nightly webkit, for example, takes exactly 1 second. Most of that time is consumed by parsing. 1 second is quite a lot. An acceptable time for real-time minification would be somewhere around 50-100ms. This problem can be mitigated by optimizing parser, or porting script to be executed in a faster environment (v8 on a server?).</p>
+
+  <p>Curiously, Opera 10.50 beta (on Mac OS X) managed to beat WebKit and completed this task almost twice faster (~500ms). Unfortunately, this version suffers from <a href="http://twitter.com/kangax/status/10037801979">some bugs in regex matching</a>, and fails half of the test suite. Hopefully, those issues will be resolved in later revisions.</p>
+
+  <p>Another interesting performance observation was with <a href="http://code.google.com/p/v8/">V8 engine</a>. When testing with version 1.3.x, the time it took to minify amazon.com home page was 0.6 secs. However, version 2.1.2.6 (currently latest stabe) performed same task in excruciatingly long 2 seconds.</p>
+
+  <h3 id="future">Future</h3>
+
+  <p>I can think of many other things to improve in minifier. Unfortunately, I don&#8217;t have much time to work on it. The project is licensed under MIT, and is free for use/modification by anyone interested. Test suite should make collaboration easy. There&#8217;s a short todo list on a bottom of project page. Among other things, it lists some of the known bugs.</p>
+
+  <p>As always, any questions, corrections, and suggestions are very much welcomed.</p>
+
+  <p>Enjoy.</p>
+
+  <p id="footnote1" class="footnotes">
+    1. &#8220;white-space: pre&#8221; declaration could be part of a rule from within an extrnal stylesheet; getting computed style would require downloading, parsing and analyzing every single stylesheet linked from the document (or imported from within another stylesheet).
+  </p>
+
+</div>

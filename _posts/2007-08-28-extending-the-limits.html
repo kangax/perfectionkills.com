@@ -1,0 +1,191 @@
+---
+layout: post
+title: Extending the limits
+tags:
+  - prototype
+---
+
+<h2>Extending the limits</h2>
+
+<p>One of the beauties of prototype is in the way it allows us to extend its functionality. Building custom snippets of code has never been easier. The philosophy behind it is to keep core-level things at a minimum, but provide a convenient way to extend them.</p>
+
+<p>The magic method is <a href="http://prototypejs.org/api/element/addMethods" alt="Element.addMethods in prototype API">Element.addMethods</a>.</p>
+
+<p>The syntax is quite simple:</p>
+
+<pre lang="javascript"><code>
+Element.addMethods({
+  method1: function() { ... },
+  method2: function() { ... },
+  ...
+});
+</code></pre>
+
+<p>When defining a custom method, make sure that:</p>
+
+<ul>
+  <li>First passed argument is an element
+<pre lang="javascript"><code>
+Element.addMethods({
+  myAwesomeMethod: function(element, ... ) {
+    element = $(element);
+    ...
+  }
+});</code></pre>
+  </li>
+  <li>That same element is returned from the method (and is therefore chain-friendly)
+<pre lang="javascript"><code>
+Element.addMethods({
+  anotherAwesomeMethod: function(element, ... ) {
+    element = $(element);
+    ...
+    return element;
+  }
+});</code></pre>
+  </li>
+</ul>
+
+<p><em class="hl">We can also skip &#8220;var&#8221; when assigning element reference (since it&#8217;s passed as a first argument).</em></p>
+
+<p>As an example, here&#8217;s a little helper, that I use quite often to display notifications (usually when form verification fails). We will update element with content, make it appear, wait couple of seconds and fade it out.</p>
+
+<p><strong>Note:</strong> The following example uses prototype version 1.6.0_rc0 and requires Scriptaculous&#8217; effects module:</p>
+
+<pre lang="javascript"><code>
+Element.addMethods({
+  flash: function(element, content) {
+    element = $(element);
+    new Effect.Appear(element, {
+      beforeStart: function() {
+        element.update(content);
+      },
+      afterFinish: function() {
+        Effect.Appear(element, {to: 0, delay: 3,
+          afterFinish: function(){
+            element.hide().setOpacity(1);
+          }})
+      }
+    });
+    return element;
+  }
+});</code></pre>
+
+<p>Now we can simply do:</p>
+
+<pre lang="javascript"><code>
+$('errorBox').flash('login field should not be empty');</code></pre>
+
+<p>Try it out! Pretty convenient, huh?</p>
+
+<p>Just to get you started, here are few more examples that might be convenient in every day use:</p>
+
+<h3>1) Form#populateFrom</h3>
+
+<p>Ever wanted to populate form via ajax? All it takes is a few lines of &#8220;magic&#8221;:</p>
+
+<ul>
+  <li><strong>Description:</strong> Fills form with data via json (requires: v1.6.0_rc0+, &#8216;Content-type: application/json&#8217; header)</li>
+  <li><strong>Usage:</strong> $(&#8216;myForm&#8217;).populateFrom(&#8216;blah.php&#8217;);</li>
+  <li><strong>Invoked on:</strong> Form</li>
+</ul>
+
+<pre lang="javascript"><code>
+  populateFrom: function(element, url) {
+    element = $(element);
+    new Ajax.Request(url, {
+      onSuccess: function(response) {
+        var data = response.responseJSON;
+        element.getElements().each(function(el) {
+          el.setValue(data[el.readAttribute('name')])
+        });
+      }
+    });
+    return element;
+  }</code></pre>
+
+<p>If your server-side script returns something like:</p>
+
+<pre lang="javascript"><code>
+{
+  "firstName": "Fluffy",
+  "lastName": "Horse",
+  "email": "far@far.away"
+}</code></pre>
+
+<p>then invoking this method</p>
+
+<pre lang="javascript"><code>
+$('myPrecious').populateFrom('myScript.php')
+</code></pre>
+
+<p>on a form with the same structure</p>
+
+<pre lang="xml"><code>
+&lt;form action="foo.bar" id="myPrecious">
+&lt;input name="firstName" type="text" />
+&lt;input name="lastName" type="text" />
+&lt;input name="email" type="text" />
+&lt;/form>
+</code></pre>
+
+<p>will populate JSON data into a form</p>
+
+<h3>2) Element#__extend</h3>
+
+<p>This one is a real gem and I find myself using it all the time. The idea is to be able to extend element with arbitrary number of methods/properties in a chain friendly manner.</p>
+
+<ul>
+  <li><strong>Description:</strong> Extends element with a hash of properties</li>
+  <li><strong>Usage:</strong> <code>$$('input#firstName')[0].__extend({initialValue: 'John'});</code> <code>$$('form').invoke('__extend', {counter: 0})</code></li>
+  <li><strong>Invoked on:</strong> Any</li>
+</ul>
+
+<pre lang="javascript"><code>
+__extend: function(element, hash) {
+  return Object.extend($(element), hash);
+}</code></pre>
+
+<p>As you can see this one is just a simple one-liner so we can easily skip explicit element assignment.<br />
+As an example of a real-life case, here&#8217;s how I used it in a <a href="http://kangax.github.io/proto.menu" title="Proto.Menu">Proto.Menu</a> class:</p>
+
+<pre lang="javascript"><code>
+new Element('a', {
+  href: '#',
+  title: item.name,
+  className: item.className || ''})
+    .observe('click', this.onClick.bind(this))
+    .update(item.name)
+    .__extend({
+      _callback: item.callback,
+      _disabled: item.disabled ? true : ''
+    });
+);</code></pre>
+
+<p>As you can see, it&#8217;s really convenient to store such things as callbacks, identifiers and boolean values as custom element properties. It&#8217;s also worth mentioning that Prototype 1.6+ extends observed elements with _eventID (preventing duplicate observers) in a similar manner.</p>
+
+<h3>Element#setUniqueClassName</h3>
+
+<p>Another common use case is when we need to assign a class to an element, removing it from its siblings at the same time. Most trivial example is setting &#8220;selected&#8221; or &#8220;active&#8221; class on navigation links</p>
+
+<ul>
+  <li><strong>Description:</strong> Sets className, removing className from all siblings</li>
+  <li><strong>Usage:</strong><code>$$('#nav li a')[0].setUniqueClassName('selected')</code></li>
+  <li><strong>Invoked on:</strong> Any</li>
+</ul>
+
+<pre lang="javascript"><code>
+setUniqueClassName: function(element, className) {
+  var element = $(element),
+  if (!element.hasClassName(className)) {
+    collection = element.next() || element.previous()
+      ? element.siblings()
+      : $A(element.up(1).getElementsByTagName(element.tagName));
+    collection.invoke('removeClassName', className);
+    element.addClassName(className);
+  }
+  return element;
+}</code></pre>
+
+<p>This method only starts iteration if current element does not have a specified className (in case already selected link was clicked). It&#8217;s also smart enough to iterate over child nodes of parent node siblings (since semantically-correct markup should contain links inside of list items). In this case, it will try to collect all &lt;a&gt; elements first and then iterate over them.</p>
+
+<p>I hope you enjoyed this tutorial and are inspired by all the possibilities of prototyping : )</p>

@@ -1,0 +1,102 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+  <head>
+    <title>Proto.IPS :: In-place-select controls made easy</title>
+    
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+    <meta name="keywords" content="" />
+    <meta name="description" content="" />
+    
+    <script src="js/prototype.js" type="text/javascript"></script>
+    <script src="js/ips.js" type="text/javascript"></script>
+    <script src="js/master.js" type="text/javascript"></script>
+        
+    <link rel="stylesheet" href="css/master.css" type="text/css" media="all" />
+    <link rel="stylesheet" href="css/ips.css" type="text/css" media="all" />
+  </head>
+  <body>
+    <h2>Proto.IPS :: Unobtrusive in-place-select widget</h2>
+    <div id="status"></div> 
+    <div>
+      <p>Proto.IPS is a nice little widget which can be used for in place selection.</p>
+      <p>The idea is shamelessly stolen from gmail chat control (for setting user status) behavior.</p>
+      <p>This work is <strong>experimental</strong> so don't be too harsh on me.</p>
+      <p>There are known issues with CSS in IE6 and Safari 2 which I'm not sure how to get rid of, and any help would be greatly appreciated</p>
+      <p><a href="js/ips.js" title="Proto.IPS">Download v.0.1</a> (requires <a href="http://prototypejs.org/assets/2007/11/6/prototype.js">Prototype 1.6</a>) and <a href="css/ips.css">css file</a></p>
+      <p>I <a href="http://thinkweb2.com/projects/prototype/2007/12/22/protoips-in-place-select-widget/">gladly accept</a> any bug reports and suggestions.</p>
+      <h4>Parameters:</h4>
+      <dl>
+        <dt><code>(DOMElement|String) element</code></dt>
+          <dd>element to insert the control into</dd>
+        <dt><code>(Object) config</code></dt>
+          <dd>See the section above for all the configuration options</dd>
+      </dl>
+      <h4>Config object (passed as a second parameter):</h4>
+      <dl>
+          <dt><code>(Array) options</code></dt>
+            <dd>
+              Array of options where each option is an object with <strong>text</strong> and <strong>className</strong> (optional) properties
+            </dd>
+          <dt><code>beforeShow</code></dt>
+            <dd>called <strong>before</strong> options list is shown</dd>
+          <dt><code>afterShow</code></dt>
+            <dd>called <strong>after</strong> options list is shown</dd>
+          <dt><code>beforeUpdate(String value)</code></dt>
+            <dd>
+              called <strong>before</strong> element is updated.
+              new value is passed as a first parameter
+            </dd>
+          <dt><code>afterUpdate(String value)</code></dt>
+            <dd>
+              called <strong>after</strong> element is updated. 
+              new value is passed as a first parameter
+            </dd>
+          <dt><code>afterCreate</code></dt>
+            <dd>called right <strong>after</strong> instantiation</dd>
+      </dl>
+      <h4>Methods</h4>
+      <dl>
+        <dt>addOption(option)</dt>
+        <dd>takes option object and inserts it into a list</dd>
+      </dl>
+      <h4>Example</h4>
+<pre>
+  new Proto.IPS(element, {
+    options: [
+      {text: 'Available', className: 'on'},
+      {text: 'Free for chat', className: 'on'}, 
+      {text: 'Away', className: 'half'},
+      {text: 'Lunch', className: 'half'},
+      {text: 'Not available', className: 'off'}, 
+      {text: 'Occupied', className: 'off'}
+    ]
+  });
+</pre>
+      <div>
+        All callbacks are bounded to the actual instance. 
+        Here's what you might want to access:
+        <dl>
+          <dt><code>this.element</code></dt>
+            <dd>original element which control is wrapped around</dd>
+          <dt><code>this.trigger</code></dt>
+            <dd>"down arrow" element which triggers options list toggling (<em>ips_trigger</em> className)</dd>
+          <dt><code>this.optionsEl</code></dt>
+            <dd>options list (ul element - <em>ips_options</em> className)</dd>
+          <dt><code>this.input</code></dt>
+            <dd>input field (<em>ips_input</em> className)</dd>
+          <dt><code>this.wrapper</code></dt>
+            <dd>div which is wrapped around original element and is assigned an <em>ips_wrapper</em> className. 
+              This element holds all of the control structures (options list, input field, original element and arrow trigger) </dd>
+          <dt><code>this.options</code></dt>
+            <dd>array of options (with last added being on top)</dd>
+        </dl>
+      </div>
+      <div>
+        <em>ips_wrapper</em> and <em>ips_trigger</em> are assigned <em>over</em> class when hovered with the mouse.
+        You can use these to style the widget
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,155 @@
+---
+layout: post
+title: instanceof considered harmful or how to write a robust isArray
+popular: popular
+tags:
+  - js
+---
+
+<h2>`instanceof` considered harmful (or how to write a robust `isArray`)</h2>
+
+<p>Checking types in Javascript is well known as a pretty unreliable process.<br />
+Good old <code>typeof</code> operator is often useless when it comes to certain types of values:</p>
+
+<pre lang="javascript"><code>
+typeof null; // "object"
+typeof []; // "object"
+</code></pre>
+
+<p>People often expect to see something like &#8220;null&#8221; in the former check and something like &#8220;array&#8221; in the latter one.<br />
+Fortunately, checking for <code>null</code> is not that hard, despite useless <code>typeof</code>, and is usually accomplished by strict-comparing value to <code>null</code>:  </p>
+
+<pre lang="javascript"><code>
+value === null;
+</code></pre>
+
+<p>Checking for arrays, on the other hand, is a somewhat tricky business. There are usually two schools of thought &#8211; using <code>instanceof</code> operator (or checking object&#8217;s <code>constructor</code> property) and the-duck-typing way &#8211; checking for presence (or types) of certain set of properties (which are known to be present in array objects).</p>
+
+<p>Obviously, both ways have their pros and cons.</p>
+
+<h3>1) `instanceof` operator / `constructor` property</h3>
+
+<p><code>instanceof</code> operator essentially checks whether anything from left-hand object&#8217;s prototype chain is the same object as what&#8217;s referenced by <code>prototype</code> property of right-hand object. It sounds somewhat complicated but is easily understood from a simple example: </p>
+
+<pre lang="javascript"><code>
+var arr = [];
+arr instanceof Array; // true
+</code></pre>
+
+<p>This statement returns `true` because <code>Array.prototype</code> (being a <code>prototype</code> property of a right-hand object) references the same object as an internal [[Prototype]] of left-hand object ([[Prototype]] is &#8220;visible&#8221; via <code>arr.__proto__</code> in clients that have <code>__proto__</code> extension).  An alternative <code>constructor</code> check, which I mentioned earlier, would usually look like:</p>
+
+<pre lang="javascript"><code>
+var arr = [];
+arr.constructor == Array; // true
+</code></pre>
+
+<p>Both <code>instanceof</code> and <code>constructor</code> look very innocent and seem like great ways to check if an object is an array. If I remember correctly, latest jQuery is using <code>constructor</code>:</p>
+
+<p>An excerpt from jQuery (rev. 5917):</p>
+
+<pre lang="javascript"><code>
+...
+isArray: function( arr ) {
+  return !!arr &#038;&#038; arr.constructor == Array;
+}
+...
+</code></pre>
+
+<p>The problems arise when it comes to scripting in multi-frame DOM environments. In a nutshell, Array objects created within one iframe do not share [[Prototype]]&#8217;s with arrays created within another iframe. Their constructors are different objects and so both <code>instanceof</code> and <code>constructor</code> checks fail:</p>
+
+<pre lang="javascript"><code>
+var iframe = document.createElement('iframe');
+document.body.appendChild(iframe);
+xArray = window.frames[window.frames.length-1].Array;
+var arr = new xArray(1,2,3); // [1,2,3]
+
+// Boom!
+arr instanceof Array; // false
+
+// Boom!
+arr.constructor === Array; // false
+</code></pre>
+
+<p>This &#8220;problem&#8221; was <a href="http://groups.google.com/group/comp.lang.javascript/msg/1afbcb0da1cd4aef">mentioned by Crockford</a> as far as back in 2003. Doug suggested to try duck-typing and check for a type of one of the <code>Array.prototype</code> methods &#8211; e.g.: </p>
+
+<pre lang="javascript"><code>
+typeof myArray.sort == 'function'
+</code></pre>
+
+<p>Exactly for these reasons Javascript authors often resort to a second approach:  </p>
+
+<h3>2) Duck-typing</h3>
+
+<p>We&#8217;ve been using it in Prototype.JS for quite some time now. Dean Edwards was using it in its base2, last time I looked at it.  </p>
+
+<p>An excerpt from Prototype.js (v. 1.6.0.3):</p>
+
+<pre lang="javascript"><code>
+function isArray(object) {
+  return object != null &#038;&#038; typeof object === "object" &#038;&#038;
+    'splice' in object &#038;&#038; 'join' in object;
+}
+</code></pre>
+
+<p>By &#8220;fixing&#8221; multi-frame &#8220;problem&#8221;, this naive approach fails short in some of the trivial cases. If you were ever to have an object with <code>splice</code> and <code>join</code> properties, <code>Object.isArray</code> would obviously detect that object as being an Array:</p>
+
+<pre lang="javascript"><code>
+var testee = { splice: 1, join: 2 };
+Object.isArray(testee); // true
+</code></pre>
+
+<p>Back in June, I was reading ECMA-262 specs and noticed that there was an easy way to get value of an internal [[Class]] property that every native object has. <code>Object.prototype.toString</code> was defined like so:</p>
+
+<p><cite><br />
+<em><br />
+Object.prototype.toString( )<br />
+When the toString method is called, the following steps are taken:<br />
+1. Get the [[Class]] property of this object.<br />
+2. Compute a string value by concatenating the three strings &#8220;[object ", Result (1), and "]&#8220;.<br />
+3. Return Result (2)<br />
+</em><br />
+</cite></p>
+
+<p>Contrary to <code>Function.prototype.toString</code> which is implementation dependent and is NOT recommended to be relied upon, <code>Object.prototype.toString</code> has a clearly defined behavior for all native objects.</p>
+
+<p><cite><br />
+<em><br />
+15.3.4.2  Function.prototype.toString()<br />
+An implementation-dependent representation of the function is returned. This representation has the syntax of a FunctionDeclaration. Note in particular that the use and placement of white space, line terminators, and semicolons within the representation string is implementation-dependent.<br />
+</em><br />
+</cite></p>
+
+<p>Just as a fun exercise, I wrote a simple <code>__getClass</code> method, <a href="http://github.com/kangax/protolicious/tree/master/experimental/__getClass.js">put it into an &#8220;experimental&#8221; folder</a> and forgot about it : )</p>
+
+<pre lang="javascript"><code>
+function __getClass(object) {
+  return Object.prototype.toString.call(object)
+    .match(/^\[object\s(.*)\]$/)[1];
+};
+</code></pre>
+
+<p>A couple of weeks ago, though, someone created a ticket for Prototype.js &#8211; <a href="http://prototype.lighthouseapp.com/projects/8886-prototype/tickets/443-objectisdate-method">proposing an Object.isDate method</a>. An implementation used <code>constructor</code> check and so was vulnerable to cross-frame issues. This is when I remembered about <code>getClass</code> and its possible usage in <code>isArray</code>, <code>isDate</code> and other similar methods. </p>
+
+<p>Specs mention that:</p>
+
+<p><cite><br />
+<em><br />
+15.4.2.1 new Array([ item0[, item1 [,...]]])<br />
+&#8230;<br />
+The [[Class]] property of the newly constructed object is set to &#8220;Array&#8221;.<br />
+&#8230;<br />
+</em><br />
+</cite></p>
+
+<p>This means that creating <code>isArray</code> function could not be simpler than:</p>
+
+<pre lang="javascript"><code>
+function isArray(o) {
+  return Object.prototype.toString.call(o) === '[object Array]';
+}
+</code></pre>
+
+<p>The solution is not dependent on frames (since it checks internal [[Class]]) and is more robust than duck-typing approach. I have tested it on a handful of browsers (including some archaic and mobile ones) and was happy to find that all of them are indeed compliant in this regard.  </p>
+
+<p>Let&#8217;s hope this little &#8220;trick&#8221; serves as a remedy to cross-frame issues that authors struggle to find workarounds for : )</p>
+<p>Happy new year!</p>

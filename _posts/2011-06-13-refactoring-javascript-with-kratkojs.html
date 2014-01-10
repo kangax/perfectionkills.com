@@ -1,0 +1,399 @@
+---
+layout: post
+title: Refactoring Javascript with kratko.js
+popular: popular
+tags:
+  - js
+---
+
+<h2>Refactoring Javascript with kratko.js</h2>
+
+<p><img src="/images/kratko_screenshot_1.png" style="width:700px"></p>
+
+<p>Understanding the concept of <a href="http://en.wikipedia.org/wiki/Code_refactoring">code refactoring</a> is one of the best things you can do to become a better programmer <sup><a href="#on-refactoring">[1]</a></sup>.</p>
+
+<p>It all started a couple of weeks ago when I — once again — looked at the growing, stinky mess that my code has become. It&#8217;s a few thousand <abbr title="Lines Of Code">LOC</abbr> app with various interactive widgets and controls all on one page. Even though a lot of functionality was encapsulated in these separately-defined widgets, the main &#8220;dashboard&#8221; object — a bootstrapper, so to speak — grew like a weed and became quite an abomination.</p>
+
+<p>It was time for refactoring.</p>
+
+<p>Every now and then I would clean things up. And so there I was, once again, trying to figure out where to start. One method was whopping 70 lines long. Another few of them — just below that giant — were doing one specific task and would be better off refactored into a separate module/widget/&#8221;class&#8221;/object. What are they doing in bootstrapper anyway? I scrolled a little further and witnessed more mess — long methods, spread-out functionality and a 4-argument function sneaking somewhere in between. 4 arguments? That&#8217;s just scandalous.</p>
+
+<p>But where to start? Should I just randomly choose a thread to pull? If only I could see the stats for this dashboard object. Some kind of tool to help analyze method length of the entire thing. This way I could start with the messiest part. I could also see overall picture. Heck, I could even use a tool like this on a future project — just to get a feel of how bad things really are. </p>
+
+<p>Well, a thing like that is totally doable, isn&#8217;t it?! </p>
+
+<p>And so that how <a href="http://github.com/kangax/kratko.js">kratko.js</a> was born; a simple tool to help you refactor Javascript.</p>
+
+<h3 id="kratkojs">kratko.js</h3>
+
+<p>There are 3 aspects of refactoring I&#8217;m usually interested in:</p>
+
+<ul>
+<li>Which objects/&#8221;classes&#8221; have too many methods?</li>
+<li>Which methods do too many things?</li>
+<li>Which methods have too many arguments?</li>
+</ul>
+
+<p><img src="/images/kratko_screenshot_2.png"></p>
+
+<p>Answering these questions and refactoring according to that usually takes care of most of the mess. Objects become more autonomous, by doing only a specific task. Methods become smaller by doing less and having the right level of abstraction. And there&#8217;s no more long-argument functions, order of which no one can ever remember.</p>
+
+<p>This is exactly what kratko.js tries to provide. </p>
+
+<p>kratko.js takes an object and <strong>collects statistics</strong> about its methods and arguments. It can then display that information in a table, allowing to sort by method or argument length. It also provides such numbers as average method/arguments length, and max/min method/arguments length.</p>
+
+<p>It turns out to be pretty useful.</p>
+
+<h3 id="kratko_and_tableviewer">Kratko and TableViewer</h3>
+
+<p>To keep things simple and modular, kratko is made of 2 objects: <code>Kratko</code> which has <code>getStatsFor</code> method, and a <code>TableViewer</code> which could take stats object and display it in an interactive HTML table. If you don&#8217;t care to view results in a fancy HTML table, you can just use <code>Kratko.getStatsFor</code> passing it an object to inspect and receiving an object with elaborate stats for it. The whole thing is a tiny script — about 170 lines long. You can use it in the browser or on the server. All that&#8217;s required is environment that supports function decompilation (in other words, where <code>Function.prototype.toString</code> returns more or less exact representation of a function).</p>
+
+<p><code>TableViewer</code>, on the other hand, is a layer on top of <code>Kratko</code> and provides an outlook of these stats. What&#8217;s really useful, though, is that <code>TableViewer</code> is also <strong>interactive</strong>. You can sort a table by method or argument length, and view actual method contents.</p>
+
+<p><img src="/images/kratko_screenshot_3.png"></p>
+
+<p><img src="/images/kratko_screenshot_4.png"></p>
+
+<h3 id="getstatsfor_signature">getStatsFor signature</h3>
+
+<p>The signature of <code>Kratko.getStatsFor</code> is pretty straight-forward. Besides having average and min/max numbers, it also stores signatures of each method — just in case you&#8217;d like to iterate over it and do something other than getting an average.</p>
+
+<pre lang="javascript"><code>
+{
+  methods: {
+    name: {
+      methodString: ...,
+      length: ...,
+      argsLength: ...
+    }
+  },
+
+  totalMethodLength: ...,
+
+  minMethodLength: ...,
+  maxMethodLength: ...,
+
+  totalArgsLength: ...,
+
+  minArgsLength: ...,
+  maxArgsLength: ...,
+
+  numMethods: ...
+}
+</code></pre>
+
+<p>So, for example, an object with 2 methods — <code>foo</code> and <code>bar</code>:</p>
+
+<pre lang="javascript"><code>
+var obj = {
+  foo: function(x, y) {
+    return x + y;
+  },
+  bar: function(a, b, c, d, e, f, g) {
+    if (true) {
+      // some comment
+      alert(123);
+    }
+  }
+};
+</code></pre>
+
+<p>..would have this kind of representation:</p>
+
+<pre lang="javascript"><code>
+{
+  methods: {
+    foo: {
+      methodString: 'function (x, y) {\n  return x + y;\n}',
+      length: 1,
+      argsLength: 2
+    },
+    bar: {
+      methodString: 'function (a, b, c, d, e, f, g) {\n  if (true) {\n    //some comment\n    alert(123);\n  }}',
+      length: 3,
+      argsLength: 7
+    }
+  },
+
+  totalMethodLength: 4,
+  minMethodLength: 1,
+  maxMethodLength: 3,
+
+  totalArgsLength: 9,
+  minArgsLength: 2,
+  maxArgsLength: 7,
+
+  numMethods: 2
+}
+</code></pre>
+
+<h3 id="bookmarklet">Bookmarklet</h3>
+
+<p>The way I&#8217;ve been using kratko.js so far is via <a href="javascript:(function(){var el=document.createElement('script');el.src='https://github.com/kangax/kratko.js/raw/master/dist/kratko.js';el.onload=function(){var objectName = window.prompt('Which object to inspect?'); if (!objectName) return; new TableViewer(Kratko.getStatsFor(eval(objectName)))};document.getElementsByTagName('head')[0].appendChild(el)})();">simple bookmarklet</a> (<a href="https://github.com/kangax/kratko.js/blob/master/bookmarklet.js">up-to-date source</a>). Open this bookmarklet on the page of a project you&#8217;re working on; tell it which object to inspect (e.g. <code>SomeWidget.prototype</code>, <code>dashboard</code>, etc.) and a stats table will appear. Now you can sort through the methods, and get a nice outlook on what&#8217;s going on.</p>
+
+<p>The bookmarklet and the actual kratko.js script should work on most modern browsers, but I&#8217;ve only tested it on Chrome (13) and Firefox (4). I haven&#8217;t worked on making it cross-browser, but I also haven&#8217;t used anything fancy, so it should be pretty portable.</p>
+
+<h3 id="distribution_graph">Distribution graph</h3>
+
+<p>After working with kratko.js for a bit, I realized that average method length doesn&#8217;t always tell me much. My &#8220;class&#8221; had 100+ methods. Even though some of them were larger than 50 lines long — and so were unacceptable — the average would still come out to be somewhere along 15-20, due to a large number of short, 1-5 -line methods.</p>
+
+<p>I needed a way to quickly see total method size distribution, and so I added a little graph for that. It groups methods by length, showing which ones prevail and where:</p>
+
+<p><img src="/images/kratko_screenshot_5.png" alt="Graph of <code>TableViewer.prototype</code>"></p>
+
+<p>I consider the maximum acceptable length of a method in Javascript to be ~20-25 lines long. Anything more than that is usually messy. It takes longer to figure out what's going on, and it's likely a sign of either not enough abstraction, or a method doing too many things (whereas, ideally, it should be doing just one thing — and as clear as possible).</p>
+
+<p>Having said that, distribution graph is really an excellent indication of how "clean" an object is. You obviously want to stay as much on the left side of it as possible. </p>
+
+<p>Here's an example <sup><a href="#bad-graph">[2]</a></sup> (of a "bad" graph):</p>
+
+<p><img src="/images/kratko_screenshot_6.png" style="width:960px"></p>
+
+<p>As you can see, those lonely 85 and 56 -liners on the right have to go. There's also that little <strong>nasty bunch</strong> in the 28-43 area. There aren't many of them, thankfully. But they should probably be taken care of as well. Once that's done, the graph would be mainly concentrated in the left 1-20 area. And that would make things much cleaner.</p>
+
+<h3 id="code_style">Code style</h3>
+
+<p>The elephant in the room at this point is the <strong>code style</strong>. How can we base our assessment on a line count, when it could vary so much based on code style? Even though kratko.js does <strong>strip comments and empty lines</strong> <sup><a href="#multiline-comments-issue">[3]</a></sup>, there's still room for deviations. Some prefer single-line statement, others follow more explicit <a href="http://en.wikipedia.org/wiki/Indent_style#Allman_style">Allman style</a>:</p>
+
+<pre lang="javascript"><code>
+  if (smth) { smthElse }
+
+  // vs.
+
+  if (smth) {
+    smthElse
+  }
+
+  // vs.
+
+  if (smth)
+  {
+    smthElse
+  }
+</code></pre>
+
+<p>That&#8217;s exactly why it&#8217;s <strong>hard to have any absolute assessments</strong>. Obviously, it&#8217;s important to understand approximate optimal method length rather than follow any exact requirements. Decide for yourself which range you&#8217;d like to stay in, based on code style and personal preference (some people like to keep methods even smaller — under 10 lines, for example). Kratko is simply there to show you an <strong>overall picture</strong>, and guide you through the process of refactoring.</p>
+
+<h3 id="nested_functions">Nested functions</h3>
+
+<p>One last interesting point I&#8217;d like to go over is that of nested functions. When I started to refactor some of the longer methods, I noticed that many of them are long not due to lack of abstraction but due to presence of other, nested functions. Defining a small function right within another one is a pretty common thing in Javascript. It allows to keep things <abbr title="Do Not Repeat yourself">DRY</abbr> and to create necessary abstractions.</p>
+
+<p>Here&#8217;s a simple example:</p>
+
+<pre lang="javascript"><code>
+function sort(arr1, arr2) {
+
+  function byFirst(a, b) { return a[0] - b[0] }
+
+  // ...
+
+  if (smth) {
+    arr1.sort(byFirst);
+  }
+  else {
+    arr2.sort(byFirst);
+  }
+}
+</code></pre>
+
+<p>Even more importantly, it allows to <strong>scope certain functionality to one place</strong>. When an object has logic that requires more than 50 lines, you can either define few methods right on that object, or create one method with few &#8220;helper&#8221; functions defined right within it.</p>
+
+<p>There&#8217;s certainly nothing inherently wrong in doing so. Those are the same nicely-chunked functions, only defined not on an object but within &#8220;parent&#8221; method. The advantage of such style is more explicit scoping, and the downside is that it could look messy and unclear to someone not familiar with such concepts as hoisting and functions within functions:</p>
+
+<pre lang="javascript"><code>
+// Potential problem #1 is that inner function can look confusing
+
+function foo() {
+  function bar() { }
+}
+
+// Potential problem #2 is that hoisted function declaration (if any) can look confusing
+
+function foo() {
+  bar();
+
+  // ... some other code
+
+  function bar() { }
+}
+</code></pre>
+
+<p>When there&#8217;s more than one nested function, and these nested functions aren&#8217;t just one-liners, there&#8217;s clearly an <strong>additional cognitive burden</strong> involved in method reading. When reading a method, you now need to distill actual logic from these auxilary function declarations. Grouping all declarations at top (or bottom) of the function can help, but there&#8217;s still a slight overhead.</p>
+
+<p>There&#8217;s this one function in Prototype.js which I noticed demonstrates this really well. The function is 76 lines long, so please bear with me. I&#8217;m inserting it untouched just to show how nested functions — especially scattered ones — could make it harder to read the method and follow its logic. It&#8217;s a good thing Prototype.js has always kept its variable/function names as explicit and descriptive as possible — something I&#8217;ve always loved about it — or reading this function would be even harder:</p>
+
+<pre lang="javascript"><code>
+function (methods) {
+  var F = Prototype.BrowserFeatures, T = Element.Methods.ByTag;
+
+  if (!methods) {
+    Object.extend(Form, Form.Methods);
+    Object.extend(Form.Element, Form.Element.Methods);
+    Object.extend(Element.Methods.ByTag, {
+      "FORM":     Object.clone(Form.Methods),
+      "INPUT":    Object.clone(Form.Element.Methods),
+      "SELECT":   Object.clone(Form.Element.Methods),
+      "TEXTAREA": Object.clone(Form.Element.Methods)
+    });
+  }
+
+  if (arguments.length == 2) {
+    var tagName = methods;
+    methods = arguments[1];
+  }
+
+  if (!tagName) Object.extend(Element.Methods, methods || { });
+  else {
+    if (Object.isArray(tagName)) tagName.each(extend);
+    else extend(tagName);
+  }
+
+  function extend(tagName) {
+    tagName = tagName.toUpperCase();
+    if (!Element.Methods.ByTag[tagName])
+      Element.Methods.ByTag[tagName] = { };
+    Object.extend(Element.Methods.ByTag[tagName], methods);
+  }
+
+  function copy(methods, destination, onlyIfAbsent) {
+    onlyIfAbsent = onlyIfAbsent || false;
+    for (var property in methods) {
+      var value = methods[property];
+      if (!Object.isFunction(value)) continue;
+      if (!onlyIfAbsent || !(property in destination))
+        destination[property] = value.methodize();
+    }
+  }
+
+  function findDOMClass(tagName) {
+    var klass;
+    var trans = {
+      "OPTGROUP": "OptGroup", "TEXTAREA": "TextArea", "P": "Paragraph",
+      "FIELDSET": "FieldSet", "UL": "UList", "OL": "OList", "DL": "DList",
+      "DIR": "Directory", "H1": "Heading", "H2": "Heading", "H3": "Heading",
+      "H4": "Heading", "H5": "Heading", "H6": "Heading", "Q": "Quote",
+      "INS": "Mod", "DEL": "Mod", "A": "Anchor", "IMG": "Image", "CAPTION":
+      "TableCaption", "COL": "TableCol", "COLGROUP": "TableCol", "THEAD":
+      "TableSection", "TFOOT": "TableSection", "TBODY": "TableSection", "TR":
+      "TableRow", "TH": "TableCell", "TD": "TableCell", "FRAMESET":
+      "FrameSet", "IFRAME": "IFrame"
+    };
+    if (trans[tagName]) klass = 'HTML' + trans[tagName] + 'Element';
+    if (window[klass]) return window[klass];
+    klass = 'HTML' + tagName + 'Element';
+    if (window[klass]) return window[klass];
+    klass = 'HTML' + tagName.capitalize() + 'Element';
+    if (window[klass]) return window[klass];
+
+    var element = document.createElement(tagName),
+        proto = element['__proto__'] || element.constructor.prototype;
+
+    element = null;
+    return proto;
+  }
+
+  var elementPrototype = window.HTMLElement ? HTMLElement.prototype :
+   Element.prototype;
+
+  if (F.ElementExtensions) {
+    copy(Element.Methods, elementPrototype);
+    copy(Element.Methods.Simulated, elementPrototype, true);
+  }
+
+  if (F.SpecificElementExtensions) {
+    for (var tag in Element.Methods.ByTag) {
+      var klass = findDOMClass(tag);
+      if (Object.isUndefined(klass)) continue;
+      copy(T[tag], klass.prototype);
+    }
+  }
+
+  Object.extend(Element, Element.Methods);
+  delete Element.ByTag;
+
+  if (Element.extend.refresh) Element.extend.refresh();
+  Element.cache = { };
+}
+</code></pre>
+
+<p>It&#8217;s also worth mentioning that &#8220;problem&#8221; with nested function can easily be taken care of by moving these auxilary functions into a closure:</p>
+
+<pre lang="javascript"><code>
+var foo = {
+
+  bar: (function(){
+
+    function aux1() { }
+    function aux2() { }
+
+    return function() {
+      // ...
+      aux1();
+      aux2();
+    };
+
+  })()
+}
+</code></pre>
+
+<p>kratko.js obviously doesn&#8217;t know about such &#8220;hidden&#8221; functions, and so <code>bar</code> now &#8220;looks&#8221; like this:</p>
+
+<pre lang="javascript"><code>
+function() {
+  // ...
+  aux1();
+  aux2();
+}
+</code></pre>
+
+<p>All of these problems are arguably non-issues, so apply your own judgement and preference when dealing with this kind of things. If you see a method that&#8217;s long due to nested functions, and you&#8217;re OK with nested functions, move on to something else. The reason I&#8217;m bringing this up is to show once again that kratko.js measurements are not absolute and should be taken into consideration rather then followed strictly.</p>
+
+<h3 id="what_does_future_hold">What does future hold?</h3>
+
+<p>I was pondering what else could a tool like kratko.js do. Some of the ideas that came to my mind:</p>
+
+<ul style="padding-left:0">
+<li><p>Measure method width (to catch methods that are wider than 100/80/72 characters long, depending on your preference)</p></li>
+<li><p>Count statements rather than lines; this could make both of these snippets equal to 1 line long, rather than 10-to-1:</p>
+
+<pre lang="javascript"><code>
+if
+(
+true
+)
+{
+alert
+(
+1
+)
+}
+
+
+// vs.
+
+
+if (true) alert(1)
+</code></pre></li>
+<li><p>Syntax highlight the code (of the methods)</p></li>
+<li><p>Support navigating through objects (e.g. to get to <code>jQuery.fn</code> from <code>jQuery</code> or to <code>fabric.Element.prototype</code> from <code>fabric.Element</code>)</p></li>
+<li><p>Integration with other services (e.g. pre-commit hook, pre-production quality check, etc.)</p></li>
+<li><p>&lt;insert your idea here></p></li>
+</ul>
+
+<h3 id="source_unit_tests">Source, unit tests</h3>
+
+<p>kratko.js is licensed under MIT and is free for any kind of use (just leave attribution, please, and contribute if/what you can). The <a href="http://github.com/kangax/kratko.js">source is on github</a>. So are unit tests. If you want to change, fix, or suggest something — I welcome any pull requests.</p>
+
+<p>Use it to make your code better. Have fun!</p>
+
+<p class="footnote" id="on-refactoring">
+  <sup>[1]</sup> If you don&#8217;t have <a href="http://www.amazon.com/Refactoring-Improving-Design-Existing-Code/dp/0201485672">&#8220;Refactoring&#8221;</a> or <a href="http://www.amazon.com/Clean-Code-Handbook-Software-Craftsmanship/dp/0132350882">&#8220;Clean Code&#8221;</a> on a bookshelf, do yourself a favor and go get them now. This will be totally worth it.
+</p>
+
+<p class="footnote" id="bad-graph">
+  <sup>[2]</sup> This &#8220;bad&#8221; graph is actually of my <a href="https://github.com/kangax/fabric.js/blob/gh-pages/src/element.class.js#L1725-1829">fabric.Element.prototype</a>. Embarassing, I know. Will be fixed soon.
+</p>
+
+<p class="footnote" id="multiline-comments-issue">
+  <sup>[3]</sup> Note that multiline comments stripping is not very bulletproof and can have false results in certain (rare) cases. it does work well most of the time, though.
+</p>

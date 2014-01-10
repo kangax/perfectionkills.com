@@ -1,0 +1,95 @@
+---
+layout: post
+title: Proto.Menu gets facelift
+tags:
+  - prototype
+---
+
+<h2>Proto.Menu gets facelift</h2>
+
+<p>It&#8217;s been over 2 months since the last release of <a href="http://kangax.github.io/proto.menu">Proto.Menu</a> &#8211; highly lightweight and easy-to-use prototype based extension aimed to make context menu creation as simple as possible. Version 0.5 happened to be quite useful (considering all the positive feedback). There were many requests for all kinds of features, but the goal was to keep things small and concise. After analyzing the source, I found few obvious drawbacks which were supposed to be taken care of long time ago. Trying not to bloat the code base, the script was rewritten with speed, size and accessibility in mind. The result is a new shiny version &#8211; still small and fast but is much more robust and accessible. Without further ado, here is what the new version is all about:</p>
+
+<h3>Prototype 1.6</h3>
+
+<p>Prototype 1.6 is finally out. Upgrading Proto.Menu to the latest revision was definitely a reasonable thing to do. Besides tons of great enhancements and speed improvements, RC1 fixed a <strong>&#8220;conextmenu&#8221;</strong> bug (which was taken into account in a previous version) &#8211; that fix itself made the script even more compact.</p>
+
+<h3>Iframe shim</h3>
+
+<p>We all know the notoriously famous <a href="http://blogs.msdn.com/ie/archive/2006/01/17/514076.aspx">IE6 bug</a> &#8211; select elements don&#8217;t play nice, popping through any elements positioned on top (even when <strong>z-index</strong> is set to be higher). Unfortunately, IE6 is still the most used browser out there. I have no idea how this fix didn&#8217;t make its way into previous versions, but I believe that any self respectable extension should be taking care of this annoyance.</p>
+
+<pre lang="javascript"><code>
+this.shim = new Element('iframe', {
+   style: 'position:absolute;filter:progid:DXImageTransform.Microsoft.Alpha(opacity=0);display:none',
+   src: 'javascript:false;',
+   frameborder: 0
+});
+...
+if (Prototype.Browser.IE) {
+   this.container.insert({
+      after: this.shim.setStyle(Object.extend(Object.extend(elOffsets, elDimension), {
+         zIndex: this.options.zIndex - 1
+      }))
+   })
+}
+</code></pre>
+
+<h3>zIndex option</h3>
+
+<p>When fixing the z-index bug, I realized that it might be convenient to explicitly specify <strong>z-index</strong> of a menu container. As web applications become more complicated, the number of various elements on a page increases. Modal windows, tooltips and other floating elements should interact nicely with each other. Proto.menu now has a zIndex option (which is internally used to set iframe z-index properly)</p>
+
+<pre lang="javascript"><code>
+new Proto.Menu({
+   ...
+   zIndex: 500,
+   ...
+});
+</code></pre>
+
+<h3>&#8220;beforeShow&#8221;, &#8220;beforeHide&#8221; and &#8220;beforeSelect&#8221; callbacks</h3>
+
+<p>Callbacks is something every extensions developer should consider adding to their scripts. They allow users to intercept script execution at certain moments &#8211; add, change or stop certain behaviour. Proto.Menu now supports 3 callbacks: <strong>beforeShow</strong> is called every time the right click occurs but before the menu was positioned and rendered. If you wish to intercept the left click on a document which &#8220;cancels&#8221; the menu, you can now use <strong>beforeHide</strong> callback. Note that it&#8217;s not executed on menu item selection, we have another callback for that &#8211; <strong>beforeSelect</strong> is executed after the menu item was clicked but before the menu container was hidden and item callback invoked. Note that all callbacks get an event object as a first argument.</p>
+
+<pre lang="javascript"><code>
+document.observe('click', function(e){
+   if (this.container.visible() &amp;&amp; !e.isRightClick()) {
+      this.options.beforeHide(e);
+      this.container.hide();
+   }
+}.bind(this));
+</code></pre>
+
+<h3>Better callbacks</h3>
+
+<p>Menu item callbacks sucked a lot in previous version. There was no way to get neither reference to a clicked element, nor anything else. This was probably one of the most requested features. To make everyone happy, callbacks now get <strong>event</strong> object as a first argument. You can now easily access any event&#8217;s properties/methods such as target (clicked element), mouse position, and others.</p>
+
+<pre lang="javascript"><code>
+var menuItems = [{
+   name: 'Select all',
+   callback: function(e){
+      if (e.target.match('input[type=checkbox]')) {
+         e.target.up('form').select('input[type=checkbox]').each(function(el){
+            el.checked = true;
+         })
+      }
+   }
+}, {
+   ...
+}];
+...
+</code></pre>
+
+<h3>&#8220;className&#8221; option</h3>
+
+<p>Another highly requested feature (and one of the big drawbacks of previous version) was a lack of descriptive images in menu items. Images definitely take user interface on a next level. Not only visually pleasing, they let us make decision faster and be more productive. Any menu item, besides name callback and other options, now supports a <strong>className</strong> which is then assigned to an anchor element. Image based menus have never been easier!</p>
+
+<h3>Semantic markup</h3>
+
+<p>The last but not least of the new features is a <strong>proper markup</strong> of a menu element. Instead of just set of links (I can&#8217;t believe I made it this way), the structure now actually represents its true essence &#8211; unordered list of anchor elements. Making the web a somewhat meaningful environment is definitely the right way to go &#8211; interface elements should represent their purpose and try to be more user-friendly.   As usual, I am always looking forward to any bug reports/suggestions or just any feedback about this extension.  Check out a</p>
+<h3><a href="http://kangax.github.io/proto.menu">demo page</a></h3>
+
+<p>and have fun!</p>
+
+<p><strong>P.S.</strong><br />
+Just to make things a little tidier, the extension now has an extensive set of <a href="http://kangax.github.io/proto.menu/test/testProtoMenu.html">unit tests</a> (<a href="https://github.com/kangax/proto.menu/tree/gh-pages/test">source</a>). Unit tests are a wonderful way to maintain proper cross-browser functionality and behavior. Please let me know if you find any of them failing so that the bugs can be take care of quickly.</p>
+
+<p>Version 0.6 is most likely the last one to be released under this name. Proto.Menu has been ported to a <a href="http://prototype-ui.com/">Prototype-UI</a> framework and will continue to be developed as one of its components.  UI.ContextMenu supports shadow, submenus, verious themes (including Mac OSX and Leopard ones) and is deeply integrated into the framework&#8217;s core. For a sneak preview of what to expect check out <del>latest examples</del> (<b>update</b>: no longer available)</p>
