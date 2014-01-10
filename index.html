@@ -19,7 +19,7 @@ title: Home page
 {% for post in site.posts %}
   <li class="{{ post.popular }} {{ post.new }}">
     <span class="tags" style="display: none">{{ post.tags | jsonify }}</span>
-    <a href="{{ post.url }}">{{ post.title }}</a>
+    <a href="./{{ post.url }}">{{ post.title }}</a>
     <span class="date">{{ post.date | date: "%-d %B %Y" }}</span>
     <span class="num-words"><em>{{ post.content | number_of_words }}</em> words</span>
   </li>
