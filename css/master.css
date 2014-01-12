@@ -152,3 +152,22 @@ cite { float: none; line-height: 1.4; }
   .post-date:before { content: '\b7'; }
   .back-to-front { left: 0; top: -30px; }
 }
+
+
+/* sticky footer */
+html, body {
+  height: 100%;
+}
+#outer-wrapper {
+  min-height: 100%;
+  /* equal to footer height */
+  margin-bottom: -40px;
+}
+#outer-wrapper:after {
+  content: "";
+  display: block;
+}
+.footer, #outer-wrapper:after {
+  /* .push must be the same height as footer */
+  height: 40px;
+}
