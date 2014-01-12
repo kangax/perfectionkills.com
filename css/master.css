@@ -138,7 +138,7 @@ cite { float: none; line-height: 1.4; }
 
 @media screen and (max-width: 1000px) {
   #wrapper { width: auto; margin: 20px; }
-  .footer { line-height: 30px; padding-top: 10px; padding-bottom:; }
+  .footer { line-height: 30px; padding-top: 10px; }
   .footer .wrapper { width: auto; margin: 0 20px; }
   .footer .donations { display: block; float: none; }
   .num-words { display: block; float: none !important; margin-left: 0 !important; }
@@ -151,6 +151,10 @@ cite { float: none; line-height: 1.4; }
   .post-date:after { content: ''; }
   .post-date:before { content: '\b7'; }
   .back-to-front { left: 0; top: -30px; }
+
+  .footer, #outer-wrapper:after {
+    height: 60px;
+  }
 }
 
 
@@ -168,6 +172,5 @@ html, body {
   display: block;
 }
 .footer, #outer-wrapper:after {
-  /* .push must be the same height as footer */
   height: 40px;
 }
