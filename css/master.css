@@ -27,7 +27,7 @@ a { color: #f06; }
 a:hover, a:focus { text-decoration: none; }
 a:active { color: #333; }
 
-strong { background: #ffc; }
+/*strong { background: #ffc; }*/
 strong code { background: #ffc; }
 .superhero strong { background: none !important }
 
