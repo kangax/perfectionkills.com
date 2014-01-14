@@ -33,7 +33,7 @@ Aha. So instead of passing them as strings or vars or whatever, they're defined 
 
 The kind that we used in Prototype.js [to implement $super](http://prototypejs.org/2007/08/15/prototype-1-6-0-release-candidate/) back in 2007? Yep, that one. Later making its way to Resig's [simple inheritance](http://ejohn.org/blog/simple-javascript-inheritance/) (used in a _safe_ fashion) and other places.
 
-Seeing a modern framework like Angular use function decompilation got me surprised. Even though it wasn't something Angular relied on _exclusively_, this black magic has been somewhat frowned upon for years. I [wrote about some of the problems](/those-tricky-functions/) associated with it back in 2009.
+Seeing a modern framework like Angular use function decompilation got me surprised. Even though it wasn't something Angular [relied](http://docs.angularjs.org/guide/di#dependency-injection_dependency-annotation_-annotation) [on](http://docs.angularjs.org/guide/di#dependency-injection_dependency-annotation_inline-annotation) _exclusively_, this black magic has been somewhat frowned upon for years. I [wrote about some of the problems](/those-tricky-functions/) associated with it back in 2009.
 
 Something so **inherently non-standard** and so **varying among implementations** could only be compared to user agent sniffing.
 
