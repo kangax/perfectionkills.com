@@ -29,7 +29,7 @@ Notice the `$scope`, `$timeout`, `$http` identifiers.
 
 Aha. So instead of passing them as strings or vars or whatever, they're defined as *part of the source*. And of course to "read" the source there could only be one thing involved...
 
-[Function decompilation](https://github.com/angular/angular.js/blob/master/src/auto/injector.js#L63-L96).
+[Function decompilation](https://github.com/angular/angular.js/blob/dde1b2949727c297e214c99960141bfad438d7a4/src/auto/injector.js#L63-L96).
 
 The kind that we used in Prototype.js [to implement $super](http://prototypejs.org/2007/08/15/prototype-1-6-0-release-candidate/) back in 2007? Yep, that one. Later making its way to Resig's [simple inheritance](http://ejohn.org/blog/simple-javascript-inheritance/) (used in a _safe_ fashion) and other places.
 
