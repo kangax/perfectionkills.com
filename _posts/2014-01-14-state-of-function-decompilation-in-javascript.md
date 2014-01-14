@@ -12,7 +12,7 @@ tags:
 
 It's always fun to see something described as "magic" in Javascript world.
 
-One such example I came across recently was AngularJS [dependency injection](http://en.wikipedia.org/wiki/Dependency_injection) mechanism. I've never beeng familiar with the concept, but seeing it in practice looked clever and convenient. Not very magical though.
+One such example I came across recently was AngularJS [dependency injection](http://en.wikipedia.org/wiki/Dependency_injection) mechanism. I've never been familiar with the concept, but seeing it in practice looked clever and convenient. Not very magical though.
 
 What is it about? In short: defining required "modules" via function parameters. Like so:
 
