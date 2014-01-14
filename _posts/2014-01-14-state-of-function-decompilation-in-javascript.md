@@ -200,7 +200,7 @@ Regexes will, once again, have to be updated to account for all the changes (did
 
 I should also mention couple of old chestnuts that never quite sit well with function decompilation — minifiers and [preprocessors](https://github.com/jashkenas/coffee-script/wiki/List-of-languages-that-compile-to-JS).
 
-Minifiers like UglifyJS, and preprocessors/compilers like [Caja](https://code.google.com/p/google-caja/) tend to tweak the hell out of source code and rename parameters. This is why Angular's dependency injection [doesn't work with minifiers](http://docs.angularjs.org/tutorial/step_05#controller_a-note-on-minification) unless alternative methods are used.
+Minifiers like UglifyJS, and preprocessors/compilers like [Caja](https://code.google.com/p/google-caja/) tend to tweak the hell out of source code and rename parameters. This is why Angular's dependency injection [doesn't work with minifiers](http://docs.angularjs.org/tutorial/step_05#controller_a-note-on-minification) unless [alternative methods](https://github.com/btford/ngmin) are used.
 
 Perhaps not a big deal, but still a relevant issue and definitely something to keep in mind.
 
