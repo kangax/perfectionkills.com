@@ -33,7 +33,7 @@ Aha. So instead of passing them as strings or vars or whatever, they're defined 
 
 The kind that we used in Prototype.js [to implement $super](http://prototypejs.org/2007/08/15/prototype-1-6-0-release-candidate/) back in 2007? Yep, that one. Later making its way to Resig's [simple inheritance](http://ejohn.org/blog/simple-javascript-inheritance/) (used in a _safe_ fashion) and other places.
 
-Seeing a modern framework like Angular use function decompilation got me surprised. Even though it wasn't something Angular relied on _exclusively_, this black magic has been somewhat frowned upon for years. I [wrote about some of the problems](http://perfectionkills.com/those-tricky-functions/) associated with it back in 2009.
+Seeing a modern framework like Angular use function decompilation got me surprised. Even though it wasn't something Angular relied on _exclusively_, this black magic has been somewhat frowned upon for years. I [wrote about some of the problems](/those-tricky-functions/) associated with it back in 2009.
 
 Something so **inherently non-standard** and so **varying among implementations** could only be compared to user agent sniffing.
 
@@ -79,7 +79,7 @@ function foo(x, y) {
 
 And it almost does. Except when some engines omit newlines. And others omit comments. And others omit "dead code". And others include comments around (!) function. And others hide source completely...
 
-Back in the days, things were *really* bad. Safari <=2.x, for example, didn't even conform to valid Function Declaration syntax. It would go wild with things like "**(Internal Function)**" or "**[function]**" or drop identifiers from [NFE's](kangax.github.io/nfe/), just because.
+Back in the days, things were *really* bad. Safari <=2.x, for example, didn't even conform to valid Function Declaration syntax. It would go wild with things like "**(Internal Function)**" or "**[function]**" or drop identifiers from [NFE's](http://kangax.github.io/nfe/), just because.
 
 Back in the days, some of the *mobile* browsers (Blackberry, Opera Turbo) hid the code completely (replacing it with polite "** /\* source code not available \*/ **" comment instead or [similar](https://prototype.lighthouseapp.com/projects/8886/tickets/537-ajax-functionality-on-opera-mobile)), supposedly to "save" on memory. A fare optimization.
 
