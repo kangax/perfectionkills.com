@@ -214,7 +214,7 @@ Remember that:
 
 - It's still **not standard**
 - **User-defined functions** are generally looking sane
-- There are **oddball engines** (especially when it comes to [source code placement, whitespaces, comments, dead code](kangax.github.io/jstests/function-decompilation/))
+- There are **oddball engines** (especially when it comes to [source code placement, whitespaces, comments, dead code](http://kangax.github.io/jstests/function-decompilation/))
 - There might be **future oddball engines** (particularly mobile or *unusual* devices with conservative memory/power consumption)
 - **Bound functions** don't show their original source (but do preserve identifier... _sometimes_)
 - You could run into **non-standard extensions** (like Mozilla's expression closures)
