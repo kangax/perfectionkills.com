@@ -2,5 +2,5 @@ markdown: rdiscount
 pygments: true
 permalink: ./:title
 name: Perfection Kills
-description: Exploring Javascript by example
+description: "Javascript rants and findings, by kangax"
 url: http://perfectionkills.com
