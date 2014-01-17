@@ -81,7 +81,7 @@ And it almost does. Except when some engines omit newlines. And others omit comm
 
 Back in the days, things were *really* bad. Safari <=2.x, for example, didn't even conform to valid Function Declaration syntax. It would go wild with things like "**(Internal Function)**" or "**[function]**" or drop identifiers from [NFE's](http://kangax.github.io/nfe/), just because.
 
-Back in the days, some of the *mobile* browsers (Blackberry, Opera Turbo) hid the code completely (replacing it with polite "** /\* source code not available \*/ **" comment instead or [similar](https://prototype.lighthouseapp.com/projects/8886/tickets/537-ajax-functionality-on-opera-mobile)), supposedly to "save" on memory. A fare optimization.
+Back in the days, some of the *mobile* browsers (Blackberry, Opera Turbo) hid the code completely (replacing it with polite "** /\* source code not available \*/ **" comment instead or [similar](https://prototype.lighthouseapp.com/projects/8886/tickets/537-ajax-functionality-on-opera-mobile)), supposedly to "save" on memory. A fair optimization.
 
 ## Modern days
 
