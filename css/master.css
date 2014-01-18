@@ -190,6 +190,6 @@ and (max-device-width : 480px) {
     position: static !important;
   }
   .blog-slogan {
-    margin-bottom: 100px !important;
+    margin-bottom: 150px !important;
   }
 }
