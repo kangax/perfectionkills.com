@@ -1,6 +1,5 @@
 body {
   border-top: 2px solid #555; margin: 0; font-family: 'Palatino Linotype', 'Book Antiqua', 'Palatino', serif; color: #333; font-size: 16px; background: #fff;
-  -webkit-text-size-adjust: 300%;
 }
 
 #outer-wrapper { border-top: 7px solid #ddd; }
@@ -175,4 +174,8 @@ html, body {
   .footer, #outer-wrapper:after {
     height: 60px;
   }
+}
+
+@media (max-width: 480px) {
+  font-size: 1.25em;
 }
