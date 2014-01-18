@@ -182,6 +182,6 @@ and (max-device-width : 480px) {
     position: static !important;
   }
   .posts li {
-    padding-left: 100px !important;
+    padding-left: 120px !important;
   }
 }
