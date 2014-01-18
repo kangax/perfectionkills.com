@@ -189,7 +189,7 @@ and (max-device-width : 480px) {
     content: 'new';
     position: static !important;
   }
-  .blog-slogan {
-    margin-bottom: 150px !important;
+  .back-to-front {
+    display: none;
   }
 }
