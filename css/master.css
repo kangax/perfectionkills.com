@@ -1,6 +1,6 @@
 body {
   border-top: 2px solid #555; margin: 0; font-family: 'Palatino Linotype', 'Book Antiqua', 'Palatino', serif; color: #333; font-size: 16px; background: #fff;
-  -webkit-text-size-adjust: 100%;
+  -webkit-text-size-adjust: 200%;
 }
 
 #outer-wrapper { border-top: 7px solid #ddd; }
