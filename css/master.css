@@ -179,6 +179,6 @@ and (max-device-width : 480px) {
     font-size: 3em;
   }
   .front-page-container {
-    margin-top: 100px;
+    margin-top: 100px !important;
   }
 }
