@@ -181,4 +181,7 @@ and (max-device-width : 480px) {
   .filter {
     position: static !important;
   }
+  .post li {
+    padding-left: 100px !important;
+  }
 }
