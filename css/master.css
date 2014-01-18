@@ -185,4 +185,8 @@ and (max-device-width : 480px) {
     content: 'popular';
     position: static !important;
   }
+  .posts .new:before {
+    content: 'new';
+    position: static !important;
+  }
 }
