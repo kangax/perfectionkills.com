@@ -176,9 +176,9 @@ html, body {
 and (min-device-width : 320px)
 and (max-device-width : 480px) {
   body {
-    font-size: 3em;
+    font-size: 3.5em;
   }
   .front-page-container {
-    margin-top: 100px !important;
+    margin-top: 150px !important;
   }
 }
