@@ -181,7 +181,8 @@ and (max-device-width : 480px) {
   .filter {
     position: static !important;
   }
-  .posts li {
-    padding-left: 120px !important;
+  .posts .popular:before {
+    content: 'popular';
+    position: static !important;
   }
 }
