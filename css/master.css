@@ -37,7 +37,7 @@ strong code { background: #ffc; }
 .superhero strong { background: none !important }
 
 code { font-family: Courier, monospace; font-size: 0.9em; background: #e0e0e0; padding: 1px 4px; }
-pre code { border: none; font-size: 0.9em; display: block; }
+pre code { border: none; font-size: 0.9em; display: block; overflow: scroll; }
 
 pre { background: rgb(200,200,200); margin-left: -6px; margin-top: 22px; margin-bottom: 22px; padding: 1px; border-radius: 4px; }
 pre code { background: rgb(100,100,100); padding-left: 10px; color: #eee; border: 2px solid #fff; border-radius: 3px; padding-bottom: 18px; }
