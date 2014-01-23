@@ -159,7 +159,6 @@ html, body {
   .date { display: block; margin-left: 0 !important; }
   .popular:before { left: 0 !important; }
   .new:before { left: 15px !important; }
-  .posts li { padding-left: 60px; }
 
   .post-date, .post-num-words { float: none !important; }
   .post-date:after { content: ''; }
