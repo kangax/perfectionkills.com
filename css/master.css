@@ -175,9 +175,6 @@ html, body {
 @media only screen
 and (min-device-width : 320px)
 and (max-device-width : 480px) {
-  /*body {
-    font-size: 3.5em;
-  }*/
   .filter {
     position: static !important;
   }
@@ -193,4 +190,5 @@ and (max-device-width : 480px) {
     display: none;
   }
   #carbonads-container { float: none; margin-left: 0; }
+  .blog-slogan { margin-bottom: 10px; }
 }
