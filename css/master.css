@@ -192,5 +192,5 @@ and (max-device-width : 480px) {
   .back-to-front {
     display: none;
   }
-  #carbonads-container { float: left; margin-left: 0; clear: both; }
+  #carbonads-container { float: none; margin-left: 0; }
 }
