@@ -4,21 +4,21 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
   <head>
     <title>Proto.IPS :: In-place-select controls made easy</title>
-    
+
     <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
     <meta name="keywords" content="" />
     <meta name="description" content="" />
-    
+
     <script src="js/prototype.js" type="text/javascript"></script>
     <script src="js/ips.js" type="text/javascript"></script>
     <script src="js/master.js" type="text/javascript"></script>
-        
+
     <link rel="stylesheet" href="css/master.css" type="text/css" media="all" />
     <link rel="stylesheet" href="css/ips.css" type="text/css" media="all" />
   </head>
   <body>
     <h2>Proto.IPS :: Unobtrusive in-place-select widget</h2>
-    <div id="status"></div> 
+    <div id="status"></div>
     <div>
       <p>Proto.IPS is a nice little widget which can be used for in place selection.</p>
       <p>The idea is shamelessly stolen from gmail chat control (for setting user status) behavior.</p>
@@ -50,7 +50,7 @@
             </dd>
           <dt><code>afterUpdate(String value)</code></dt>
             <dd>
-              called <strong>after</strong> element is updated. 
+              called <strong>after</strong> element is updated.
               new value is passed as a first parameter
             </dd>
           <dt><code>afterCreate</code></dt>
@@ -66,16 +66,16 @@
   new Proto.IPS(element, {
     options: [
       {text: 'Available', className: 'on'},
-      {text: 'Free for chat', className: 'on'}, 
+      {text: 'Free for chat', className: 'on'},
       {text: 'Away', className: 'half'},
       {text: 'Lunch', className: 'half'},
-      {text: 'Not available', className: 'off'}, 
+      {text: 'Not available', className: 'off'},
       {text: 'Occupied', className: 'off'}
     ]
   });
 </pre>
       <div>
-        All callbacks are bounded to the actual instance. 
+        All callbacks are bounded to the actual instance.
         Here's what you might want to access:
         <dl>
           <dt><code>this.element</code></dt>
@@ -87,7 +87,7 @@
           <dt><code>this.input</code></dt>
             <dd>input field (<em>ips_input</em> className)</dd>
           <dt><code>this.wrapper</code></dt>
-            <dd>div which is wrapped around original element and is assigned an <em>ips_wrapper</em> className. 
+            <dd>div which is wrapped around original element and is assigned an <em>ips_wrapper</em> className.
               This element holds all of the control structures (options list, input field, original element and arrow trigger) </dd>
           <dt><code>this.options</code></dt>
             <dd>array of options (with last added being on top)</dd>
