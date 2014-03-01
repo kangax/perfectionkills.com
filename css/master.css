@@ -6,12 +6,12 @@ body {
 }
 
 #outer-wrapper { border-top: 7px solid #ddd; }
-#wrapper { width: 860px; margin: 10px auto; padding: 10px; }
+#wrapper { width: 860px; margin: 10px auto; padding: 10px; -webkit-box-sizing: content-box; -moz-box-sizing: content-box; box-sizing: content-box}
 
-.blog-title { margin: 0; padding-bottom: 0; margin-right: 8px; display: inline; }
+.blog-title { padding-bottom: 0; margin-right: 8px; display: inline; }
 .blog-title a { color: #333; text-decoration: none; }
 .blog-title a:hover, .blog-title a:focus { text-shadow: #FFC8C8 0 0 1px; }
-.blog-author { margin: 0; display: inline; vertical-align: baseline; font-style: italic; }
+.blog-author { display: inline; vertical-align: baseline; font-style: italic; }
 .blog-slogan { clear: both; margin-top: 0; font-size: 0.9em; text-transform: lowercase; font-variant: small-caps; color: #f06; margin-left: 2px; margin-bottom: 60px; }
 
 h2, h3, h4, h5 { position: relative; }
