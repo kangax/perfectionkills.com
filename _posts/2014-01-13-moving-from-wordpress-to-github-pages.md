@@ -44,6 +44,6 @@ If you mainly care about content and enjoy minimalism, Jekyll/gh-pages is just a
 
 ## Fun stats
 
-Since starting [perfectionkills.com](http://perfectionkills.com) in Aug 2007 — mostly wanting to share Prototype.js tutorials, tips, and scripts — I wrote **55 posts** (worth **70,000 words**). There's been **914,000 visits** and **1,160,000 pageviews**. People left **1744 comments** (most popular posts being [Understanding delete](http://perfectionkills.com/understanding-delete), [Javascript quiz](http://perfectionkills.com/js-quiz), and [Profiling CSS for fun and profit](http://perfectionkills.com/profiling-css-for-fun-and-profit/)).
+Since starting [perfectionkills.com](http://perfectionkills.com) in Aug 2007 — mostly wanting to share Prototype.js tutorials, tips, and scripts — I wrote **55 posts** (worth **70,000 words**). There's been **914,000 visits** and **1,160,000 pageviews**. People left **1744 comments** (most popular posts being [Understanding delete](http://perfectionkills.com/understanding-delete), [Javascript quiz](http://perfectionkills.com/javascript-quiz), and [Profiling CSS for fun and profit](http://perfectionkills.com/profiling-css-for-fun-and-profit-optimization-notes)).
 
 Here's to the next 50 posts and a milion visits! :)
