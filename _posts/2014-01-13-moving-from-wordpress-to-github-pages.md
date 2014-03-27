@@ -1,7 +1,6 @@
 ---
 layout: post
 title: Moving from Wordpress to Github Pages
-new: new
 tags:
   - other
 ---

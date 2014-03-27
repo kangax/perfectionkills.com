@@ -1,7 +1,6 @@
 ---
 layout: post
 title: State of function decompilation in Javascript
-new: new
 tags:
   - js
 ---
