@@ -4,5 +4,6 @@ permalink:      ./:title
 name:           Perfection Kills
 description:    "Javascript rants and findings, by kangax"
 url:            http://perfectionkills.com
+encoding:       UTF-8
 
 exclude:        ["README"]
