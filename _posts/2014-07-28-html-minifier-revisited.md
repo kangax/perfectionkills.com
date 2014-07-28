@@ -13,7 +13,7 @@ new: new
 
 I haven't been working on it all that much, but occasionally would add a feature, fix a bug, add some tests, refactor, or pull someone's generous contribution.
 
-Rewind to these days, and HTMLMinifier is no longer a simple experimental piece of Javascript. With over [400 tests](http://kangax.github.io/html-minifier/tests/), running on Node.js and [packaged on NPM](https://www.npmjs.org/package/html-minifier) (with 120+ dependents), having CLI, [grunt](https://github.com/gruntjs/grunt-contrib-htmlmin)/[gulp](https://github.com/jonschlinkert/gulp-htmlmin) modules, benchmarking suite, and a number of improvements over the years, it became a rather viable tool for someone looking to squeeze the most out of front-end performance.
+Fast forward to these days, and HTMLMinifier is no longer a simple experimental piece of Javascript. With over [400 tests](http://kangax.github.io/html-minifier/tests/), running on Node.js and [packaged on NPM](https://www.npmjs.org/package/html-minifier) (with 120+ dependents), having CLI, [grunt](https://github.com/gruntjs/grunt-contrib-htmlmin)/[gulp](https://github.com/jonschlinkert/gulp-htmlmin) modules, benchmarking suite, and a number of improvements over the years, it became a rather viable tool for someone looking to squeeze the most out of front-end performance.
 
 Seeing how minifier gained quite few new additions over the years, I thought I'd give a quick rundown of what changed and what it's now capable of.
 
