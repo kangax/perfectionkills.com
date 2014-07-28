@@ -282,9 +282,11 @@ Notice remarkable savings (~40KB) on large static files such as a one-page [Eloq
 
 Minifier has come a long way, but there's always room for improvement.
 
-There's few more bugs to squeesh and few features to add. I also believe there's more optimizations we could perform to get the best savings — whether it's reordering attributes to aid GZip compression or more aggressive content removal (spaces, attributes, values, etc.).
+There's few more bugs to squeesh and few features to add. I also believe there's more optimizations we could perform to get the best savings — whether it's reordering attributes to aid gzip compression or more aggressive content removal (spaces, attributes, values, etc.).
 
 One concern I have is how long it takes to minify large (500KB+) files. While it's unlikely that someone uses minifier in real-time (rather, as a one time compilation step) it's still unacceptable for minification to take more than 1-2 minutes. This is something we could try fixing in the future.
 
-As always, I welcome you to try it out in your projects, report any bugs/suggestions, and help with whatever you can. Huge thanks goes to [all the contributors](https://github.com/kangax/html-minifier/graphs/contributors) without whom we wouldn't come this far!
+We can also monitor performance stats — both size (as well as gzipped?) and time taken — on each commit, to get a good picture of whether things change for the better or worse.
+
+As always, I welcome you to try minifier in your projects, report any bugs/suggestions, and help with whatever you can. Huge thanks goes to [all the contributors](https://github.com/kangax/html-minifier/graphs/contributors) without whom we wouldn't have come this far!
 
