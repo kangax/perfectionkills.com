@@ -207,7 +207,7 @@ We also have a benchmark suite now that goes over a number of "source" files (fr
 
 <img src="../images/minifier_benchmarks.png">
 
-How does HTMLMinifier compare to the other solutions out there ([Will Peavy's online minifier](http://www.willpeavy.com/minifier/) and a Java-based [HTMLCompressor](http://htmlcompressor.com))?
+How does HTMLMinifier compare <sup><a href="#benchmarks">[1]</a></sup> to the other solutions out there ([Will Peavy's online minifier](http://www.willpeavy.com/minifier/) and a Java-based [HTMLCompressor](http://htmlcompressor.com))?
 
 <table style="border-spacing: 10px; border-collapse: separate;">
 <thead><tr>
@@ -290,3 +290,4 @@ We can also monitor performance stats — both size (as well as gzipped?) and ti
 
 As always, I welcome you to try minifier in your projects, report any bugs/suggestions, and help with whatever you can. Huge thanks goes to [all the contributors](https://github.com/kangax/html-minifier/graphs/contributors) without whom we wouldn't have come this far!
 
+<sup id="benchmarks">[1] Benchmarks performed on OS X 10.9.4 (2.3GHz Core i7).</sup>
