@@ -3,8 +3,6 @@ layout: post
 title: HTML minifier revisited
 tags:
   - html
-new: new
-
 ---
 
 # HTML minifier revisted
