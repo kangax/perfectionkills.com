@@ -1,18 +1,40 @@
+---
+# Front matter comment to ensure Jekyll properly reads file.
+---
+
 /*
   16px = 1em
 */
+
 body {
-  border-top: 2px solid #555; margin: 0; font-family: 'Palatino Linotype', 'Book Antiqua', 'Palatino', serif; color: #333; font-size: 1em; background: #fff;
+  border-top: 2px solid #555;
+  margin: 0;
+  font-family: 'Palatino Linotype', 'Book Antiqua', 'Palatino', serif;
+  color: #333;
+  font-size: 1em;
+  background: #fff;
 }
 
-#outer-wrapper { border-top: 7px solid #ddd; }
-#wrapper { width: 860px; margin: 10px auto; padding: 10px; -webkit-box-sizing: content-box; -moz-box-sizing: content-box; box-sizing: content-box}
+#outer-wrapper {
+  border-top: 7px solid #ddd;
+}
+#wrapper {
+  width: 860px;
+  margin: 10px auto;
+  padding: 10px;
+  -webkit-box-sizing: content-box;
+  -moz-box-sizing: content-box;
+  box-sizing: content-box;
+}
 
 .blog-title { padding-bottom: 0; margin-right: 8px; display: inline; }
 .blog-title a { color: #333; text-decoration: none; }
 .blog-title a:hover, .blog-title a:focus { text-shadow: #FFC8C8 0 0 1px; }
 .blog-author { display: inline; vertical-align: baseline; font-style: italic; }
-.blog-slogan { clear: both; margin-top: 0; font-size: 0.9em; text-transform: lowercase; font-variant: small-caps; color: #f06; margin-left: 2px; margin-bottom: 60px; }
+.blog-slogan {
+  clear: both; margin-top: 0; font-size: 0.9em; text-transform: lowercase;
+  font-variant: small-caps; color: #f06; margin-left: 2px; margin-bottom: 60px;
+}
 
 h2, h3, h4, h5 { position: relative; }
 h2 { font-size: 1.6em; margin-bottom: 28px; }
@@ -33,23 +55,34 @@ a:hover, a:focus { text-decoration: none; }
 a:active { color: #333; }
 
 img {
-    display: block;
-    max-width: 100%;
-    height: auto;
+  display: block;
+  max-width: 100%;
+  height: auto;
 }
 
-/*strong { background: #ffc; }*/
 strong code { background: #ffc; }
 .superhero strong { background: none !important }
 
 code { font-family: Courier, monospace; font-size: 0.9em; background: #e0e0e0; padding: 1px 4px; }
 pre code { border: none; font-size: 0.9em; display: block; overflow: scroll; }
 
-pre { background: rgb(200,200,200); margin-left: -6px; margin-top: 22px; margin-bottom: 22px; padding: 1px; border-radius: 4px; }
-pre code { background: rgb(100,100,100); padding-left: 10px; color: #eee; border: 2px solid #fff; border-radius: 3px; padding-bottom: 18px; }
+pre {
+  background: rgb(200,200,200); margin-left: -6px; margin-top: 22px; margin-bottom: 22px;
+  padding: 1px; border-radius: 4px;
+}
+pre code {
+  background: rgb(100,100,100); padding-left: 10px; color: #eee; border: 2px solid #fff;
+  border-radius: 3px; padding-bottom: 18px;
+}
 
-blockquote, cite { quotes: "\201C" "\201D" "\2018" "\2019"; float: left; clear: both; font-style: italic; color: #777; margin-top: 22px; margin-bottom: 22px; width: 100%; }
-blockquote:before { content: open-quote; float: left; font-size: 4em; margin-left: -45px; margin-top: -10px; font-family: "times new roman"; color: #faa; font-weight: bold; }
+blockquote, cite {
+  quotes: "\201C" "\201D" "\2018" "\2019"; float: left; clear: both;
+  font-style: italic; color: #777; margin-top: 22px; margin-bottom: 22px; width: 100%;
+}
+blockquote:before {
+  content: open-quote; float: left; font-size: 4em; margin-left: -45px;
+  margin-top: -10px; font-family: "times new roman"; color: #faa; font-weight: bold;
+}
 blockquote p { display: inline; float: left; margin-top: 0; margin-left: 10px; }
 cite { float: none; line-height: 1.4; }
 
@@ -97,15 +130,22 @@ cite { float: none; line-height: 1.4; }
 
 .posts .popular:before {
   content: 'popular'; position: absolute; top: -1px; left: -60px; font-size: 0.7em;
-  border-radius: 5px; background: rgb(155, 177, 213); color: #fff; padding: 3px 6px; font-family: Helvetica, sans-serif; }
+  border-radius: 5px; background: rgb(155, 177, 213); color: #fff; padding: 3px 6px;
+  font-family: Helvetica, sans-serif;
+}
 
 .posts .new:before {
   content: 'new'; position: absolute; top: -1px; left: -45px; font-size: 0.7em;
-  border-radius: 5px; background: rgb(152, 203, 74); color: #fff; padding: 3px 6px; font-family: Helvetica, sans-serif; }
+  border-radius: 5px; background: rgb(152, 203, 74); color: #fff; padding: 3px 6px;
+  font-family: Helvetica, sans-serif;
+}
 
 .posts li.hidden { height: 0; overflow: hidden; opacity: 0; margin-bottom: 0; }
 
-.popular-tag { font-size: 0.7em; border-radius: 5px; background: rgb(155, 177, 213); color: #fff; padding: 3px 6px; font-family: Helvetica, sans-serif; }
+.popular-tag {
+  font-size: 0.7em; border-radius: 5px; background: rgb(155, 177, 213); color: #fff;
+  padding: 3px 6px; font-family: Helvetica, sans-serif;
+}
 
 .gist span { font-size: 90%; }
 .gist-meta { opacity: 0; transition: all 0.1s; }
@@ -120,7 +160,10 @@ cite { float: none; line-height: 1.4; }
 
 .filter { position: absolute; top: -50px; right: 0; font-size: 0.8em; }
 .topic:first-child { margin-left: 10px; }
-.topic.selected { font-size: 0.9em; border-radius: 5px; background: #f06; color: #fff; padding: 3px 6px; font-family: Helvetica, sans-serif; text-decoration: none; }
+.topic.selected {
+  font-size: 0.9em; border-radius: 5px; background: #f06; color: #fff;
+  padding: 3px 6px; font-family: Helvetica, sans-serif; text-decoration: none;
+}
 
 .floated { float: left; vertical-align: top; margin-right: 20px; margin-top: 10px; }
 

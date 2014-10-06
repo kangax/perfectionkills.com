@@ -7,3 +7,5 @@ url:            http://perfectionkills.com
 encoding:       UTF-8
 
 exclude:        ["README"]
+sass:
+  style:        compressed
