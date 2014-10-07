@@ -1,0 +1,13 @@
+linters:
+  PropertySortOrder:
+    enabled: false
+
+  Indentation:
+    severity: warning
+    width: 2
+
+  StringQuotes:
+    enabled: false
+
+  LeadingZero:
+    enabled: false
