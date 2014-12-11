@@ -1,5 +1,5 @@
 markdown:       rdiscount
-pygments:       true
+highlighter:    true
 permalink:      ./:title
 name:           Perfection Kills
 description:    "Javascript rants and findings, by kangax"
