@@ -1,5 +1,5 @@
 ---
-layout: nil
+layout: empty
 ---
 
 # www.robotstxt.org/

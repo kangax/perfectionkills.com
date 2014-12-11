@@ -196,6 +196,7 @@ cite {
   margin-top: 22px;
   margin-bottom: 22px;
   width: 100%;
+  line-height: 1.4
 }
 
 blockquote:before {
@@ -383,8 +384,13 @@ cite {
   font-family: Helvetica, sans-serif;
 }
 
-.gist span {
-  font-size: 90%;
+.gist .highlight {
+  font-size: 14px !important;
+}
+
+.gist .task-list {
+  font-size: 14px !important;
+  font-style: italic;
 }
 
 .gist-meta {

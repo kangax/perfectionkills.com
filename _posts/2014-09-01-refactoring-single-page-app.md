@@ -3,7 +3,6 @@ layout: post
 title: Refactoring single page app
 tags:
   - js
-new: new
 ---
 
 # Refactoring single page app
