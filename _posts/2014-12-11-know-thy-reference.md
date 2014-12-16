@@ -272,7 +272,7 @@ Of course, the current behavior is that non-Reference is passed to a Function ca
 
 ### typeof operator
 
-Know that we understand References, we can take a look in few other places for a better understanding. Take, for example, [typeof operator](https://es5.github.io/#x11.4.3):
+Now that we understand References, we can take a look in few other places for a better understanding. Take, for example, [typeof operator](https://es5.github.io/#x11.4.3):
 
 {% gist kangax/1b0c46898331cf92b540 %}
 
@@ -305,7 +305,7 @@ What might have looked like mambo-jumbo is now pretty nice and clear:
 
 And that's a wrap!
 
-Hopefully you know understand the underlying mechanism of References in Javascript; how they're used in various places and how we can "utilize" them to explain `this` behavior even in non-trivial constructs.
+Hopefully you now understand the underlying mechanism of References in Javascript; how they're used in various places and how we can "utilize" them to explain `this` behavior even in non-trivial constructs.
 
 Note that everything I mentioned in this post was <b>based on ES5</b>, being current standard and the most implemented one at the moment. [ES6](people.mozilla.org/~jorendorff/es6-draft.html) might have some changes, but that's a story for another day.
 
