@@ -122,7 +122,7 @@ Here's a simple cheat sheet:
   </thead>
   <tbody>
     <tr>
-      <td style="border: 1px solid #ccc; padding: 5px">foo</td>
+      <td style="border: 1px solid #ccc; padding: 5px">"foo"</td>
       <td style="border: 1px solid #ccc; padding: 5px; background: #fcc">No</td>
       <td style="border: 1px solid #ccc; padding: 5px"></td>
     </tr>
