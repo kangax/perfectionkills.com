@@ -31,7 +31,7 @@ Is it possible to shoehorn MVC onto all this? What exactly would become a model 
 The following is my step-by-step refactoring path, including close look at some MVC-ish solutions. You can use it to get ideas on revamping your own spaghetti app, and/or to see how to approach design of &lt;canvas>-based app, specifically. Each step is made as a separate commit in [fabricjs.com repo on github](https://github.com/kangax/fabricjs.com/commits/gh-pages?page=3).
 
 
-## Complexity vs. Maintainability
+<h2 id="complexity_vs_maintainability">Complexity vs. Maintainability</h2>
 
 <img src="/images/plato.png">
 
