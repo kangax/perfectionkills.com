@@ -633,3 +633,8 @@ and (max-device-width : 480px) {
     margin-bottom: 10px;
   }
 }
+
+.innertext code {
+  background: none;
+  padding: 0;
+}

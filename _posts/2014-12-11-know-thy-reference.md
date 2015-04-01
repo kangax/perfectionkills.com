@@ -3,7 +3,6 @@ layout: post
 title: Know thy reference
 tags:
   - js
-new: new
 ---
 
 # Know thy reference
