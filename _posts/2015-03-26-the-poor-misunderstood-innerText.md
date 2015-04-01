@@ -12,7 +12,7 @@ new: new
 
 Few things are as misunderstood and misused on the web as <code>innerText</code> property.
 
-That perky, non-standard way of element's <em>text retrieval</em>, [introduced by Internet Explorer](https://msdn.microsoft.com/en-us/library/ie/ms533899%28v=vs.85%29.aspx) and later "copied" by both WebKit/Blink and Opera for web-compatibility reasons. It's usually seen in combination with <code>textContent</code> — as a cross-browser way of using standard property followed by a proprietary one:
+That quirky, non-standard way of element's <em>text retrieval</em>, [introduced by Internet Explorer](https://msdn.microsoft.com/en-us/library/ie/ms533899%28v=vs.85%29.aspx) and later "copied" by both WebKit/Blink and Opera for web-compatibility reasons. It's usually seen in combination with <code>textContent</code> — as a cross-browser way of using standard property followed by a proprietary one:
 
 {% gist kangax/21b031672fcce0810e6f %}
 
