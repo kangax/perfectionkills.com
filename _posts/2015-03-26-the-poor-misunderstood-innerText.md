@@ -20,13 +20,13 @@ Or as the main webcompat offender in [numerous Mozilla tickets](https://bugzilla
 
 {% gist kangax/84462c2c36f7db8ad8a3 %}
 
-<code>innerText</code> is pretty much always frown upon. After all, why would you want to use a non-standard property that does the "same" thing as a standard one? Very few people venture to actually check the differences, and on the surface it certainly appears as there is none. Those curious enough to investage further usually <em>do</em> find them, but only slight ones.
+<code>innerText</code> is pretty much always frown upon. After all, why would you want to use a non-standard property that does the "same" thing as a standard one? Very few people venture to actually check the differences, and on the surface it certainly appears as there is none. Those curious enough to investigate further usually <em>do</em> find them, but only slight ones, and only <b>when retrieving text, not setting it</b>.
 
 Back in 2009, I did just that. And I even wrote [this StackOverflow answer](http://stackoverflow.com/a/1359822/130652) on the exact differences — slight whitespace deviations, things like inclusion of &lt;script> contents by <code>textContent</code> (but not <code>innerText</code>), differences in interface (<code>Node</code> vs. <code>HTMLElement</code>), and so on.
 
 All this time I was strongly convinced that there isn't much else to know about <code>textContent</code> vs. <code>innerText</code>. Just steer away from <code>innerText</code>, use this "combo" for cross-browser code, keep in mind slight differences, and you're golden.
 
-Little did I know that I was merely looking at the tip of the iceberg, and that my perception of <code>innerText</code> will change drastically. What you're about to hear is the story of Internet Explorer getting something right, the real differences between these properties, and how we probably want to standardize this red-headed stepchild.
+Little did I know that I was merely looking at the tip of the iceberg and that my perception of <code>innerText</code> will change drastically. What you're about to hear is the story of Internet Explorer getting something right, the real differences between these properties, and how we probably want to standardize this red-headed stepchild.
 
 ### The real difference
 
@@ -76,9 +76,9 @@ Knowing these differences, we can see just how potentially misleading (and dange
 
 Coming back to a text editor...
 
-Let's say we have a [contenteditable](http://html5demos.com/contenteditable) area in which a user is writing something. And we'd like to have our own spelling correction of a text in that area. In order to do that, we really want to analyze text <b>the way it appears in the browser</b>, not in the markup. We'd like to know if there's newlines or spaces typed by a user, and not those that are in the markup, so that we can correct text accordingly.
+Let's say we have a [contenteditable](http://html5demos.com/contenteditable) area in which a user is writing something. And we'd like to have our own spelling correction of a text in that area. In order to do that, we really want to analyze text <b>the way it appears in the browser</b>, not in the markup. We'd like to know if there are newlines or spaces typed by a user, and not those that are in the markup, so that we can correct text accordingly.
 
-This is just one usecase of plain text retrieval. Perhaps you might want to <b>convert written text to another format</b> (PDF, SVG, image via canvas, etc.) in which case it has to look exactly as it was typed. Or maybe you need to <b>know the cursor position in a text</b> (or its entire length), so you need to operate on a text the way it's presented.
+This is just one use-case of plain text retrieval. Perhaps you might want to <b>convert written text to another format</b> (PDF, SVG, image via canvas, etc.) in which case it has to look exactly as it was typed. Or maybe you need to <b>know the cursor position in a text</b> (or its entire length), so you need to operate on a text the way it's presented.
 
 I'm sure there's more scenarios.
 
@@ -104,7 +104,7 @@ Once I realized the significance of <code>innerText</code>, I wanted to see the 
 
 I started with (now extinct) [test suite by Aryeh Gregor](https://web.archive.org/web/20110205234444/http://aryeh.name/spec/innertext/test/innerText.html) and [added few more things](http://kangax.github.io/jstests/innerText/) to it. I also searched WebKit/Blink bug trackers and included [whatever](https://code.google.com/p/chromium/issues/detail?id=96839) [relevant](https://bugs.webkit.org/show_bug.cgi?id=14805) [things](https://bugs.webkit.org/show_bug.cgi?id=17830) I found there.
 
-The table above (and in the test suite) shows all the gory details, but few things worth mentioning. First, good news — Internet Explorer &lt;=9 are identical in their behavior :) Now bad — everything else diverges. Even IE changes with each new version — 9, 10, 11, and Tech Preview (the unreleased version of IE that's currently in the making) are all different. What's also interesting is how WebKit copied some of the old-IE traits — such as not including contents of &lt;script> and &lt;style> elements — and then when IE changed, they naturally drifted apart. Currently, some of the WebKit/Blink behavior is like old-IE and some isn't. But even comparing to original versions, WebKit did a poor job copying this feature; or rather, it seems like they've tried to make it <em>better</em>!
+The table above (and in the test suite) shows all the gory details, but few things worth mentioning. First, good news — Internet Explorer &lt;=9 are identical in their behavior :) Now bad — everything else diverges. Even IE changes with each new version — 9, 10, 11, and Tech Preview (the unreleased version of IE that's currently in the making) are all different. What's also interesting is how WebKit copied some of the old-IE traits — such as not including contents of &lt;script> and &lt;style> elements — and then when IE changed, they naturally drifted apart. Currently, some of the WebKit/Blink behavior is like old-IE and some isn't. But even comparing to original versions, WebKit did a poor job copying this feature, or rather, it seems like they've tried to make it <em>better</em>!
 
 Unlike IE, WebKit/Blink insert tabs between table cells — that kind of makes sense! They also preserve upper/lower-cased text, which is arguably better. They don't include hidden elements ("display:none", "visibility:hidden"), which makes sense too. And they don't include contents of &lt;select> elements and &lt;canvas>/&lt;video> fallback — perhaps a questionable aspect — but reasonable as well.
 
@@ -140,7 +140,7 @@ So if we wanted to use jQuery to get real text representation (à la <code>inner
 
 ### Standardization attempts
 
-Hopefully by now I've convinced you that <code>innerText</code> is pretty damn useful; we went over underlying concept, browser differences, performance implications, and saw how even an all-mighty jQuery is of no help.
+Hopefully by now I've convinced you that <code>innerText</code> is pretty damn useful; we went over the underlying concept, browser differences, performance implications and saw how even an all-mighty jQuery is of no help.
 
 You would think that by now this property is standardized or at least making its way into the standard.
 
@@ -152,7 +152,7 @@ Back in 2010, Adam Barth (of Google), [proposes to spec innerText](http://lists.
 In addition to Adam's comments, there is no standard, stable way of *getting* the text from a series of nodes. textContent returns everything, including tabs, white space, and even script content. [...] innerText is one of those things IE got right, just like innerHTML. Let's please consider making that a standard instead of removing it.
 </blockquote>
 
-In the same thread, Robert O'Callahan (of Mozilla) [doubts usefullness of innerText](http://lists.w3.org/Archives/Public/public-whatwg-archive/2010Aug/0477.html) but also adds:
+In the same thread, Robert O'Callahan (of Mozilla) [doubts usefulness of innerText](http://lists.w3.org/Archives/Public/public-whatwg-archive/2010Aug/0477.html) but also adds:
 
 <blockquote>
 But if Mike Wilcox or others want to make the case that innerText is actually a useful and needed feature, we should hear it. Or if someone from Webkit or Opera wants to explain why they added it, that would be useful too.
@@ -186,17 +186,17 @@ Notice that "opacity: 0" elements are not displayed, yet they are part of <code>
 
 But I think that's OK.
 
-If you think of <code>innerText</code> as text copied off the page, most of these "artifacts" make perfect sense. Just because chunk of text is given "opacity: 0" doesn't mean that it shouldn't be part of output. It's a purely presentational concern, just like bullets, space between paragraphs or indented text. What matters is **structural preservation** — block-styled elements should create newlines, inline ones should be inline.
+If you think of <code>innerText</code> as text copied from the page, most of these "artifacts" make perfect sense. Just because a chunk of text is given "opacity: 0" doesn't mean that it shouldn't be part of output. It's a purely presentational concern, just like bullets, space between paragraphs or indented text. What matters is **structural preservation** — block-styled elements should create newlines, inline ones should be inline.
 
-One iffy aspect is probably "text-transform". Should capitalized or uppercased text be preserved? WebKit/Blink think it should; Internet Explorer doesn't. Is it part of text itself or merely styling?
+One iffy aspect is probably "text-transform". Should capitalized or uppercased text be preserved? WebKit/Blink think it should; Internet Explorer doesn't. Is it part of a text itself or merely styling?
 
-Another one is "visibility: hidden". Similar to "opacity: 0" (and unlike "display: none"), text is still part of the flow, it just can't be seen. Common sense would suggest that it <b>should still be part of the output</b>. And while Internet Explorer does just that, WebKit/Blink disagrees (also being curiously inconsistent with their "opacity: 0" behavior).
+Another one is "visibility: hidden". Similar to "opacity: 0" (and unlike "display: none"), a text is still part of the flow, it just can't be seen. Common sense would suggest that it <b>should still be part of the output</b>. And while Internet Explorer does just that, WebKit/Blink disagrees (also being curiously inconsistent with their "opacity: 0" behavior).
 
-Elements that aren't known to a browser pose additional problem. For example, WebKit/Blink recently started supporting &lt;template> element. That element is not displayed, and so is not part of <code>innerText</code>. To Internet Explorer, however, it's nothing but an unknown inline element, and of course it outputs its contents.
+Elements that aren't known to a browser pose an additional problem. For example, WebKit/Blink recently started supporting &lt;template> element. That element is not displayed, and so it is not part of <code>innerText</code>. To Internet Explorer, however, it's nothing but an unknown inline element, and of course it outputs its contents.
 
 ### Standardization, take 2
 
-In 2011, another <code>innerText</code> proposal [is posted to WHATWG mailing list](http://lists.w3.org/Archives/Public/public-html/2011Jul/0133.html), this time by Aryeh Gregor. Aryah proposes to either:
+In 2011, another <code>innerText</code> proposal [is posted to WHATWG mailing list](http://lists.w3.org/Archives/Public/public-html/2011Jul/0133.html), this time by Aryeh Gregor. Aryeh proposes to either:
 
 <ol>
   <li>Drop <code>innerText</code> entirely</li>
@@ -204,7 +204,7 @@ In 2011, another <code>innerText</code> proposal [is posted to WHATWG mailing li
   <li>Actually spec <code>innerText</code> according to whatever IE/WebKit are doing</li>
 </ol>
 
-Similar to previous discussions, Mozilla oposes 3rd option (standardizing it), whereas Microsoft and Opera oppose 1st one (dropping it).
+Similar to previous discussions, Mozilla opposes 3rd option (standardizing it), whereas Microsoft and Opera oppose 1st one (dropping it).
 
 In the same thread, Aryeh expresses his concerns about standardizing <code>innerText</code>:
 
@@ -222,7 +222,7 @@ It's not clear whether the latter is in fact an option; that depends on  how Sel
 So far the only proposal I've seen for Selection.toString is "do what the copy operation does", which is neither well-defined nor acceptable for innerText.  In my opinion.
 </blockquote>
 
-At the end, we're left with [this WHATWG ticket by Aryeh](https://www.w3.org/Bugs/Public/show_bug.cgi?id=13145) on specifying <code>innerText</code>. Things look rather grim, as evidenced in one of the comments:
+In the end, we're left with [this WHATWG ticket by Aryeh](https://www.w3.org/Bugs/Public/show_bug.cgi?id=13145) on specifying <code>innerText</code>. Things look rather grim, as evidenced in one of the comments:
 
 <blockquote>
 I've been told in no uncertain terms that it's <b>not practical for non-Gecko browsers to remove</b>. Depending on the rendering tree to the extent WebKit does, on the other hand, is insanely complicated to spec in terms of standard stuff like DOM and CSS. Also, it potentially breaks for detached nodes (WebKit behaves totally differently in that case). [...] But <b>Gecko people seemed pretty unhappy about this kind of complexity and rendering dependence in a DOM property</b>.  And on the other hand, I got the impression <b>WebKit is reluctant to rewrite their innerText implementation</b> at all.  So I'm figuring that the spec that will be implemented by the most browsers possible is one that's as simple as possible, basically just a compat shim.  If multiple implementers actually want to implement something like the innerText spec I started writing, I'd be happy to resume work on it, but that wasn't my impression.
@@ -254,7 +254,7 @@ I took a stab at a relatively simple version of <code>innerText</code>:
 
 Couple important tasks here:
 
-1. Checking if a text node is within "formatted" context (i.e. a child of "white-space: pre-*" node), in which case its contents should concatenated as is; otherwise collapse all whitespaces to 1.
+1. Checking if a text node is within "formatted" context (i.e. a child of "white-space: pre-*" node), in which case its contents should be concatenated as is; otherwise collapse all whitespaces to 1.
 
 2. Checking if a node is block-styled ("block", "list-item", "table", etc.), in which case it has to be surrounded by newlines; otherwise, it's inline and its contents are output as is.
 
@@ -262,10 +262,10 @@ Then there's things like ignoring &lt;script>, &lt;style>, etc. nodes and insert
 
 This is still a <b>very minimal and naive implementation</b>. For one, it doesn't collapse newlines between block elements — a quite important aspect. In order to do that, we need to <b>keep track of more state</b> — to know information about previous node's style. It also doesn't normalize whitespace in "true" manner — a text node with leading and trailing spaces, for example, should have those spaces stripped if it is (the only node?) in a block element.
 
-This needs more work but it's a decent start.
+This needs more work, but it's a decent start.
 
-It would be also a good idea to write <code>innerText</code> implementation in Javascript, with unit tests for each of the "feature" in a compat table. Perhaps even supporting 2 modes — IE and WebKit/Blink. An implementation like this could then be simply integrated in non-supporting engines (or used as a proper polyfill).
+It would be also a good idea to write <code>innerText</code> implementation in Javascript, with unit tests for each of the "feature" in a compat table. Perhaps even supporting 2 modes — IE and WebKit/Blink. An implementation like this could then be simply integrated into non-supporting engines (or used as a proper polyfill).
 
-I'd love to hear your thoughts, ideas, experiences, criticism. I hope (with all of your help) we can make some improvement in this direction. And even if nothing changes, at least we've shed some light on this very misunderstood ancient feature.
+I'd love to hear your thoughts, ideas, experiences, criticism. I hope (with all of your help) we can make some improvement in this direction. And even if nothing changes, at least some light was shed on this very misunderstood ancient feature.
 
 <script async src="//assets.codepen.io/assets/embed/ei.js"></script>
