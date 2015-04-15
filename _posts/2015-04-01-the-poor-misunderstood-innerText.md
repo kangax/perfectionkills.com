@@ -28,7 +28,7 @@ All this time I was strongly convinced that there isn't much else to know about 
 
 Little did I know that I was merely looking at the tip of the iceberg and that my perception of <code>innerText</code> will change drastically. What you're about to hear is the story of Internet Explorer getting something right, the real differences between these properties, and how we probably want to standardize this red-headed stepchild.
 
-### The real difference
+<h3 id="the-real-difference">The real difference</h3>
 
 A little while ago, I was helping someone with the implementation of text editor in a browser. This is when I realized just how ridiculously important these seemingly insignificant whitespace deviations between <code>textContent</code> and <code>innerText</code> are.
 
@@ -72,7 +72,7 @@ Knowing these differences, we can see just how potentially misleading (and dange
 
 {% gist kangax/1afbc0d166ac220e2cac %}
 
-### The case for innerText
+<h3 id="case-for-innerText">The case for innerText</h3>
 
 Coming back to a text editor...
 
@@ -96,7 +96,7 @@ The problems with this frankenstein of a workaround are performance, complexity,
 
 Internet Explorer got this right — <code>textContent</code> and <code>Selection#toString</code> are poor contenders in cases like this; <code>innerText</code> is exactly what we need. Except that it's non-standard, and unsupported by one major browser. Thankfully, at least Chrome (Blink) and Safari (WebKit) were considerate enough to immitate it. One would hope there's no deviations among their implementations. Or is there?
 
-### Differences with textContent
+<h3 id="diff-with-textContent">Differences with textContent</h3>
 
 Once I realized the significance of <code>innerText</code>, I wanted to see the differences among 2 engines. Since there was nothing like this out there, I set on a path to explore it. In true ["cross-browser maddness" traditions](http://unixpapa.com/js/key.html), what I've found was not for the faint of heart.
 
@@ -112,11 +112,11 @@ Ok, there's more good news.
 
 Notice that IE Tech Preview (Spartan) is now much closer to WebKit/Blink. There's only 9 aspects they differ in (comparing to 10-11 in earlier versions). That's still a lot but there's at least <em>some</em> hope for convergence. Most notably, IE <em>again</em> stopped including &lt;script> and &lt;style> contents, and — for the first time ever — stopped including "display:none" elements (but not "visibility:hidden" ones — more on that later).
 
-### Opera mess
+<h3 id="opera-mess">Opera mess</h3>
 
 You might have caught the lack of Opera in a table. It's not just because Opera is now using Blink engine (essentially having WebKit behavior). It's also due to the fact that when it wasn't on Blink, it's been <b>reaaaally naughty</b> when it comes to <code>innerText</code>. To sustain web compatibility, Opera simply went ahead and "aliased" <code>innerText</code> to <code>textContent</code>. That's right, in Opera, <code>innerText</code> would return nothing close to what we see in IE or WebKit. There's simply no point including in a table; it would diverge in every single aspect, and we can just consider it as never implemented.
 
-### Note on performance
+<h3 id="note-on-perf">Note on performance</h3>
 
 Another difference lurks behind <code>textContent</code> and <code>innerText</code> — performance.
 
@@ -132,13 +132,13 @@ Knowing the underlying concepts of both properties, this shouldn't come as a sur
 
 So for all intents and purposes, <code>innerText</code> is significantly slower than <code>textContent</code>. And if all you need is to retrieve a text of an element without any kind of style awareness, you should — by all means — use <code>textContent</code> instead. However, this style awareness of <code>innerText</code> is <em>exactly</em> what we need when retrieving text "as presented"; and that comes with a price.
 
-### What about jQuery?
+<h3 id="what-about-jquery">What about jQuery?</h3>
 
 You're probably familiar with jQuery's <code>text()</code> method. But how exactly does it work and what does it use — <code>textContent || innerText</code> combo or something else? Turns out, jQuery [takes a safe route](https://github.com/jquery/jquery/blob/7602dc708dc6d9d0ae9982aadb9fa4615a9c49fa/external/sizzle/dist/sizzle.js#L942-L971) — it either returns <code>textContent</code> (if available), or manually does what <code>textContent</code> is supposed to do — iterates over all children and concatenates their <code>nodeValue</code>'s. Apparently, at one point jQuery **did** use <code>innerText</code>, but then [ran into good old whitespace differences](http://bugs.jquery.com/ticket/11153) and decided to ditch it altogether.
 
 So if we wanted to use jQuery to get real text representation (à la <code>innerText</code>), we can't use jQuery's <code>text()</code> since it's basically a cross-browser <code>textContent</code>. We would need to roll our own solution.
 
-### Standardization attempts
+<h3 id="standardization-attempts">Standardization attempts</h3>
 
 Hopefully by now I've convinced you that <code>innerText</code> is pretty damn useful; we went over the underlying concept, browser differences, performance implications and saw how even an all-mighty jQuery is of no help.
 
@@ -176,7 +176,7 @@ attribute may be difficult.
 
 And the conversation dies out.
 
-### Is innerText really useful?
+<h3 id="is-innerText-useful">Is innerText really useful?</h3>
 
 As Rob points out, "convert to plaintext" could certainly be an ambiguous task. In fact, we can easily create a test markup that looks nothing like its "plain text" version:
 
@@ -194,7 +194,7 @@ Another one is "visibility: hidden". Similar to "opacity: 0" (and unlike "displa
 
 Elements that aren't known to a browser pose an additional problem. For example, WebKit/Blink recently started supporting &lt;template> element. That element is not displayed, and so it is not part of <code>innerText</code>. To Internet Explorer, however, it's nothing but an unknown inline element, and of course it outputs its contents.
 
-### Standardization, take 2
+<h3 id="standardization-2">Standardization, take 2</h3>
 
 In 2011, another <code>innerText</code> proposal [is posted to WHATWG mailing list](http://lists.w3.org/Archives/Public/public-html/2011Jul/0133.html), this time by Aryeh Gregor. Aryeh proposes to either:
 
@@ -230,7 +230,7 @@ I've been told in no uncertain terms that it's <b>not practical for non-Gecko br
 
 We can't remove it, can't change it, can't spec it to depend on rendering, and spec'ing it would be quite difficult :)
 
-### Light at the end of a tunnel?
+<h3 id="tunnel">Light at the end of a tunnel?</h3>
 
 Could there still be some hope for <code>innerText</code> or will it forever stay an unspecified legacy with 2 different implementations?
 
@@ -246,7 +246,7 @@ The plan could be:
 
 Seeing [how amazing Microsoft has been](https://status.modern.ie/) recently, I really hope we can make this happen.
 
-### The naive spec
+<h3 id="naive-spec">The naive spec</h3>
 
 I took a stab at a relatively simple version of <code>innerText</code>:
 
