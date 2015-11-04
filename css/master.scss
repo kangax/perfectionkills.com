@@ -176,7 +176,7 @@ pre {
   code {
     font-size: 0.9em;
     display: block;
-    overflow: scroll;
+    overflow: auto;
     background: rgb(100, 100, 100);
     padding-left: 10px;
     color: #eee;
@@ -637,4 +637,18 @@ and (max-device-width : 480px) {
 .innertext code {
   background: none;
   padding: 0;
+}
+
+.answers {
+  list-style: none;
+  padding-left: 20px;
+  margin-bottom: 40px;
+}
+.quiz {
+  padding-left: 0;
+}
+#quiz-result {
+  background: #efe;
+  padding: 1em;
+  border: 1px solid #afa;
 }
