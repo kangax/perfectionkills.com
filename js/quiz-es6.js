@@ -19,7 +19,7 @@
     if (!byId('answer-9-4').checked) { wrongAnswers.push(9); }
     if (!byId('answer-10-2').checked) { wrongAnswers.push(10); }
     if (!byId('answer-11-4').checked) { wrongAnswers.push(11); }
-    if (!byId('answer-12-3').checked) { wrongAnswers.push(12); }
+    if (!byId('answer-12-4').checked) { wrongAnswers.push(12); }
     if (!byId('answer-13-4').checked) { wrongAnswers.push(13); }
 
     var message, total = 13;
