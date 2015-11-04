@@ -3,7 +3,6 @@ layout: post
 title: The poor, misunderstood innerText
 tags:
   - js
-new: new
 ---
 
 # The poor, misunderstood innerText
@@ -267,5 +266,15 @@ This needs more work, but it's a decent start.
 It would be also a good idea to write <code>innerText</code> implementation in Javascript, with unit tests for each of the "feature" in a compat table. Perhaps even supporting 2 modes — IE and WebKit/Blink. An implementation like this could then be simply integrated into non-supporting engines (or used as a proper polyfill).
 
 I'd love to hear your thoughts, ideas, experiences, criticism. I hope (with all of your help) we can make some improvement in this direction. And even if nothing changes, at least some light was shed on this very misunderstood ancient feature.
+
+<h3 id="update">Update: half a year later</h3>
+
+It's been half a year since I wrote this post and few things changed for the better!
+
+First of all, [Robert O'Callahan](http://robert.ocallahan.org/) of Mozilla made some awesome effort — he decided to [spec out the innerText](https://github.com/rocallahan/innerText-spec) and then implemented it in Firefox. The idea was to spec something simple and sensible. The proposed spec — only after about 11 years — is now [implemented in Firefox 45](https://bugzilla.mozilla.org/show_bug.cgi?id=264412) :)
+
+I've added FF45 results to [a compat table](kangax.github.io/jstests/innerText/) and aside from couple differences, FF is pretty close to Chrome's implementation. I'm also planning to add more tests to reveal any other differences among Chrome, FF, and Edge.
+
+The spec already revealed few bugs in Chrome, which I'm hoping to file bugs for and see resolved. If we can then also get Edge to converge, we'll be very close to having all 3 biggest browsers behave similarly, making `innerText` viable feature in a near future.
 
 <script async src="//assets.codepen.io/assets/embed/ei.js"></script>
