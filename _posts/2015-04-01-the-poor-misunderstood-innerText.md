@@ -271,12 +271,12 @@ I'd love to hear your thoughts, ideas, experiences, criticism. I hope (with all 
 
 It's been half a year since I wrote this post and few things changed for the better!
 
-First of all, [Robert O'Callahan](http://robert.ocallahan.org/) of Mozilla made some awesome effort — he decided to [spec out the innerText](https://github.com/rocallahan/innerText-spec) and then implemented it in Firefox. The idea was to spec something simple and sensible. The proposed spec — only after about 11 years — is now [implemented in Firefox 45](https://bugzilla.mozilla.org/show_bug.cgi?id=264412) :)
+First of all, [Robert O'Callahan](http://robert.ocallahan.org/) of Mozilla made some awesome effort — he decided to [spec out the innerText](https://github.com/rocallahan/innerText-spec) and then implemented it in Firefox. The idea was to create something simple but sensible. The proposed spec — only after about 11 years — is now [implemented in Firefox 45](https://bugzilla.mozilla.org/show_bug.cgi?id=264412) :)
 
-I've added FF45 results to [a compat table](kangax.github.io/jstests/innerText/) and aside from couple differences, FF is pretty close to Chrome's implementation. I'm also planning to add more tests to reveal any other differences among Chrome, FF, and Edge.
+I've added FF45 results to [a compat table](http://kangax.github.io/jstests/innerText/) and aside from couple differences, FF is pretty close to Chrome's implementation. I'm also planning to add more tests to find any other differences among Chrome, FF, and Edge.
 
 <img src="/images/innerText_updated.png">
 
-The spec already revealed few bugs in Chrome, which I'm hoping to file bugs for and see resolved. If we can then also get Edge to converge, we'll be very close to having all 3 biggest browsers behave similarly, making `innerText` viable feature in a near future.
+The spec already revealed few bugs in Chrome, which I'm hoping to file tickets for and see resolved. If we can then also get Edge to converge, we'll be very close to having all 3 biggest browsers behave similarly, making `innerText` viable feature in a near future.
 
 <script async src="//assets.codepen.io/assets/embed/ei.js"></script>
