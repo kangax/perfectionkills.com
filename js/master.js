@@ -24,14 +24,14 @@
   }
 })();
 
-(function(){
-  var z = document.createElement("script");
-  z.type = "text/javascript";
-  z.async = true;
-  z.src = "http://engine.carbonads.com/z/12089/carbon_2_1_0_VERT";
-  var s = document.getElementsByTagName("script")[0];
-  s.parentNode.insertBefore(z, s);
-})();
+// (function(){
+//   var z = document.createElement("script");
+//   z.type = "text/javascript";
+//   z.async = true;
+//   z.src = "http://engine.carbonads.com/z/12089/carbon_2_1_0_VERT";
+//   var s = document.getElementsByTagName("script")[0];
+//   s.parentNode.insertBefore(z, s);
+// })();
 
 var _gaq = [
   ['_setAccount', 'UA-1128111-11'],
