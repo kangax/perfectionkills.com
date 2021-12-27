@@ -1,6 +1,7 @@
 ---
 layout: post
 title: Refactoring single page app
+permalink: refactoring-single-page-app/
 tags:
   - js
 ---

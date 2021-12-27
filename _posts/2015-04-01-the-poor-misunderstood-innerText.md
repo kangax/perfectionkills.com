@@ -1,6 +1,7 @@
 ---
 layout: post
 title: The poor, misunderstood innerText
+permalink: the-poor-misunderstood-innerText/
 tags:
   - js
 ---

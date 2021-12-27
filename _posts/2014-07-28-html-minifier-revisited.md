@@ -1,6 +1,7 @@
 ---
 layout: post
 title: HTML minifier revisited
+permalink: html-minifier-revisited/
 tags:
   - html
 ---

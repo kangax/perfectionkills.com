@@ -1,6 +1,7 @@
 ---
 layout: post
 title: Fabric.js 0.5 is out
+permalink: fabric-js-0-5-is-out/
 tags:
   - js
 ---

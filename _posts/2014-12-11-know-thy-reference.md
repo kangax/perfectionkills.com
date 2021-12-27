@@ -1,6 +1,7 @@
 ---
 layout: post
 title: Know thy reference
+permalink: know-thy-reference/
 tags:
   - js
 ---

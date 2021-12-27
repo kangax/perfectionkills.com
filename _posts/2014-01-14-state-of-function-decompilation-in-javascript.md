@@ -1,6 +1,7 @@
 ---
 layout: post
 title: State of function decompilation in Javascript
+permalink: state-of-function-decompilation-in-javascript/
 tags:
   - js
 ---
