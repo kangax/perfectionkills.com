@@ -1,6 +1,7 @@
 ---
 layout: post
 title: Moving from Wordpress to Github Pages
+permalink: moving-from-wordpress-to-github-pages/
 tags:
   - other
 ---
