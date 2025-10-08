@@ -1,0 +1,234 @@
+---
+layout: post
+title: "PRzilla: CrossFit AI companion"
+permalink: przilla-crossfit-ai-companion/
+tags:
+  - other
+new: new
+---
+
+<h2>PRzilla: CrossFit AI companion</h2>
+
+<h2>Why</h2>
+
+<p>When I left LinkedIn, I itched to build something in the space dear to my heart — fitness and CrossFit specifically. I also wanted a challenge of building a full-stack app, something I’ve never done before. The app would solve my pain points but I wanted to release it out there for anyone to use. This meant database, auth, users, and production-level user experience. It would be the biggest project I’ve ever done. With the rise of AI-assisted coding, it was a perfect time.</p>
+
+<h2>Problem</h2>
+
+<p>I’ve been using <a href="https://www.sugarwod.com/">SugarWOD</a> to track scores for CrossFit workouts (<a href="https://www.crossfit.com/essentials/what-is-a-crossfit-workout">WODs</a>) prescribed by my gym. But SugarWOD was never designed to be a standalone tracker: it’s missing many WODs, those that are there don’t have any info, and it doesn’t have a way to discover new ones. So I supplemented it with <a href="https://wodwell.com">wodwell.com</a> to find more workouts and track their scores. </p>
+
+<p>Wodwell has its own issues: full of ads, a clunky UI, and it's slow. More importantly, I wanted to be in control of my data and wodwell has no export. It also wasn’t great that my workout history and performance data was split between two platforms.</p>
+
+<h2>What</h2>
+
+<p>All of this sounded like a perfect opportunity to build just that: a full-stack app that has an incredibly easy and fast search through a 1000 most popular WODs. It would allow to log scores for any of them, to track your progression over time, and to favorite WODs for later. As I started coding with AI, I quickly realized I could go <em>even further</em>: we could get insights into WODs via AI analysis (time domain, difficulty, L1-10 benchmarks, etc.)</p>
+
+<div id="youtube2-FZZZuicIssY">
+
+<p><a href="https://www.youtube.com/watch?v=FZZZuicIssY">Watch the product walkthrough</a></p>
+
+</div>
+
+<h2>How</h2>
+
+<p>Before I set out on this journey I wanted to define few foundational tenets that were non-negotiable.</p>
+
+<h4>AI-driven</h4>
+
+<p>“Vibe coding” exploded as I was starting this project. My LinkedIn feed was full with “this is incredible” and “this will never work” posts. I came across <a href="https://addyo.substack.com/p/why-i-use-cline-for-ai-engineering">Addy’s article on Cline</a> and decided to build this app entirely with AI as a matter of principle. <strong>No manual coding</strong>. It would be a perfect experiment since an app was not just a trivial one-pager vibe-coded in a day.</p>
+
+<h4>Mobile-ready</h4>
+
+<p>Always a fun UI challenge and is certainly a must these days unless you provide a native app. In context of CrossFit, you often need to look things up or log your scores while in the gym. Every page needed to be responsive and every UI concept needed to be adopted to small and large screens.</p>
+
+<h4>Dark mode</h4>
+
+<p>Not a terribly complicated constrain and is largely solved by using the right foundational abstractions but it does add cognitive complexity, especially if you’re working with AI, as you need to ensure it complies and uses the right tokens.</p>
+
+<h4>Stateful</h4>
+
+<p>Often overlooked aspect but it’s what separates a polished, predictable app from a clunky frustrating experience. URL’s are the source of truth. Important UI state change needs to be reflected in them. Now you have the power to reload it, bookmark it, share it, go back, and so on.</p>
+
+<h4>Fast</h4>
+
+<p>Next.js is known for SSR support out of the box; this means fast server-driven apps. This was a great opportunity for me to learn and experiment with these concepts.</p>
+
+<blockquote>
+
+<p>Big lesson I took from introducing these in the beginning: each constrain is a liability, <strong>another dimension</strong> to your product surface. Be careful with creating too many from the start. Think iPhone and its lack of copy-paste first few years.<br/><br/>A feature alone is a single point or a line (1D).</p>
+
+<ul>
+
+<li>
+
+<p><strong>Add a "mobile-ready" constraint</strong>, and that line now exists on a 2D plane (feature x device). You have to test both states.</p>
+
+</li>
+
+<li>
+
+<p><strong>Add "dark mode,"</strong> and the plane becomes a 3D cube (feature x device x theme).</p>
+
+</li>
+
+<li>
+
+<p><strong>Add "SSR-ready,"</strong> and you're now in a 4D space.</p>
+
+</li>
+
+</ul>
+
+</blockquote>
+
+<h2>From Zero to SaaS in 150 Days</h2>
+
+<p>I’ve now spent about 5 months working on this daily-ish. I <a href="https://kangax.substack.com/p/building-an-app-with-cline-claude">learned a ton</a> <a href="https://kangax.substack.com/p/gemini-25-pro-and-the-meta-engineering">about AI assisted coding</a> <a href="https://kangax.substack.com/p/memory-bank-and-the-many-failures">and wrote about</a> <a href="https://kangax.substack.com/p/fast-cheap-or-smart-pick-three-the">most of it</a>. The lessons never stop and I post them <a href="https://www.linkedin.com/in/juriyzaytsev/recent-activity/all/">weekly on LinkedIn</a>. </p>
+
+<p>What started as a simple way to see most common WODs, quickly turned into a powerful UI that allows to find just the right workout. With the power of AI, <a href="https://kangax.substack.com/p/using-ai-to-accurately-predict-crossfit">I’ve gone deep on classifying workouts</a> to create helpful data that doesn’t exist anywhere else out there — difficulty, modality, training stimulus, time domain, and workout characteristics via tags.</p>
+
+<p>When I ask AI to summarize the complexity <sup id="footnote-anchor-1"><a href="#footnote-1">1</a></sup> of the app now:</p>
+
+<blockquote><p>PRZilla is a large-scale production web application with 123,000 lines of TypeScript code across 818 files, featuring 19 database tables, ~109 React components in 304 TSX files, and 67 tRPC API procedures. The codebase includes 1,532 test cases with 256 E2E tests across 40 test files ensuring critical user journeys, 58 service modules handling complex business logic including 6 AI-powered features, and manages 922 predefined workouts with sophisticated scoring algorithms. This represents approximately 2-3 years of full-time development effort , comparable in complexity to a mid-sized SaaS product.</p></blockquote>
+
+<p>It’s incredible to see the kind of power you wield with AI. The breadth and depth of functionality certainly feels like it would have taken me 2-3 years. I haven’t written any of this code and honestly can’t imagine having to ever write code manually again. </p>
+
+<p>Cutting wood by hand is slow. Using an electric saw freehand is fast, but it’s how you get a crooked cut. The real leverage comes when you bolt the saw in place at a precise angle, set the exact speed, and let it execute a perfect cut in a minute.</p>
+
+<p>That is exactly how I build software now. I don’t write code manually. And I don't just hand a task to an AI. Instead, I architect the system, protect it with guardrails so it stays the course, and give it specific instructions so it knows exactly the path to follow.</p>
+
+<p>My role has changed: <strong>I am the architect and the guardrail engineer.</strong></p>
+
+<h2>The Hard Part is Still the Hard Part</h2>
+
+<p>Having spent a good amount of time not only developing new features but also refactoring, redesigning UI, and fixing bugs, I can tell with good confidence: <strong>your app will not fall apart</strong>. AI is capable of 95%. The remaining 5% are complex cases that usually reside at the edges of larger system integrations OR are just complex in nature. Those would be also complex for human, likely even more so.</p>
+
+<p>For example, I’ve struggled to implement a well-working lazy loading of WOD cards on the main page because there was already a complex state management of various filters that had to all work in unison and support SSR; introducing lazy loading created X^Y^Z level of state management complexity and AI struggled to keep everything together without small bugs popping up here and there. </p>
+
+<p>These are the fundamentally hard issues inherent to engineering. AI offers no magic wand for challenges like:</p>
+
+<ul>
+
+<li>
+
+<p>The "dependency hell" of npm packages.</p>
+
+</li>
+
+<li>
+
+<p>The chaos of flaky end-to-end tests.</p>
+
+</li>
+
+<li>
+
+<p>Navigating features with no documentation.</p>
+
+</li>
+
+</ul>
+
+<p>AI also can’t make your app stable if the underlying structure is rotten: fragmented state, logic duplication, complex branches with subtle bugs. But it’s surprisingly good at finding those and fixing them in a heartbeat.</p>
+
+<h2>Code != Product</h2>
+
+<p>When I look at the app right now I feel like it would have taken me <em>much less time</em> to build the “final” version. Yet, the reality is that development works like this in non-trivial apps:</p>
+
+<figure><img src="/images/przilla-crossfit-ai-companion/przilla-crossfit-ai-companion-1.png"/></figure>
+
+<div>
+
+<p>AI allows you to travel that curvy path much faster. Although you have to be careful because without proper guardrails you can start swinging too far left and right: you created too much code, too many experiments, pushed things to prod too fast, all leading to too much liability.</p>
+
+</div>
+
+<h2>Production-ready</h2>
+
+<p>You develop a feature, you have 1 problem.<br/>You decide to release it into production, now you have 10 problems.</p>
+
+<p>Besides the app looking “good” and working “smooth”, the most important production-level aspect is making sure you don’t break things. In the last 10 years I’ve  worked at big companies where, despite often being oncall, you always have dedicated SRE help. You also have a well-oiled infra machine to detect errors in prod and notify you.</p>
+
+<p>Thankfully, for small full-stack apps like mine, platforms like <a href="https://posthog.com/">PostHog</a> &amp; <a href="https://sentry.io/">Sentry</a> are incredible and provide all-in-one solutions for error monitoring (and more) with generous basic tiers.</p>
+
+<h4>No broken windows</h4>
+
+<p>I followed a pretty standard, tiered approach to release things safely:</p>
+
+<ul>
+
+<li>
+
+<p>TypeScript must pass</p>
+
+</li>
+
+<li>
+
+<p>Linter must pass</p>
+
+</li>
+
+<li>
+
+<p>Unit tests must pass</p>
+
+</li>
+
+<li>
+
+<p>E2E tests must pass</p>
+
+</li>
+
+<li>
+
+<p>Test locally to ensure things work</p>
+
+</li>
+
+<li>
+
+<p>Always push to a branch in production (<a href="https://vercel.com/">Vercel</a> makes it easy). This is basically your staging environment since it’s hitting production DB. </p>
+
+</li>
+
+<li>
+
+<p>Manually test feature in prod branch, merge into main if it works well. An even safer option would be to introduce feature flags with gradual rollouts but I didn’t want that complexity <em>just yet</em>. </p>
+
+</li>
+
+<li>
+
+<p>Finally, watch out for spikes in errors following the rollout of a commit.</p>
+
+</li>
+
+</ul>
+
+<blockquote>
+
+<p>Big takeaway here was not to trust AI with E2E tests. I didn’t pay too much attention to <em>all</em> of the assertions at first, then quickly discovered that bugs weren’t being caught. Turns out quality of E2E assertions was subpar: tests relied only on visibility checks, many used vague assertions or hard‑coded values, and almost none validated data against the database. Tests were slow and flaky due to waitForTimeout calls and text-based or CSS-class selectors. I ended up adding lint rules (via <a href="https://www.npmjs.com/package/eslint-plugin-playwright">eslint-plugin-playwright</a>) to ensure AI doesn’t break this in the future.</p>
+
+</blockquote>
+
+<h4>Good design</h4>
+
+<p>I struggled with design at first but later found that it’s often a matter of the right prompt. For example, this was prompted to look like Apple Fitness / Whoop in 2025 with Sonnet 4 (which translates to clean, modern and minimal UI with oversized elements):</p>
+
+<figure><img src="/images/przilla-crossfit-ai-companion/przilla-crossfit-ai-companion-2.png"/></figure>
+
+<p>Compare to the old one:</p>
+
+<figure><img src="/images/przilla-crossfit-ai-companion/przilla-crossfit-ai-companion-3.png"/></figure>
+
+<p>To summarize, I think at least 80% of my time was spent on making things polished: figuring out UI/UX, refining UI/UX… endlessly, testing various permutations of an app, thinking through edge cases, ensuring it’s tested well, ensuring it’s feature-complete yet not over-engineered, documenting it well, deploying it correctly, and so on.</p>
+
+<p>In the next post, I’ll dive deeper into some of the fitness-heavy concepts I’ve implemented in the app. We’ll talk more about that colorful “My Fitness” page and the complex LLM-powered pipeline that powers it!</p>
+
+<div class="footnote" id="footnote-1"><sup>1</sup>
+
+<p>Code metrics don't tell the whole story, but they do provide a rough idea of this app's scale. Recognizing that AI can introduce bloat, I carefully reviewed and streamlined all committed code. I estimate the result is a lean codebase with no more than 15-20% potential cruft.</p>
+
+</div>
