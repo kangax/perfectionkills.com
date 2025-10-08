@@ -59,6 +59,50 @@ body {
   margin-bottom: 60px;
 }
 
+.site-callout {
+  margin: 0 0 48px;
+  padding: 26px 28px 24px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fdfaf7;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+
+  &__title {
+    margin: 0 0 10px;
+    font-size: 1.5em;
+    color: #d35400;
+  }
+
+  &__body {
+    margin: 0 0 18px;
+    font-size: 1em;
+    line-height: 1.5;
+
+    a {
+      color: #d35400;
+      text-decoration: underline;
+    }
+  }
+
+  &__cta {
+    display: inline-block;
+    padding: 8px 18px;
+    border-radius: 4px;
+    border: 1px solid #d35400;
+    color: #d35400;
+    text-decoration: none;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    transition: background 0.15s ease-in-out, color 0.15s ease-in-out;
+
+    &:hover,
+    &:focus {
+      background: #d35400;
+      color: #fff;
+    }
+  }
+}
+
 h2,
 h3,
 h4,

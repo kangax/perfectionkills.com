@@ -42,7 +42,7 @@ var _gaq = [
   var script = d.createElement('script'),
       head   = d.getElementsByTagName('head')[0];
   script.async = true;
-  script.src = 'http://www.google-analytics.com/ga.js';
+  script.src = 'https://www.google-analytics.com/ga.js';
   head.insertBefore(script, head.firstChild);
 })(document);
 
