@@ -23,10 +23,8 @@ new: new
 
 <p>All of this sounded like a perfect opportunity to build just that: a full-stack app that has an incredibly easy and fast search through a 1000 most popular WODs. It would allow to log scores for any of them, to track your progression over time, and to favorite WODs for later. As I started coding with AI, I quickly realized I could go <em>even further</em>: we could get insights into WODs via AI analysis (time domain, difficulty, L1-10 benchmarks, etc.)</p>
 
-<div id="youtube2-FZZZuicIssY">
-
-<p><a href="https://www.youtube.com/watch?v=FZZZuicIssY">Watch the product walkthrough</a></p>
-
+<div class="video-wrapper">
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/FZZZuicIssY" title="PRzilla walkthrough" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 </div>
 
 <h2>How</h2>
@@ -59,23 +57,11 @@ new: new
 
 <ul>
 
-<li>
+<li>Add a "mobile-ready" constraint, and that line now exists on a 2D plane (feature x device). You have to test both states.</li>
 
-<p><strong>Add a "mobile-ready" constraint</strong>, and that line now exists on a 2D plane (feature x device). You have to test both states.</p>
+<li>Add "dark mode," and the plane becomes a 3D cube (feature x device x theme).</li>
 
-</li>
-
-<li>
-
-<p><strong>Add "dark mode,"</strong> and the plane becomes a 3D cube (feature x device x theme).</p>
-
-</li>
-
-<li>
-
-<p><strong>Add "SSR-ready,"</strong> and you're now in a 4D space.</p>
-
-</li>
+<li>Add "SSR-ready," and you're now in a 4D space.</li>
 
 </ul>
 
@@ -89,7 +75,9 @@ new: new
 
 <p>When I ask AI to summarize the complexity <sup id="footnote-anchor-1"><a href="#footnote-1">1</a></sup> of the app now:</p>
 
-<blockquote><p>PRZilla is a large-scale production web application with 123,000 lines of TypeScript code across 818 files, featuring 19 database tables, ~109 React components in 304 TSX files, and 67 tRPC API procedures. The codebase includes 1,532 test cases with 256 E2E tests across 40 test files ensuring critical user journeys, 58 service modules handling complex business logic including 6 AI-powered features, and manages 922 predefined workouts with sophisticated scoring algorithms. This represents approximately 2-3 years of full-time development effort , comparable in complexity to a mid-sized SaaS product.</p></blockquote>
+<blockquote>
+<p>PRZilla is a large-scale production web application with 123,000 lines of TypeScript code across 818 files, featuring 19 database tables, ~109 React components in 304 TSX files, and 67 tRPC API procedures. The codebase includes 1,532 test cases with 256 E2E tests across 40 test files ensuring critical user journeys, 58 service modules handling complex business logic including 6 AI-powered features, and manages 922 predefined workouts with sophisticated scoring algorithms. This represents approximately 2-3 years of full-time development effort , comparable in complexity to a mid-sized SaaS product.</p>
+</blockquote>
 
 <p>It’s incredible to see the kind of power you wield with AI. The breadth and depth of functionality certainly feels like it would have taken me 2-3 years. I haven’t written any of this code and honestly can’t imagine having to ever write code manually again. </p>
 

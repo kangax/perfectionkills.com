@@ -1,0 +1,312 @@
+---
+layout: post
+title: "Using AI to accurately predict CrossFit workout difficulty and performance"
+permalink: using-ai-to-accurately-predict-crossfit/
+tags:
+  - other
+new: new
+---
+
+<h2>Using AI to accurately predict CrossFit workout difficulty and performance</h2>
+
+<figure><img src="/images/using-ai-to-accurately-predict-crossfit/using-ai-to-accurately-predict-crossfit-1.png"/></figure>
+
+<p>One of the things I’ve geeked out on recently was using AI to assign difficulty and performance bands to a <a href="https://www.crossfit.com/essentials/what-is-a-crossfit-workout">WOD</a>. Not just one but 907 of them (and counting). </p>
+
+<p>I’m building <a href="https://przilla.app">PRzilla.app</a> which allows you to log scores for various WOD’s, track your performance, and see all kinds of cool charts about it: how you’re progressing, what biases and weaknesses there are, movement prioritization.</p>
+
+<h3>Performance levels</h3>
+
+<p>In order to measure athlete performance, we need to compare it against a set of “objective” levels. For example, it is commonly accepted that <a href="https://www.crossfit.com/231103">Fran</a> can be done within 3 minutes if you’re an elite CrossFit athlete, <a href="https://wodwell.com/wod/fran/">with the rest of the bands looking like this</a>:</p>
+
+<blockquote>
+
+<p>What is a good score for the “Fran” workout?</p>
+
+<ul>
+
+<li>Beginner: 7-9 minutes</li>
+
+<li>Intermediate: 6-7 minutes</li>
+
+<li>Advanced: 4-6 minutes</li>
+
+<li>Elite: &lt;3 minutes</li>
+
+</ul>
+
+</blockquote>
+
+<p><a href="https://wodwell.com/wods/?sort=popular&amp;ref=headernav">Wodwell</a> is likely the biggest database of WOD’s and it shows bands for some of the most common ones but <strong>not all of them</strong>. I decided to add these bands to PRzilla and add them to <em>all workouts</em>. </p>
+
+<p>But how do we measure all of them?</p>
+
+<p>Ideally, we’d have a dedicated panel of experts going over thousands of WOD’s to figure all of this out. Thankfully, current top-tier AI models are trained on sufficient volume of CrossFit data and have strong-enough reasoning capabilities to do this in much shorter time.</p>
+
+<h3>Subjectivity</h3>
+
+<p>Here’s the thing: <strong>absolute scores are bound to be subjective</strong> and context-dependent!</p>
+
+<p>Even though Fran times are “commonly accepted“ as &lt;3, 4-6, 6-7, 7-9 there can also be a decent variation among them when adjusted for male vs. female, year/decade measured (CF performance is <a href="https://games.crossfit.com/article/crossfit-open-workout-252-analysis">usually trending upwards</a>), in general population vs. experienced CrossFitters, in CrossFitters vs. specialized athletes (runners/weightlifters/calisthenic warriors), based on country/area or a specific gym (Mayhem vs. your typical box), and many more.</p>
+
+<p>This makes calculations tricky but I think it’s still possible to create a range that resembles an averaged-out, close-enough representation. Our “5k run” results are likely more lax than the ones actual runners would use. But for most workouts, it’s possible to use reasoning to tell that 6 minute Fran is roughly a (top of) intermediate or a (bottom of) advanced.</p>
+
+<p>More importantly, as long as our scoring system is consistent across the board, it’s great for measuring <strong>relative performance</strong>: either against yourself over time, or against others.</p>
+
+<h3>CrossFit specific AI analysis</h3>
+
+<p>Top tier AI models are already trained on a large enough CrossFit data to be able to determine most of these bands. But we need few extra layers of careful orchestration to create a solid system at large:</p>
+
+<ol>
+
+<li>
+
+<p><strong>SOTA thinking model(s)</strong><br/>I used mostly Gemini 2.5 Pro (sometimes Sonnet 3.7) since those were the best reasoning models at the moment.</p>
+
+</li>
+
+<li>
+
+<p><strong>Prompt and context</strong><br/>Make it act like a CrossFit coach / exercise scientist. “Use your extensive CrossFit knowledge”. Give it extra data to consult and base off of to narrow the scope and context, e.g. Community Cup tiers and measurements.</p>
+
+</li>
+
+<li>
+
+<p><strong>Memory bank and examples</strong><br/>In practice, models are <a href="https://kangax.substack.com/i/161351606/the-real-context-window">limited by 100-200K context window</a> so we can’t send our entire JSON consisting of millions of tokens. For relative stability across batches, we need to constantly orient our model to return relatively similar calculations. I used a combination of <a href="https://kangax.substack.com/p/memory-bank-and-the-many-failures">memory bank</a> + specific detailed documentation for this plan/feature + few examples of already existing calculations and reasoning across varied workouts. Reasoning was performed in batches to prevent hallucinations and tackle cost (this was expensive as is).</p>
+
+</li>
+
+<li>
+
+<p><strong>Internal error correction</strong><br/>At the end of calculation, model needs to double-check its own analysis of specific WOD for correctness.</p>
+
+</li>
+
+<li>
+
+<p><strong>External error correction</strong><br/>At the end of each batch of calculations, model takes few random <em>existing</em> scores and compares them to a current calculation; this ensures relative stability across many batches.</p>
+
+</li>
+
+</ol>
+
+<h3>Percentiles</h3>
+
+<figure><img src="/images/using-ai-to-accurately-predict-crossfit/using-ai-to-accurately-predict-crossfit-2.jpeg"/></figure>
+
+<p>CrossFit <a href="https://games.crossfit.com/article/crossfit-open-workout-253-analysis">popularized percentile-based scores</a> during the Open, and — as part of <a href="https://games.crossfit.com/article/guide-2025-community-cup">Community Cup</a> — they recently rolled out a scoring system that consists of 5 levels that map directly to percentiles — Rookie (&lt;21%), Novice (22-43%), Intermediate (44-65%), Advanced (66-87%), and Pro (&gt;88%).</p>
+
+<p>I initially went with wodwell-inspired 4 tiers of Beginner, Intermediate, Advanced, Elite, then realized that there’s not enough granularity. When working on <a href="https://library.crossfit.com/premium/pdf/CFJ_Williams_WeakBias.pdf">GPP</a> charts, the scale was 1-10 and plotting “Advanced” on it was washing out the result too much. 60% and 80% could both be considered Advanced but to go from one to another might take you few years! Similarly with <a href="https://www.przilla.app/charts">GPP wheel chart</a>: if your stamina is at 60% and strength is at 80%, you would want to see that reflected on a chart as unevenness.</p>
+
+<h3>Example: Frelen</h3>
+
+<p>Here is a <a href="https://gist.github.com/kangax/032f6335b11cce9324e73568363bc784">raw example</a> of one of the calculations and model’s reasoning. I already had a 4 tier system/data that was generated using similar heuristic; each WOD had a <em>difficulty</em>, <em>difficultyExplanation</em> (the one model derived from its reasoning before), <em>type</em>, and <em>levels</em>.</p>
+
+<p>I then used a model to derive 10 levels by giving it existing framework of how we derived those 4 levels + new system of 10 levels + examples.</p>
+
+<div>
+
+<p>Notice how it analyses WOD step by step; it understands that it’s similar to “Helen” and “Eva” since both follow a similar triplet pattern of run, x, pull-ups with this one being closer to “Eva” in terms of volume; it calculates rough times for run and thrusters while accounting for fatigue and number of rounds; adjusts edges of 10-tier to be more than 4-tier one and even considers that because it’s a “hard” WOD, beginner level is to be extended by 7min. </p>
+
+</div>
+
+<p>This now allows us to see where our scores stand for <em>any</em> WOD, such as this L7 that falls within 4:00-5:00 for <a href="https://www.przilla.app/?search=Diane">Diane</a>.</p>
+
+<figure><img src="/images/using-ai-to-accurately-predict-crossfit/using-ai-to-accurately-predict-crossfit-3.png"/></figure>
+
+<p>Before doing a workout, you can take a look at the performance guide and have a better idea which time to shoot for to get into a certain percentile.</p>
+
+<figure><img src="/images/using-ai-to-accurately-predict-crossfit/using-ai-to-accurately-predict-crossfit-4.png"/></figure>
+
+<h3>AI-derived difficulty</h3>
+
+<p>Using similar training and reasoning, I was also able to create difficulty levels for all WOD’s. You’ve already seen “Frelen” categorized as “Hard“ earlier. </p>
+
+<p>Here’s the <a href="https://gist.github.com/kangax/e84b6d5f5eae1d1a8105fe87b97992d1">actual documentation used</a> when orienting AI to work with this data. AI uses this as a framework to understand general structure of a workout, and then adjusts difficulty based on modifiers like volume, skill, and load.</p>
+
+<h3>Difficulty examples</h3>
+
+<p>This produces strikingly accurate results. Note AI’s explanation for <em>why</em> difficulty is set certain way:</p>
+
+<ul>
+
+<li>
+
+<p><a href="http://przilla.app/?search=1k row">1k row</a> — <strong>Easy</strong>, <em>“A standard benchmark test of 1000 meter rowing speed.“</em></p>
+
+</li>
+
+<li>
+
+<p><a href="http://przilla.app/?search=baseline">Baseline</a><sup id="footnote-anchor-1"><a href="#footnote-1">1</a></sup> — <strong>Easy</strong>, <em>“A classic CrossFit introductory benchmark testing basic rowing and bodyweight movement capacity.”</em></p>
+
+</li>
+
+<li>
+
+<p><a href="http://przilla.app/?search=annie">Annie</a> <sup id="footnote-anchor-2"><a href="#footnote-2">2</a></sup> — <strong>Medium</strong>, <em>“Girl WOD (Ladder Couplet). Tests double-under skill proficiency and core endurance in a fast-paced descending rep scheme (50-40-30-20-10).”</em></p>
+
+</li>
+
+<li>
+
+<p><a href="http://przilla.app/?search=wittman">Wittman</a> <sup id="footnote-anchor-3"><a href="#footnote-3">3</a></sup> — <strong>Medium</strong>, <em>“Hero WOD (Triplet). 7 rounds combining moderate KB swings, light power cleans, and box jumps. Tests moderate power endurance/conditioning.”</em></p>
+
+</li>
+
+<li>
+
+<p><a href="https://www.przilla.app/?search=Dork">Dork</a> <sup id="footnote-anchor-4"><a href="#footnote-4">4</a></sup> — <strong>Hard</strong>, <em>“Hero WOD (Triplet). 6 rounds combining DUs, heavy KB swings (70lb), and burpees. Tests conditioning, skill, and endurance over significant volume.”</em></p>
+
+</li>
+
+<li>
+
+<p><a href="https://www.przilla.app/?search=Kelly">Kelly</a> <sup id="footnote-anchor-5"><a href="#footnote-5">5</a></sup> — <strong>Hard</strong>, <em>“Girl WOD (Triplet). 5 rounds: run, high-vol box jumps, high-vol wall balls. Tests high-volume conditioning/endurance.”</em></p>
+
+</li>
+
+<li>
+
+<p><a href="https://www.przilla.app/?search=Maggie">Maggie</a> <sup id="footnote-anchor-6"><a href="#footnote-6">6</a></sup> — <strong>Very Hard</strong>, <em>“Five rounds of high-volume, high-skill gymnastics movements (HSPU, Pull-ups, Pistols). Tests advanced gymnastics capacity and endurance.”</em></p>
+
+</li>
+
+<li>
+
+<p><a href="https://www.przilla.app/?search=The Seven">The Seven</a> <sup id="footnote-anchor-7"><a href="#footnote-7">7</a></sup> — <strong>Very Hard</strong>, <em>“Hero WOD. 7 rounds of 7 reps: HSPU, heavy thrusters (135lb), KTE, heavy DL (245lb), burpees, heavy KB swings (70lb), pull-ups. Extremely demanding strength/skill/volume across 7 movements.“</em></p>
+
+</li>
+
+<li>
+
+<p><a href="https://www.przilla.app/?search=Atalanta">Atalanta</a> <sup id="footnote-anchor-8"><a href="#footnote-8">8</a></sup> — <strong>Extremely Hard</strong>, <em>“Long Murph-style chipper with vest, high volume gymnastics.“</em></p>
+
+</li>
+
+<li>
+
+<p><a href="https://www.przilla.app/?search=2007 Reload">2007 Reload</a> <sup id="footnote-anchor-9"><a href="#footnote-9">9</a></sup> — <strong>Extremely Hard</strong>, <em>“Long row followed by high-skill gymnastics and heavy shoulder-to-overheads demand elite capacity and strength.“</em></p>
+
+</li>
+
+</ul>
+
+<p>Fun fact: “Extremely Hard“ category did not exist until I introduced Crossfit Games workouts at which point AI proactively came up with it and it made sense as the relative difficulty was objectively increased in those! Only 15 out of 907 are currently categorized as such.</p>
+
+<h3>Effort vs Complexity</h3>
+
+<p>Some of you will certainly scoff at a “1k row” categorized as easy. A simple movement like that can <em>absolutely</em> be made into a grueling test of strength, grit, endurance and stamina. The difficulty in PRzilla is not about how hard something <em>can</em> be made but how demanding it is on skill/strength/endurance. 1k row is easy in a sense that it can be performed by almost any person and can be completed with little effort <strong>as prescribed</strong>. You can’t say the same about <a href="https://www.przilla.app/?category=Girl&amp;search=Amanda">Amanda</a> that will have you do 21 ring muscle-ups together with 21 squat snatches at 135lb — feats that can take you years to master individually, not to mention being able to superset them.</p>
+
+<h3>Extreme skills</h3>
+
+<p>Speaking of extremely hard tests, it was interesting to see how AI estimates something like “<a href="https://www.przilla.app/?category=Girl&amp;search=Triple+unders%3A+max+reps">Triple unders: max reps</a>” or “<a href="https://www.przilla.app/?category=Girl&amp;search=Free+standing+handstand+push-ups">Free standing handstand push-ups: max reps</a>”:</p>
+
+<blockquote>
+
+<p>This is a "Very Hard" test of max unbroken triple-unders. This is an extremely high-skill movement. Even a single rep is a significant achievement for many.</p>
+
+<p>High-skill jump rope variation requiring exceptional timing, coordination, and wrist speed.</p>
+
+<ul>
+
+<li>L1: Cannot complete 0 reps (effectively)</li>
+
+<li>L2: 0 reps</li>
+
+<li>L3: 0 reps</li>
+
+<li>L4: 0 reps</li>
+
+<li>L5: 1-4 reps</li>
+
+<li>L6: 5-10 reps</li>
+
+<li>L7: 11-15 reps</li>
+
+<li>L8: 16-21 reps</li>
+
+<li>L9: 22-36 reps</li>
+
+<li>L10: &gt;=36 reps</li>
+
+</ul>
+
+</blockquote>
+
+<p>Because we maintain relative difficulty, even an intermediate score on such tests are a great achievement. And the model understands that beginners (up until level 5) are unlikely to complete even 1.</p>
+
+<h3>Timeline and adjusted performance</h3>
+
+<p>Once we know your performance levels on all the WOD’s, it’s easy to plot them over time for a chart like this that <a href="https://www.przilla.app/charts">shows “fitness level” progression and trend</a>. And here’s something even more fun — because we have WOD’s difficulty, we can adjust your score to be more representative of real life performance (meaning that getting “Intermediate” in a “Very Hard” WOD is closer to getting “Advanced“ in “Hard” one):</p>
+
+<pre><code>adjustedLevel = cap(scoreLevel + difficultyBonus, 0, 10)</code></pre>
+
+<p>…where difficultyBonus is something simple like:</p>
+
+<p>Easy: -0.5, Medium: +0.0, Hard: +0.5, Very Hard: +1.0, Extremely Hard: +1.5</p>
+
+<figure><img src="/images/using-ai-to-accurately-predict-crossfit/using-ai-to-accurately-predict-crossfit-5.png"/></figure>
+
+<h3>Work in progress</h3>
+
+<p>Give these estimates a try — do they feel right? Could anything be improved? I’m planning to refine these in PRzilla for an even deeper understanding of workout stimulus; similar to community cup, we could be better at gender and age group adjustments. There are also gaps right now with certain WODs that have a timecap and so are a hybrid of time (if completed within timecap) and reps/load (if completed at timecap).</p>
+
+<p>In the future, I’m planning to add an option to input any custom WOD and get an estimate of its difficulty and performance levels.</p>
+
+<p></p>
+
+<div class="footnote" id="footnote-1"><sup>1</sup>
+
+<p>For Time: 500 meter Row, 40 Air Squats, 30 Sit-Ups, 20 Push-Ups, 10 Pull-Ups</p>
+
+</div>
+
+<div class="footnote" id="footnote-2"><sup>2</sup>
+
+<p>50-40-30-20-10 Reps For Time: Double-Unders, Sit-Ups</p>
+
+</div>
+
+<div class="footnote" id="footnote-3"><sup>3</sup>
+
+<p>7 Rounds For Time: 15 Kettlebell Swings (1.5/1 pood) , 15 Power Cleans (95/65 lb), 15 Box Jumps (24/20 in))</p>
+
+</div>
+
+<div class="footnote" id="footnote-4"><sup>4</sup>
+
+<p>6 Rounds For Time: 60 Double-Unders, 30 Kettlebell Swings (1.5/1 pood), 15 Burpees</p>
+
+</div>
+
+<div class="footnote" id="footnote-5"><sup>5</sup>
+
+<p>5 Rounds For Time: 400 meter Run, 30 Box Jumps (24/20 in), 30 Wall Ball Shots (20/14 lb)</p>
+
+</div>
+
+<div class="footnote" id="footnote-6"><sup>6</sup>
+
+<p>5 Rounds for Time: 20 Handstand Push-Ups, 40 Pull-Ups, 60 Pistols (Alternating Legs)</p>
+
+</div>
+
+<div class="footnote" id="footnote-7"><sup>7</sup>
+
+<p>7 Rounds for Time: 7 Handstand Push-Ups, 7 Thrusters (135/95 lb), 7 Knees-to-Elbows, 7 Deadlifts (245/165 lb), 7 Burpees, 7 Kettlebell Swings (2/1.5 pood), 7 Pull-Ups</p>
+
+</div>
+
+<div class="footnote" id="footnote-8"><sup>8</sup>
+
+<p>For Time: 1 mile Run, 100 Handstand Push-Ups, 200 Alternating Pistols, 300 Pull-Ups, 1 mile Run. Wear a Weight Vest (20/14 lb)</p>
+
+</div>
+
+<div class="footnote" id="footnote-9"><sup>9</sup>
+
+<p>For Time: 1,500 meter Row Then, 5 Rounds of: 10 Bar Muscle-Ups, 7 Shoulder-to-Overheads (235/145 lb)</p>
+
+</div>

@@ -260,6 +260,18 @@ blockquote p {
   margin-left: 10px;
 }
 
+blockquote ul {
+  float: left;
+  clear: both;
+  margin: 10px 0 0 30px;
+  padding-left: 15px;
+}
+
+blockquote ul li {
+  margin-bottom: 5px;
+  list-style-type: disc;
+}
+
 cite {
   float: none;
   line-height: 1.4;
