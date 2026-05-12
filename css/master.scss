@@ -18,7 +18,7 @@ body {
 }
 
 #wrapper {
-  width: 860px;
+  width: 720px;
   margin: 10px auto;
   padding: 10px;
   -webkit-box-sizing: content-box;
@@ -72,8 +72,8 @@ body {
 
   &__logo {
     flex-shrink: 0;
+    width: 80px;
     img {
-      display: block;
       width: 80px;
       height: auto;
     }
