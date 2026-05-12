@@ -1,0 +1,94 @@
+---
+layout: post
+title: "Your CrossFit App Doesn't Know What You Did"
+permalink: your-crossfit-app-doesnt-know-what-you-did/
+tags:
+  - other
+new: new
+---
+
+<h2>Your CrossFit App Doesn't Know What You Did</h2>
+
+<p>CrossFit apps are good at storing WOD scores, but are terrible at knowing the work you've actually done. Here's a WOD from <a href="https://www.murderofcrowsbrooklyn.com/">my box</a>:</p>
+
+<figure><img src="https://substack-post-media.s3.amazonaws.com/public/images/364a00ad-3543-48b4-a24d-068b8bba73b2_1206x715.jpeg"/></figure>
+
+<p>Out of 20 results, only 1 person did it RX:</p>
+
+<figure><img src="https://substack-post-media.s3.amazonaws.com/public/images/794176f2-53ae-43ec-ab82-6f04332cd303_1206x2622.png"/></figure>
+
+<h2>Stored, not understood</h2>
+
+<p>In SugarWOD the only way to mark WOD as scaled is via notes. Notice how everyone wrote 155#, 145 lb, 165lb, @165, etc.</p>
+
+<p>Ok, so what's the problem?</p>
+
+<p>Well, the reality is that I've done 10 sets of 2 power cleans + 1 power jerk @165lb. My training log in SugarWOD, however, has no idea that this is what I've done. If I go into "History" for this WOD and click on Apr 24 I see "170" which makes me think that maybe that's the previous weight I did. But no, it brings me to a WOD where I did "1 above knee squat snatch @170lb" not "2 Power Clean + 1 Split Jerk" or even just "Power Clean + Split Jerk" or even just a standalone "Power Clean" / "Split Jerk":</p>
+
+<figure><img src="https://substack-post-media.s3.amazonaws.com/public/images/20910261-6382-4418-ab2f-8edeb8c079d3_1269x1239.png"/></figure>
+
+<p>It's entirely wrong and confusing. And if I go into my barbell lift history, this weight I just lifted is neither under Power Clean, nor under Clean and Jerk, nor under Split Jerk:</p>
+
+<figure><img src="https://substack-post-media.s3.amazonaws.com/public/images/8bc4db74-043f-459c-bbf5-f55b06d16d68_1448x1086.png"/></figure>
+
+<p>The two lonely logs for Power Clean are from Mar 2024. That's… 2 years ago. SugarWOD <strong>has no idea about countless times I've done power clean</strong> in a WOD like today.</p>
+
+<p>My barbell PR history in an app simply can't be trusted.</p>
+
+<p>Ok, that's SugarWOD. What about others? Of ~25 apps, only <a href="https://beyondthewhiteboard.com/">BTWB</a> and <a href="https://about.wodup.com/">WodUp</a> treat scaled work as structured data — and both punt on the hard part. BTWB excludes scaled metcons from its fitness rating. WodUp tags them four ways but disqualifies any scaled benchmark from PR tracking. Everyone else — Wodify, SugarWOD, Mayhem, CompTrain, TrainHeroic, Hevy, Strong, the long tail — collapses your work into Rx/Scaled + a score + a notes field.</p>
+
+<h2>We were already half-right</h2>
+
+<p>In <a href="https://apps.apple.com/app/id6758307458">PRzilla</a>, we already tracked all movements correctly when logged individually or as part of a WOD. Here's a workout with Power Clean that I did in Apr 2025 which SugarWOD never showed. It's displayed in the history, alongside individual lifts:</p>
+
+<figure><img src="https://substack-post-media.s3.amazonaws.com/public/images/3eb23917-ad4f-4781-b202-fff52c0ba6fc_2412x2622.png"/></figure>
+
+<p>Scaled WODs like this Holleyman were part of the history too, but we didn't actually know how you scaled them outside of the notes. It would just display as "(scaled)" and not be part of any metrics:</p>
+
+<figure><img src="https://substack-post-media.s3.amazonaws.com/public/images/00c44dac-c4e0-41bf-8059-897113694959_2412x2622.png"/></figure>
+
+<h3>As fast as a notes field</h3>
+
+<p>I always knew this is one of the most important things to have in a CrossFit app worth its salt; after many weeks of work, it's finally here.</p>
+
+<p>You can now specify exactly the <strong>work you've done</strong> when logging any WOD in PRzilla. WOD's are just prescriptions. Every WOD is decomposed into movement blocks. And it's those movement blocks that define your history, stats, charts, etc. in our system.</p>
+
+<p>But here's a harsh truth: the last thing athletes want to do when logging WODs is to spend few minutes tinkering with movements, sets, reps, and weights. Sweaty hands. Still breathing hard. 99% of us write "165#" and move on. That's why it was very important for me to remove as much friction when logging scaled WODs as possible.</p>
+
+<p>Let's go back to the Clean &amp; Jerk WOD. The moment I add it, PRzilla parses it into Power Clean, Split Jerk, and Air Bike; it creates all 10 sets of each, prefills first with 2 reps, second with 1 rep, and adds RX weight to both.</p>
+
+<p>Because I scaled to 165lb, all I need to do is type "165" in Power Clean's topmost weight cell and click "Apply to all sets below". It takes me the same amount of time as writing "165#".</p>
+
+<figure><img src="https://substack-post-media.s3.amazonaws.com/public/images/65d30a37-49ce-42f6-897d-05752368bccf_2412x2622.png"/></figure>
+
+<p>If I scaled that WOD to just power clean I can remove Split Jerk movement from the session by clicking "Delete". It's actually faster than typing "Did not do Split Jerk" in the notes. And I can replace power clean with dumbbell clean just as quickly as typing "Scaled to db cleans".</p>
+
+<p>We now have the power of a full-blown workout editor <strong>within the context of one WOD</strong>. And we have <strong>minimal friction</strong>.</p>
+
+<h2>From score to signal</h2>
+
+<p>When looking at your workout session (left pic), you now see the things you've actually done and not just what was prescribed. A lot more useful metric that goes in line with the rest of the movements in a workout session. After all, we show <code>3 x 2 @ 275lb</code> on Front Squats and not just <em>"Find 2RM in 15min"</em>:</p>
+
+<figure><img src="https://substack-post-media.s3.amazonaws.com/public/images/27d5d495-6637-4fa9-9145-8f4688d120e6_2412x2622.png"/></figure>
+
+<p>The Holleyman (right pic) is now displaying <code>30 x 1 @155lb</code> because we have your actual weight as part of the WOD movements (=work performed). Seeing all the weights in a history list like this feels like a basic right in a CrossFit-aware workout tracker :)</p>
+
+<h3>You can't program what you can't see</h3>
+
+<p>Ok, charts and history lists are nice and all but… does this all <em>really</em> matter? I think so. <strong>Accurate training data is the foundation of your fitness training</strong>. We need to know where you stand in order to design a path forward.</p>
+
+<p>If you scaled Holleyman to 185lb (and finished all 30 rounds), now we know these things:</p>
+
+<ol>
+
+<li><p><strong>1RM</strong> — this tells us that your max is at least 185lb without explicitly testing it.<br>1RM is essential for daily programming.</p></li>
+
+<li><p><strong>Volume</strong> — you've done 185x30=5550lb of Power Clean in that session.<br>When we know your volume, we know the intensity of a given workout relative to your usual effort. If you've only ever done 1000lb of power cleans in a WOD, doing a WOD with 5000lb will wreck you for days. We can mark such WOD as high-volume for <em>your</em> level. A high-volume day can then either be scaled correctly or programmed in a way that doesn't interfere with other workouts in a week.</p></li>
+
+<li><p><strong>Progress</strong> — Holleyman @155lb in 20min vs. Holleyman @185lb in 20min is the kind of progress you can see if we track scaled work. That's density: more work done in the same amount of time. It's important to know if you're trending up, down or plateauing.</p></li>
+
+<li><p><strong>Programming</strong> — passing your results to AI coach makes for highly relevant advice. If it knows you did 30 rounds of power cleans @185lb, it can use that to create a workout that's within your reach. It can tell you to scale up or down next time according to this weight. It can even flag less obvious things like weak squat clean in relation to power clean.</p></li>
+
+</ol>
+
+<p>A coach who doesn't know what you lifted can't tell you what to lift tomorrow. Neither can your app. PRzilla is my attempt to fix that — <a href="https://apps.apple.com/app/id6758307458">give it a try</a>.</p>

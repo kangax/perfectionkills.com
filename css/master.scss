@@ -84,6 +84,11 @@ body {
     }
   }
 
+  &__stores {
+    display: flex;
+    gap: 12px;
+  }
+
   &__cta {
     display: inline-block;
     padding: 8px 18px;
