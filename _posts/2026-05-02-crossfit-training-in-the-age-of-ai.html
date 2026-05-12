@@ -1,0 +1,88 @@
+---
+layout: post
+title: "CrossFit training in the age of AI"
+permalink: crossfit-training-in-the-age-of-ai/
+tags:
+  - other
+---
+
+<h2>CrossFit training in the age of AI</h2>
+
+<p>If you've been following this blog, you know I've <a href="https://kangax.substack.com/p/building-an-app-with-cline-claude">spent the past year</a> building PRzilla — from <a href="/using-ai-to-accurately-predict-crossfit/">AI-powered WOD benchmarks</a> to <a href="/my-fitness-from-spreadsheet-to-an-app/">My Fitness visualizations that replaced a decade of spreadsheets</a> to a <a href="/crossfit-tracking-app-but-youre-in-control/">full workout tracker</a>. If you're new here, the short version: I left my tech career to build the CrossFit training app I always wanted, and it turned into something much bigger than I expected.</p>
+
+<figure><img src="https://substack-post-media.s3.amazonaws.com/public/images/1546ef83-9f75-42de-946b-b0e92c9fa3dd_2314x1232.png"/></figure>
+
+<p>The native app is live — <a href="https://apps.apple.com/app/id6758307458">iOS</a> and <a href="https://play.google.com/store/apps/details?id=app.przilla.przilla&hl=en_US">Android</a>, 11 consecutive weekly releases and counting — and what started as a workout tracker has become an AI training companion that sits on top of your data, reads your recovery metrics, and coaches you like someone who actually knows your training history.</p>
+
+<p>Here's how I got there.</p>
+
+<h3>Why not SugarWOD or Strong or Strava?</h3>
+
+<p>As I <a href="/crossfit-tracking-app-but-youre-in-control/">mentioned earlier</a>, most training apps I've used are either geared towards traditional strength training (Strong/Hevy) or are Crossfit-class-centric and suck at logging any other activity (SugarWOD/Wodify/PushPress) or are too specialized and have poor workout trackers (Strava focuses on running/biking and Whoop focuses on recovery; strength logging is poor).</p>
+
+<p>If I <strong>joined my gym class</strong> on Monday, I want to log whatever WOD was on a whiteboard / in SugarWOD. If on Tuesday I do an <strong>open gym</strong> instead to work on my ring muscle up practice, I want to log 3-3-3-2-2-2-2 and let it be part of my metrics. Maybe I also do an hour on a rower <strong>to work on zone 2</strong>. Or maybe I <strong>went for a run</strong> with a friend who's preparing for Hyrox or a Brooklyn half. I want to log those too. And then perhaps on Friday I'm traveling to SF and will <strong>drop into another box</strong>. The box is on a completely different programming track and often different platform like Wodify or PushPress. I want to <strong>log whatever WOD I end up doing at that gym</strong>. And even if I <em>only</em> ever do my gym programming via SugarWOD, what happens when I <strong>move to another area</strong> and join another box that uses different software—I'd like to keep all my history and lifts.</p>
+
+<p>PRzilla solves all of this. Here's what that looks like in practice:</p>
+
+<ol>
+<li><p>No longer tied to a single CrossFit box and their platform</p></li>
+<li><p>You can log anything you want</p></li>
+<li><p>You own your data</p></li>
+</ol>
+
+<h3>Camera advantage</h3>
+
+<p>One feature I'm especially excited about is that you can snap a photo of your gym's whiteboard and the app breaks the entire training day into structured movements and WODs — matching canonical benchmarks when it recognizes them or creating a custom one when it doesn't. WODs automatically get analyzed for performance level bell curve so you can immediately see where you stand.</p>
+
+<p>Here I snapped SugarWOD's whiteboard and it turned it into back squat and shoulder press as single movements (which I could then log as many sets/reps of) and it created a WOD with running and Fran-like couplet, giving me a time to shoot for:</p>
+
+<figure><img src="https://substack-post-media.s3.amazonaws.com/public/images/a1530926-4958-4239-a166-be59ededf6fb_3618x2622.png"/></figure>
+
+<p>I spent months building and refining this sophisticated workout tracker that can handle any workout. Even though I made it easy to log things, I eventually realized that training log itself is <em>not</em> the end goal. There are two more legs of a tripod that truly elevate training experience to the next level.</p>
+
+<h3>Recovery as the middle lever</h3>
+
+<p>Your training log is the <strong>past</strong>. Your <a href="https://www.reddit.com/r/crossfit/comments/1l1hbej/so_many_online_crossfit_programs_which_ones_are/">programming</a> is the <strong>future</strong>.</p>
+
+<p>They're intimately related to each other: as a coach, I need to know what you're capable of doing in order to design a program to get you from point A (your past) to point B (your goal). Your training log is a snapshot of your abilities, strengths and weaknesses. An advanced lifter that needs to work on their positions in a snatch to bring it from 1.25x to 1.5xBW has very different movements prescribed than someone who just started training and are working on their 5x5 Back Squat progression.</p>
+
+<p>However, Training Data <em>↔</em> Programming don't exist in a vacuum; the subject in the middle—you—responds to demands placed on them (=programming) positively or negatively. One way to measure how they respond to them is via your <strong>recovery metrics</strong>: <a href="https://my.clevelandclinic.org/health/symptoms/21773-heart-rate-variability-hrv">HRV</a>, <a href="https://www.polar.com/en/guide/resting-heart-rate">RHR</a>, Sleep hours/quality. Waking up with low HRV <em>could</em> be related to a hard session yesterday (it tells us that it might have been too intense for you). And it should <em>adjust</em> your programming accordingly (multiple hard sessions lead to overtraining).</p>
+
+<p>And so I've added Apple Health integration:</p>
+
+<figure><img src="https://substack-post-media.s3.amazonaws.com/public/images/7be552d6-ffcf-48e5-b75b-4c209ca9d457_1206x2622.png" style="max-width:266px"/></figure>
+
+<p>The feature is in beta but the idea is that you can now see your "readiness" day-by-day. Last week I saw my HRV drop 15ms after back-to-back heavy sessions — a clear signal I was accumulating more fatigue than I was recovering from. Without this data, I would have pushed through another hard day. With it, I dialed back to skill work and was fully recovered by Thursday.</p>
+
+<h3>AI as an orchestrator</h3>
+
+<p>A good coach would start by looking at your training history, create a program to get you from point A (your past) to point B (your goal), then adjust it in real time based on how you respond to it (your recovery metrics).</p>
+
+<figure><img src="https://substack-post-media.s3.amazonaws.com/public/images/e8f57442-2ca5-465a-8e6a-7a4e8f241870_865x382.png" style="max-width:516px"/></figure>
+
+<p>Given AI capabilities in 2026, it can do all of the above. It just needs to have access to your health and training data. It can serve as an orchestrator in the middle, carefully analyzing your past (<strong>recent training</strong>), ingesting what's present (<strong>morning readiness</strong>) and adjusting your future (<strong>today or tomorrow's workout</strong>).</p>
+
+<p>Meet your <strong>personal coach</strong>; they know you better than a coach in your gym.</p>
+
+<p>The coach has access to your full training history, remembers past conversations, and can search the web for workout details you mention. You don't re-explain yourself every session — it already knows your recent lifts, your weak points, and your goals.</p>
+
+<figure><img src="https://substack-post-media.s3.amazonaws.com/public/images/d784ffdf-6efa-4264-a32e-9960b3344ea8_2412x2622.png"/></figure>
+
+<p>As you can see, I've been using it for my own training. My honest take, as a coach myself, is that I'm genuinely surprised at how relevant the answers are. I would say they're at ~80-90% of what a human coach would recommend; not perfect and sometimes sloppy, but very useful as a brainstorming partner if you're a high level athlete, and are very illuminating if you're a beginner.</p>
+
+<p>Some things you can ask:</p>
+
+<ul>
+<li>"How has my squat been progressing?"</li>
+<li>"How should I approach this workout?" (attach a WOD from our catalog or a picture)</li>
+<li>"What movements have I not done much lately that decay the fastest?"</li>
+<li>"Help me structure this week as a best prep for QuarterFinals next week; recall that I do a long engine team WOD every Saturday"</li>
+</ul>
+
+<p>I wanted to create a workout tracker that can handle serious training demands. I ended up with a real-time AI companion at your fingertips that can guide you like a real coach.</p>
+
+<h3>My fitness</h3>
+
+<figure><img src="https://substack-post-media.s3.amazonaws.com/public/images/98a022b7-1c8b-417e-870e-7d3681e39f82_1964x1332.png" style="max-width:726px"/></figure>
+
+<p>There's one more piece I haven't talked about yet. All of this data — your training history, your recovery trends, your AI coaching conversations — paints a picture of who you are as an athlete. Your fitness level across workouts. Your strength relative to established standards. How much you've actually practiced each skill over your lifetime. I've been calling this '<a href="/my-fitness-from-spreadsheet-to-an-app/">My Fitness</a>' — a gamified snapshot of your athletic identity that evolves as you train. Think of it as <a href="https://www.whoop.com/us/en/thelocker/healthspan/">Whoop's 'real age'</a> but for functional fitness: one page that shows you exactly where you stand and what to work on next. You've seen it on the web and it's coming to the native app soon.</p>
