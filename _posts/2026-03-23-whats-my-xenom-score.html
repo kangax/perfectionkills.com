@@ -1,0 +1,126 @@
+---
+layout: post
+title: "What's my XENOM score?"
+permalink: whats-my-xenom-score/
+tags:
+  - other
+---
+
+<h2>What's my XENOM score?</h2>
+
+<p>TLDR: <a href="https://przilla.app/xenom-score">xenom calculator is here</a></p>
+
+<p>The other day I came across <a href="https://www.xenom.global/">XENOM</a> — a newly-founded global CrossFit competition with a known and fixed set of workouts. Think CrossFit Games but standardized to a consistent two-day event similar to <a href="https://hyrox.com/">HYROX</a>. You get a score on each of the 10 workouts and <a href="https://www.xenom.global/scoring">your final result is the sum total</a>.</p>
+
+<p>This got me thinking: can we determine athlete's performance on this kind of event?</p>
+
+<p>In HYROX world, people ask the same question: <a href="https://www.google.com/search?q=hyrox+calculator">what's my estimated HYROX time</a> if I've never run the race? Why do we care? Well, if we know user's estimated time we know their starting level, their weakest splits, best division to compete under, and—most importantly—what improvement is realistic and <strong>what exact program to follow</strong> to get better for the upcoming race. Just like to run a marathon your training would look very different if you're at 8min/mile with 10 miles weekly average or 5min/mile with 50miles/week.</p>
+
+<p>I've been working on <a href="/using-ai-to-accurately-predict-crossfit/">CrossFit benchmarking with AI</a> for a long time. But the XENOM problem is different: instead of figuring out time/reps on a given workout, race estimate is asking us to map athlete performance onto a score on a <em>different</em> workout.</p>
+
+<h3>HYROX vs XENOM</h3>
+
+<p>So how do HYROX calculators do this? Because HYROX is a sequence of single movements, its math is a lot simpler. Take your 1km running time × 8, add time of each of the stations (rowing, wall balls, etc.), and add fatigue multipliers for each.</p>
+
+<p>XENOM estimate is asking: how well would I do on 4 attempts of max snatch in 9min, on a wall walk + rope climb ladder, on a 12min WOD ending with max rep muscle-ups, on a 3km run into 2k ski, and so on.</p>
+
+<p>Obviously the best way — outside of doing an entire mock race — would be to just attempt each of those workouts and plug in your results<sup id="footnote-anchor-1"><a href="#footnote-1">1</a></sup>. But in the age of modern AI and having access to your training data (like we do in <a href="https://apps.apple.com/app/id6758307458">PRzilla</a>), we should certainly be able to figure this out without actual attempts.</p>
+
+<p>1RM snatch (<a href="https://przilla.app/wod/xenom-001">XENOM 001</a>) is easy: just plug your best max lift. Recent snatch matters more than your all-time-best from 5 years ago.</p>
+
+<p>What about more complex workouts?</p>
+
+<h3>Think like a coach</h3>
+
+<p>Putting my coach hat on, to determine the score on <a href="https://przilla.app/wod/xenom-002">XENOM 002</a> which is an ascending ladder of 2 wall walks + 1 rope climb, 4 wall walks + 2 rope climbs, etc. for 8min, I could start by checking user's recent wall walk performance. Ok, they've done 5x5 wall walks a month ago and 3 rope climbs a couple months ago. They're capable of getting to 2+1, 4+2 and can likely get to 6+3 as well and perhaps even 8+4. I'm able to predict this because 5x5 tells me that 5 is not their true max (1RM) but likely 7-8 is.</p>
+
+<h3>Muscular endurance</h3>
+
+<p>Here's the thing: max consecutive reps are not a perfect predictor to what an athlete is able to do. Some aren't able to piece 10 wall walks in a row but they can bang out 30-45 via 10-15 sets of 3 with short rest. That's a first wrench in our calculations. I might see that you've only ever done 3 consecutive wall walks, but I don't know what your <em>muscular endurance</em> on them is. A classic example is <a href="https://przilla.app/wod/cindy">Cindy</a> — if you did 20 rounds RX I can say with high confidence that your muscular endurance is quite strong; you're able to continuously perform 5/10/15 of pull-ups/push-ups/squats for 20 minutes. Same thing with wall walks: being able to do 10 in a row is an indicator of your continuous-set endurance and proficiency in the movement... but an even better predictor could be looking at a <a href="https://przilla.app/?search=%22wall+walk%22">WOD that includes plenty of wall walks</a> like Open 21.1, 22.1, 23.3, etc.</p>
+
+<h3>Similar movements</h3>
+
+<p>As a coach, I can also look at your handstand push-up performance, either as a max-rep number or in a WOD that includes them (e.g. <a href="https://przilla.app/wod/diane">Diane</a>). How about handstand walk. You can do 50ft? Your handstand endurance is generally "strong" and so your wall walk performance should be at least L5. But here's a curve ball: can you extrapolate handstand walk performance from a handstand push-up? The stabilizing muscle stamina has some overlap but you can certainly get good at handstands without ever being able to do a handstand push-up; the latter requires strength and stability throughout the entire range of motion.</p>
+
+<h3>WOD logging is complicated</h3>
+
+<p>Even if we have your training data, CrossFit-style workouts make our calculation hard because <strong>you log a score, you don't log how you performed the movements</strong>.</p>
+
+<p>In a WOD that calls for 3 rounds of 20 C2B, did you do them as 5 sets of 4 because the mastery isn't quite there (e.g. ~L3 perf) or did you bang out sets of 20 (e.g. ~L8 perf) because you <em>own</em> them? We can somewhat extrapolate it from the total time: an athlete that's able to do easy 20 is likely to finish workout faster than the one breaking in 4 sets, but it's not a direct indicator of your movement performance.</p>
+
+<p>Thankfully, when logging untimed practice (standalone movements) in PRzilla, you log them as <strong>sets and reps</strong>. This makes it easier for us to determine your max reps without a standalone test. Just like logging 3x10 bench press @185lb tells us your estimated 1RM.</p>
+
+<figure><img src="https://substack-post-media.s3.amazonaws.com/public/images/9c93c94c-926a-4c55-a968-785724003b28_1170x2532.png" style="max-width:352px"/></figure>
+
+<p>There is a good opportunity for disruption here: specify sets/reps when logging WODs for that ultimate analytics.</p>
+
+<h3>Movement relevance</h3>
+
+<p>Another curveball: let's say you log 10 rounds on a WOD that's a 12min AMRAP of 5 deadlifts and 5 wall walks. This is a good indicator of your capacity but did you do 10 rounds because of deadlift strength or wall walk strength, and which percentage of each contributed to the final score? It could be 80%/20%—you're a powerlifter with 500lb deadlift who's never done handstand work; or 20%/80% — you're a gymnast who's never done deadlifts. We should be looking at a broader set of workouts: if you consistently do well on those with handstand movements, we can assume with more certainty that you're good at them.</p>
+
+<h3>Submaximal strength</h3>
+
+<p>While we know that absolute strength corresponds to being able to do more work at a given weight, can we really be sure that a person with 255lb clean will do better on <a href="https://przilla.app/wod/grace">Grace</a> than a person with 205lb clean? I've seen guys in the gym who never go above 185lb but they can cycle 135lb forever, and do it fast. On the other hand, my clean is closer to 225 but my HR is through the roof after 15 singles with 135lb. In other words, you don't need to push the ceiling in order to get good at sub maximal weight endurance<sup id="footnote-anchor-2"><a href="#footnote-2">2</a></sup>.</p>
+
+<p>This is why looking at a user's <a href="https://przilla.app/wod/dt">DT</a> and Grace scores is as important as looking at their Clean 1RM; it shows their performance in <a href="https://przilla.app/?tags=Barbell+Cycling">barbell cycling</a>, submaximal strength and endurance rather than their absolute max.</p>
+
+<h3>Ideal benchmarks</h3>
+
+<p>Why is Grace such a great benchmark? Because it asks you to perform X reps in one movement in shortest time. This is similar to a famous <a href="https://przilla.app/wod/30-muscle-ups">30 muscle-ups for time</a>. If we invert this into <strong>max reps in X time</strong>, you have tests like <a href="https://przilla.app/wod/handstand-push-ups-2-min-max-reps">Handstand Push-ups: Max reps in 2 min</a>. Going back to wall walks, if we know max reps athlete can complete in 2 min, that'd be one of the best <em>proxy</em> benchmarks for events like 002.</p>
+
+<h3>HYROX PFT</h3>
+
+<p>An interesting proxy that exists in HYROX world is their <a href="https://hyroxhk.com/physical-fitness-test/">Physical Fitness Test</a>: run 1000m, do 50 burpee broad jumps, 100 stationary lunges, 1000m row, 30 hand-release push-ups, and 100 wall balls.</p>
+
+<p>15–25 min is PRO, 25–35 minutes is Open, 30–40 min is Doubles, 35–45 min is Relay.</p>
+
+<p>Notice anything? PFT is similar to Grace or 30RMU's: it's a chipper of all of the HYROX movements where you perform X reps on each as quickly as you can. This is a direct indicator of strength/endurance/capacity on each of them, making your level approximation quite accurate.</p>
+
+<h3>XENOM PFT</h3>
+
+<p>So should XENOM have its own PFT? HYROX's works because it IS the race, just miniaturized. Same movements, scaled volume, done. Clean and obvious.</p>
+
+<p>XENOM can't do that. Ten events, <strong>nineteen movements</strong> across three completely different fitness domains — a miniature version is just a giant chipper. Technically, it would be something like <a href="https://przilla.app/wod/king-kong">King Kong</a> or <a href="https://przilla.app/wod/fight-gone-bad">Fight Gone Bad</a>. Practically, you'd be testing too many things in a way that's not really representative of individual events: stimulus of a ladder is very different than a stimulus of max-weight attempts or a long endurance grinder.</p>
+
+<p>We <em>could</em> come up with something like this: accessible to a majority of CrossFitters (no muscle-ups, no heavy snatch, no max-cal bike) but it would only be a faint projection of your overall performance.</p>
+
+<p>For time:</p>
+
+<p>1,000m Run<br>
+15 Thrusters (60/42kg)<br>
+15 Toes-to-Bar<br>
+1,000m Echo Ski<br>
+10 Cleans (80/55kg)<br>
+10 Handstand Push-Ups</p>
+
+<p>Elite: &lt;15 min, RX: 15–22 min, Compete: 22–32 min</p>
+
+<h3>XENOM calculator</h3>
+
+<p>In the meantime, I whipped up <a href="https://przilla.app/xenom-score">XENOM calculator in PRzilla</a>.</p>
+
+<p>Calculator is <strong>smart</strong>. It uses WOD scores that serve as best proxies for an event — DT, Fran, Amanda, 5k run, etc. If there are no benchmarks it analyzes your training data for relevant signals. It decays benchmarks at different rates based on scientific research: strength reduces slowly, endurance diminishes fast, and acquired skills mostly persist.</p>
+
+<p>Here it's showing that I'll probably land right at that fabulous 50th percentile :) You can override each score if you performed that specific workout or feel like our projection is incorrect.</p>
+
+<figure><img src="https://substack-post-media.s3.amazonaws.com/public/images/8e9483f6-bc8e-482e-997c-fdbc7a18feec_1512x1472.png"/></figure>
+
+<p>If you're logged in, it uses your existing WOD scores under the hood. If you don't have account, just plug your WOD scores manually and it'll use the exact same smart calculations. The more scores you give the more accurate final prediction is.</p>
+
+<figure><img src="https://substack-post-media.s3.amazonaws.com/public/images/df587cac-73b9-44bb-9ac5-4a6cf9449993_1504x1456.png"/></figure>
+
+<p>I'll be refining this calculator as we learn more about benchmarks. I'd like to add a division estimate to help folks decide what track to compete under.</p>
+
+<h3>AI Coach</h3>
+
+<p>Next version: I'd like to try feeding this through LLM asking it to reason as a coach. Coach doesn't just run formulas — they read between the lines. They notice you've been logging at 70% for two months, that your shoulder-heavy movements have quietly disappeared from your logs, that your snatch PR is from 2022 but you've been crushing Isabel lately. That kind of contextual reasoning is hard to encode in rules.</p>
+
+<p><a href="mailto:hello@przilla.app">Drop me a note</a> if you have thoughts on this or just found it useful.</p>
+
+<div class="footnote" id="footnote-1"><sup>1</sup>
+<p>Many HYROX calculators do a very simple math where they ask you to put time of each station.</p>
+</div>
+
+<div class="footnote" id="footnote-2"><sup>2</sup>
+<p>For more on strength and submaximal strength, see coach Shawn's recent <a href="https://railroadcrossfit.com/what-is-strength-and-who-is-strong/">excellent writeup on this</a>.</p>
+</div>
