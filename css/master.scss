@@ -329,12 +329,31 @@ cite {
 }
 
 .footnote {
-  font-size: 0.75em;
+  display: flex;
+  gap: 8px;
+  font-size: 0.85em;
   color: #666;
+  line-height: 1.5;
+
+  & + .footnote {
+    margin-top: 6px;
+  }
+
+  &:first-of-type {
+    border-top: 1px solid #eee;
+    margin-top: 32px;
+    padding-top: 16px;
+  }
 
   sup {
-    color: #f06;
-    margin-right: 5px;
+    flex-shrink: 0;
+    color: #999;
+    font-size: 0.85em;
+    margin-top: 2px;
+  }
+
+  p {
+    margin: 0;
   }
 }
 
