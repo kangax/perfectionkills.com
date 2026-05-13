@@ -33,18 +33,16 @@
 //   s.parentNode.insertBefore(z, s);
 // })();
 
-var _gaq = [
-  ['_setAccount', 'UA-1128111-11'],
-  ['_setCustomVar', 1, 'document.querySelector', document.querySelector + '', 3],
-  ['_trackPageview']
-];
 (function(d) {
-  var script = d.createElement('script'),
-      head   = d.getElementsByTagName('head')[0];
+  var script = d.createElement('script');
   script.async = true;
-  script.src = 'https://www.google-analytics.com/ga.js';
-  head.insertBefore(script, head.firstChild);
+  script.src = 'https://www.googletagmanager.com/gtag/js?id=G-JMMHN1E71L';
+  d.head.appendChild(script);
 })(document);
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-JMMHN1E71L');
 
 document.documentElement.onclick = function(e) {
   e = e || window.event;
