@@ -2,7 +2,7 @@ markdown:       rdiscount
 highlighter:    pygments
 permalink:      ./:title
 name:           Perfection Kills
-description:    "Javascript rants and findings, by kangax"
+description:    "Engineering and Fitness Musings by kangax"
 author:         kangax
 twitter_username: kangax
 url:            https://perfectionkills.com
