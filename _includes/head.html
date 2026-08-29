@@ -1,0 +1,72 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+{%- comment -%}
+  Every post body opens with an <h2> repeating its own title, so that heading is
+  removed before deriving a description. Entities are decoded first because
+  strip_html leaves them encoded and xml_escape would double-escape them.
+{%- endcomment -%}
+
+{%- if page.layout == 'post' -%}
+  {%- capture page_title -%}{{ page.title }}{%- endcapture -%}
+  {%- capture head_title -%}{{ page.title }} — {{ site.name }}{%- endcapture -%}
+  {%- if page.description -%}
+    {%- capture page_description -%}{{ page.description }}{%- endcapture -%}
+  {%- else -%}
+    {%- comment -%}
+      Drop leading <style> blocks (always after the title heading) and anything
+      from the first <script> on; strip_html keeps their text otherwise.
+    {%- endcomment -%}
+    {%- assign body = page.content | split: '</style>' | last | split: '<script' | first -%}
+    {%- assign body = body | strip_html | normalize_whitespace | strip -%}
+    {%- assign body = body | remove_first: page.title | strip -%}
+    {%- comment -%}
+      These posts were imported from Wordpress and carry literal numeric
+      entities. Decode them before xml_escape, or a curly quote ships to Google
+      as the visible text "&#8217;". &amp; is decoded last so that an encoded
+      "&amp;lt;" does not turn into a real tag.
+    {%- endcomment -%}
+    {%- assign body = body | replace: '&#8217;', "'" | replace: '&#8216;', "'" | replace: '&#8220;', '"' | replace: '&#8221;', '"' | replace: '&#8211;', '-' | replace: '&#8212;', '-' | replace: '&#8230;', '...' | replace: '&#39;', "'" | replace: '&quot;', '"' | replace: '&nbsp;', ' ' | replace: '&lt;', '<' | replace: '&gt;', '>' | replace: '&amp;', '&' -%}
+    {%- assign body = body | normalize_whitespace | strip -%}
+    {%- comment -%} A near-empty body (image-only posts) is worse than the site default. {%- endcomment -%}
+    {%- if body.size < 40 -%}
+      {%- capture page_description -%}{{ site.description }}{%- endcapture -%}
+    {%- else -%}
+      {%- capture page_description -%}{{ body | truncate: 160 }}{%- endcapture -%}
+    {%- endif -%}
+  {%- endif -%}
+{%- else -%}
+  {%- capture page_title -%}{{ site.name }}{%- endcapture -%}
+  {%- capture head_title -%}{{ site.name }}{%- endcapture -%}
+  {%- capture page_description -%}{{ page.description | default: site.description }}{%- endcapture -%}
+{%- endif -%}
+
+{%- assign page_title = page_title | strip | xml_escape -%}
+{%- assign head_title = head_title | strip | xml_escape -%}
+{%- assign page_description = page_description | strip | xml_escape -%}
+{%- assign canonical_url = page.url | absolute_url -%}
+{%- if page.image -%}
+  {%- assign social_image = page.image | absolute_url -%}
+{%- endif %}
+
+<title>{{ head_title }}</title>
+<meta name="description" content="{{ page_description }}">
+<link rel="canonical" href="{{ canonical_url }}">
+
+<meta property="og:type" content="{% if page.layout == 'post' %}article{% else %}website{% endif %}">
+<meta property="og:site_name" content="{{ site.name }}">
+<meta property="og:title" content="{{ page_title }}">
+<meta property="og:description" content="{{ page_description }}">
+<meta property="og:url" content="{{ canonical_url }}">
+{% if social_image %}<meta property="og:image" content="{{ social_image }}">
+{% endif %}{% if page.date %}<meta property="article:published_time" content="{{ page.date | date_to_xmlschema }}">
+{% endif %}
+<meta name="twitter:card" content="{% if social_image %}summary_large_image{% else %}summary{% endif %}">
+<meta name="twitter:site" content="@{{ site.twitter_username }}">
+<meta name="twitter:creator" content="@{{ site.twitter_username }}">
+<meta name="twitter:title" content="{{ page_title }}">
+<meta name="twitter:description" content="{{ page_description }}">
+{% if social_image %}<meta name="twitter:image" content="{{ social_image }}">
+{% endif %}
+<link rel="stylesheet" href="/css/master.css">
+<link rel="alternate" type="application/rss+xml" title="{{ site.name }}" href="{{ '/feed.xml' | absolute_url }}">

@@ -3,7 +3,9 @@ highlighter:    pygments
 permalink:      ./:title
 name:           Perfection Kills
 description:    "Javascript rants and findings, by kangax"
-url:            http://perfectionkills.com
+author:         kangax
+twitter_username: kangax
+url:            https://perfectionkills.com
 encoding:       UTF-8
 exclude:        ["README", "vendor"]
 sass:
