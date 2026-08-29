@@ -8,7 +8,7 @@ tags:
 
 <h2>Fabric.js 0.5 is out</h2>
 
-<img src="/images/kitchensink.png" style="box-shadow:rgba(0,0,0,0.3) 0 0 5px">
+<img width="524" height="501" loading="lazy" src="/images/kitchensink.png" style="box-shadow:rgba(0,0,0,0.3) 0 0 5px">
 
 <p>Remember that <a href="http://kangax.github.com/fabric.js/demos/kitchensink/">fabulous canvas library</a> that makes working with canvas a breeze? The one that can <a href="http://www.slideshare.net/kangax/fabric-falsy-values-8067834/28">parse SVG files</a> on the fly and fluently draw them on canvas; that can render <a href="http://www.slideshare.net/kangax/fabric-falsy-values-8067834/22">complex text</a> in real time; that can morph objects with a touch of a mouse; with sophisticated, programmatically-accessible <a href="http://www.slideshare.net/kangax/fabricjs-building-acanvaslibrarybk/18">object model</a>; <a href="http://kangax.github.com/fabric.js/demos/ladybug/">easy to use animation</a> and <a href="http://kangax.github.com/fabric.js/demos/events/">event infrastructure</a>?</p>
 
@@ -50,7 +50,7 @@ stream.on('data', function(chunk) {
 
 <p>.. and here&#8217;s what the resulting image would be — 30&deg; rotated half-transparent, red rectangle.</p>
 
-<p><img src="/images/rect.png" style="box-shadow:rgba(0,0,0,0.3) 0 0 5px"></p>
+<p><img width="200" height="200" loading="lazy" src="/images/rect.png" style="box-shadow:rgba(0,0,0,0.3) 0 0 5px"></p>
 
 <p>I'm really excited about Node support in fabric. We'll be using it in production on <a href="http://printio.ru">Printio.ru</a> shortly.</p>
 

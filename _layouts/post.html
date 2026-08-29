@@ -1,15 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
-    <meta name="description" content="{{ site.description }}">
-
-    <title>{{ page.title }} — {{ site.name }}</title>
-
-    <link rel="stylesheet" href="/css/master.css">
-    <link rel="alternate" type="application/rss+xml" title="{{ site.name }}" href="{{ site.url }}/feed.xml">
-
-    <meta name="viewport" content="width=device-width,initial-scale=1">
+    {% include head.html %}
   </head>
   <body>
     <div id="outer-wrapper">
@@ -35,16 +27,6 @@
 
           {{ content }}
 
-          <p class="donations-in-post">
-            Did you like this? Donations are welcome
-
-            <script data-gittip-username="kangax"
-                data-gittip-widget="button"
-                src="//gttp.co/v1.js"></script>
-
-            <script id='fba9cr0'>(function(i){var f,s=document.getElementById(i);f=document.createElement('iframe');f.src='//api.flattr.com/button/view/?uid=kangax&button=compact&url='+encodeURIComponent(document.URL);f.title='Flattr';f.height=20;f.width=110;f.style.borderWidth=0;s.parentNode.insertBefore(f,s);})('fba9cr0');</script>
-          </p>
-
           <div id="disqus_thread"></div>
           <script>
             var disqus_shortname = 'perfectionkillscom';
@@ -54,8 +36,8 @@
               (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
             })();
           </script>
-          <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-          <a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+          <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+          <a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
 
         </div>
 

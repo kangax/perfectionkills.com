@@ -1,6 +1,7 @@
 ---
 layout: post
 title: Experimenting with HTML minifier
+description: "Building HTMLMinifier back when JS and CSS had plenty of minifiers and HTML had almost none. How the parser works, the options it supports, and their cost."
 popular: popular
 permalink: experimenting-with-html-minifier/
 tags:
@@ -64,7 +65,7 @@ tags:
     </li>
   </ul>
 
-  <p>In <a href="http://perfectionkills.com/optimizing-html/">Optimizing HTML</a>, I mentioned that state of HTML minifiers is <a href="http://perfectionkills.com/optimizing-html/#tools">rather crude at the moment</a>. We have a large variety of JS and CSS minification tools, but almost no HTML ones. This is actually <strong>quite understandable</strong>. </p>
+  <p>In <a href="/optimizing-html/">Optimizing HTML</a>, I mentioned that state of HTML minifiers is <a href="/optimizing-html/#tools">rather crude at the moment</a>. We have a large variety of JS and CSS minification tools, but almost no HTML ones. This is actually <strong>quite understandable</strong>. </p>
 
   <p>First of all, minifiying scripts and stylesheets usually results in better savings, overall. Second, the nature of document markup is much more dynamic than that of scripts and styles. As a result, HTML minification has to be done &#8220;on demand&#8221;, and carries certain overhead. Only when this overhead is less then <strong>difference in time for delivering minified-vs-original document</strong>, there&#8217;s a benefit in minification. In some cases, though, savings in document size (and so bandwidth) can be more important than time spent on minification.</p>
 
@@ -76,7 +77,7 @@ tags:
 
   <p>
     <a href="http://kangax.github.com/html-minifier/">
-      <img src="/images/minifier-screenshot.png" alt="Screenshot of HTMLMinifier">
+      <img width="779" height="630" loading="lazy" src="/images/minifier-screenshot.png" alt="Screenshot of HTMLMinifier">
     </a>
   </p>
 
@@ -112,7 +113,7 @@ tags:
 
   <h4 id="lint">Lint</h4>
 
-  <p>While working on minifier, I realized that oftentimes the most wasteful part of the markup is not white space, comments or boolean attributes, but inline styles, scripts, presentational or deprecated elements and attributes. None of these can be simply stripped, as that could affect state of the document and is just too obtrusive. What can be done, however, is reporting of these occurences to the user. HTMLLint is even a smaller script, whose job is exactly that—to log any deprecated or presentational elements/attributes encountered during parsing. Additionally, it detects event attributes (e.g. onclick, onmouseover, etc.). The rationale for this is that moving contents of event attributes to external script allows to <a href="http://perfectionkills.com/optimizing-html/#3_onclick_onmouseover_etc">take advantage of resource caching</a>.</p>
+  <p>While working on minifier, I realized that oftentimes the most wasteful part of the markup is not white space, comments or boolean attributes, but inline styles, scripts, presentational or deprecated elements and attributes. None of these can be simply stripped, as that could affect state of the document and is just too obtrusive. What can be done, however, is reporting of these occurences to the user. HTMLLint is even a smaller script, whose job is exactly that—to log any deprecated or presentational elements/attributes encountered during parsing. Additionally, it detects event attributes (e.g. onclick, onmouseover, etc.). The rationale for this is that moving contents of event attributes to external script allows to <a href="/optimizing-html/#3_onclick_onmouseover_etc">take advantage of resource caching</a>.</p>
 
   <h3 id="options">Options</h3>
 
@@ -168,7 +169,7 @@ tags:
   */
 </code></pre>
 
-  <p><a href="http://perfectionkills.com/optimizing-html/#1_html_comments_in_scripts">Explanation of why you might want to strip comments.</a></p>
+  <p><a href="/optimizing-html/#1_html_comments_in_scripts">Explanation of why you might want to strip comments.</a></p>
 
   <h4 id="remove_cdata_sections">Remove CDATA sections</h4>
 
@@ -181,7 +182,7 @@ tags:
   output; // '&lt;script>alert(1)&lt;/script>'
 </code></pre>
 
-  <p><a href="http://perfectionkills.com/optimizing-html/#2_cdata_8230_sections">Explanation of why you might want to do this.</a></p>
+  <p><a href="/optimizing-html/#2_cdata_8230_sections">Explanation of why you might want to do this.</a></p>
 
   <h4 id="collapse_whitespace">Collapse whitespace</h4>
 
@@ -292,11 +293,11 @@ tags:
 
   <p>There are also few other redundancies that are taken care of as part of this optimization.</p>
 
-  <p>One of them is removing deprecated language attribute on SCRIPT elements. It was <a href="http://perfectionkills.com/optimizing-html/#7_script_language_javascript">among markup smells I mentioned recently</a>. Another one is <a href="http://perfectionkills.com/optimizing-html/#5_a_id_name">coexisting &#8220;name&#8221; and &#8220;id&#8221; attributes on acnhors</a>. And finally, redundant <a href="http://perfectionkills.com/optimizing-html/#4_onclick_javascript">&#8220;javascript&#8221; labels in event handlers</a>.</p>
+  <p>One of them is removing deprecated language attribute on SCRIPT elements. It was <a href="/optimizing-html/#7_script_language_javascript">among markup smells I mentioned recently</a>. Another one is <a href="/optimizing-html/#5_a_id_name">coexisting &#8220;name&#8221; and &#8220;id&#8221; attributes on acnhors</a>. And finally, redundant <a href="/optimizing-html/#4_onclick_javascript">&#8220;javascript&#8221; labels in event handlers</a>.</p>
 
   <h4 id="use_short_doctype">Use short doctype</h4>
 
-  <p>This optimization is the only one <strong>affecting document validity</strong>. That is if document is defined to be anything but HTML5 (such as HTML 4.01). When <code>useShortDoctype</code> option is enabled, existing doctype is replaced with its short (HTML5) version—<code>&lt;!DOCTYPE html></code>. As mentioned before, <a href="http://perfectionkills.com/optimizing-html/#6_doctype_html">this replacement is generally pretty safe</a>, but you should decide for yourself if this is something worth doing.</p>
+  <p>This optimization is the only one <strong>affecting document validity</strong>. That is if document is defined to be anything but HTML5 (such as HTML 4.01). When <code>useShortDoctype</code> option is enabled, existing doctype is replaced with its short (HTML5) version—<code>&lt;!DOCTYPE html></code>. As mentioned before, <a href="/optimizing-html/#6_doctype_html">this replacement is generally pretty safe</a>, but you should decide for yourself if this is something worth doing.</p>
 
   <h4 id="remove_empty_or_blank_attributes">Remove empty (or blank) attributes</h4>
 
@@ -354,7 +355,7 @@ tags:
 
   <p>Just like with previous &#8220;gotchas&#8221;, I&#8217;m not sure how likely this type of scenario is to appear in real life. From what I can see, the only other element (besides SCRIPT), allowed as child of both—HEAD and BODY, is OBJECT. As for the future, it should be possible to make minifier strip other optional tags as well. But only in safe scenarios.</p>
 
-  <p>It&#8217;s also worth mentioning that unclosed elements <a href="http://perfectionkills.com/optimizing-html/#comment-57196">can result in slightly slower parsing times</a>. Unfortunately, there are no extensive benchmarks done on this topic, and results seem to vary across browsers.</p>
+  <p>It&#8217;s also worth mentioning that unclosed elements <a href="/optimizing-html/#comment-57196">can result in slightly slower parsing times</a>. Unfortunately, there are no extensive benchmarks done on this topic, and results seem to vary across browsers.</p>
 
   <h4 id="remove_empty_elements">Remove empty elements</h4>
 

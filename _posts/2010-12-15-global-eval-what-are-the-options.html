@@ -1,6 +1,7 @@
 ---
 layout: post
 title: Global eval. What are the options?
+description: "Why this.execScript || eval is not a good cross-browser answer for global eval, and what indirect eval, new Function, and script insertion actually do."
 permalink: global-eval-what-are-the-options/
 tags:
   - js
@@ -436,7 +437,7 @@ var globalEval = (function() {
 
   <p><strong>Mootools</strong> uses <code>window.execScript</code> when present, falling back on script insertion (similar to jQuery). jQuery&#8217;s script insertion, however, is more robust than Mootools, as they actually test if it results in evaluation of code.</p>
 
-  <p><strong>Fuse.js</strong> choses a very elaborate and careful strategy. It tests if indirect eval works as expected (catching an error if any), uses it if it does; if indirect eval is defunct, Fuse falls back on script injection. Unlike jQuery or Mootools, it actually <strong>tries to return a value</strong> of a code executed via script injection. It does so by wrapping contents of code with eval. An interesting side effect of executing code globally via <code>eval</code> is that function and variable declarations <a href="http://perfectionkills.com/understanding-delete/#firebug_confusion">create <strong>deletable bindings</strong></a> (which is most likely an insignificant detail).</p>
+  <p><strong>Fuse.js</strong> choses a very elaborate and careful strategy. It tests if indirect eval works as expected (catching an error if any), uses it if it does; if indirect eval is defunct, Fuse falls back on script injection. Unlike jQuery or Mootools, it actually <strong>tries to return a value</strong> of a code executed via script injection. It does so by wrapping contents of code with eval. An interesting side effect of executing code globally via <code>eval</code> is that function and variable declarations <a href="/understanding-delete/#firebug_confusion">create <strong>deletable bindings</strong></a> (which is most likely an insignificant detail).</p>
 
   <h3 id="summary">Summary</h3>
 

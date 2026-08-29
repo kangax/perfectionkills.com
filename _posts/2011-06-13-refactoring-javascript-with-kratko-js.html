@@ -8,7 +8,7 @@ tags:
 
 <h2>Refactoring Javascript with kratko.js</h2>
 
-<p><img src="/images/kratko_screenshot_1.png" style="width:675px"></p>
+<p><img width="865" height="623" loading="lazy" src="/images/kratko_screenshot_1.png" style="width:675px"></p>
 
 <p>Understanding the concept of <a href="http://en.wikipedia.org/wiki/Code_refactoring">code refactoring</a> is one of the best things you can do to become a better programmer <sup><a href="#on-refactoring">[1]</a></sup>.</p>
 
@@ -34,7 +34,7 @@ tags:
 <li>Which methods have too many arguments?</li>
 </ul>
 
-<p><img src="/images/kratko_screenshot_2.png"></p>
+<p><img width="259" height="145" loading="lazy" src="/images/kratko_screenshot_2.png"></p>
 
 <p>Answering these questions and refactoring according to that usually takes care of most of the mess. Objects become more autonomous, by doing only a specific task. Methods become smaller by doing less and having the right level of abstraction. And there&#8217;s no more long-argument functions, order of which no one can ever remember.</p>
 
@@ -50,9 +50,9 @@ tags:
 
 <p><code>TableViewer</code>, on the other hand, is a layer on top of <code>Kratko</code> and provides an outlook of these stats. What&#8217;s really useful, though, is that <code>TableViewer</code> is also <strong>interactive</strong>. You can sort a table by method or argument length, and view actual method contents.</p>
 
-<p><img src="/images/kratko_screenshot_3.png"></p>
+<p><img width="460" height="104" loading="lazy" src="/images/kratko_screenshot_3.png"></p>
 
-<p><img src="/images/kratko_screenshot_4.png"></p>
+<p><img width="374" height="217" loading="lazy" src="/images/kratko_screenshot_4.png"></p>
 
 <h3 id="getstatsfor_signature">getStatsFor signature</h3>
 
@@ -139,7 +139,7 @@ var obj = {
 
 <p>I needed a way to quickly see total method size distribution, and so I added a little graph for that. It groups methods by length, showing which ones prevail and where:</p>
 
-<p><img src="/images/kratko_screenshot_5.png" alt="Graph of <code>TableViewer.prototype</code>"></p>
+<p><img width="304" height="71" loading="lazy" src="/images/kratko_screenshot_5.png" alt="Graph of <code>TableViewer.prototype</code>"></p>
 
 <p>I consider the maximum acceptable length of a method in Javascript to be ~20-25 lines long. Anything more than that is usually messy. It takes longer to figure out what's going on, and it's likely a sign of either not enough abstraction, or a method doing too many things (whereas, ideally, it should be doing just one thing — and as clear as possible).</p>
 
@@ -147,7 +147,7 @@ var obj = {
 
 <p>Here's an example <sup><a href="#bad-graph">[2]</a></sup> (of a "bad" graph):</p>
 
-<p><img src="/images/kratko_screenshot_6.png" style="width:960px"></p>
+<p><img width="1134" height="206" loading="lazy" src="/images/kratko_screenshot_6.png" style="width:960px"></p>
 
 <p>As you can see, those lonely 85 and 56 -liners on the right have to go. There's also that little <strong>nasty bunch</strong> in the 28-43 area. There aren't many of them, thankfully. But they should probably be taken care of as well. Once that's done, the graph would be mainly concentrated in the left 1-20 area. And that would make things much cleaner.</p>
 

@@ -21,7 +21,7 @@ tags:
 
 <p>Perfect!</p>
 
-<p><img src="/images/profiler.png" width="900px"></p>
+<p><img loading="lazy" src="/images/profiler.png" width="900px"></p>
 
 <p>I wasn&#8217;t thrilled about profiling in one environment, and optimizing according to one engine (especially the engine that&#8217;s used only in one browser), but decided to give it a try. After all, the offending styles/rules would probably be similar in all engines/browsers. And this was pretty much the only thing out there. </p>
 
@@ -72,7 +72,7 @@ Object.keys([].slice.call(
 
 <p>As you can see from <a href="https://github.com/kangax/perfectionkills.com/blob/master/css_perf/css_perf_test.html">this test page</a>, I created a document with 400 buttons.</p>
 
-<p><img src="/images/buttons.png" alt="Buttons" title="" /></p>
+<p><img width="406" height="178" loading="lazy" src="/images/buttons.png" alt="Buttons" title="" /></p>
 
 <p>I started checking how various styles affect rendering performance (&#8220;repaint time&#8221; in profiler). The basic version of button only had these styles:</p>
 
@@ -88,7 +88,7 @@ float: left;
 margin: 5px;
 </code></pre>
 
-<p><img src="/images/btn_before.png" alt="Btn Before" title="" /></p>
+<p><img width="101" height="46" loading="lazy" src="/images/btn_before.png" alt="Btn Before" title="" /></p>
 
 <p>The total repaint time of 400 buttons with these basic styles only took 6ms (in Opera). I then gradually added more styles, and recorded change in repaint time. The final version had these additional styles, and was taking 177ms to repaint — a 30x increase!</p>
 
@@ -101,7 +101,7 @@ opacity: 0.9;
 color: rgba(0,0,0,0.5);
 </code></pre>
 
-<p><img src="/images/btn_after.png" alt="Btn After" title="" /></p>
+<p><img width="105" height="49" loading="lazy" src="/images/btn_after.png" alt="Btn After" title="" /></p>
 
 <p>The exact breakdown of each one of those properties was as follows:</p>
 
@@ -127,7 +127,7 @@ color: rgba(0,0,0,0.5);
 
 <li><p>In Opera, <strong>page reloads negatively affect performance</strong>. The progression is visibly linear. You can see from the graph how rendering time slowly increases over 40 page reloads (each one of those red rectangles on the bottom correspond to page load followed by few second wait). Paint time becomes almost 3 times slower at the end. It looks almost like page is leaking. To err on a side of caution, I always used the average of first ~5 results to get &#8220;fresh&#8221; numbers.</p>
 
-<p><img src="/images/profiler_page_reload.png" alt="Profiler Page Reload" style="width:900px"></p>
+<p><img width="1277" height="178" loading="lazy" src="/images/profiler_page_reload.png" alt="Profiler Page Reload" style="width:900px"></p>
 
 <p>Script used for testing (reloading page):</p>
 
@@ -253,7 +253,7 @@ Total                       121.33 ms
 
 <li><p>When I was almost done with my findings, WebKit has added selector profiler similar to Opera&#8217;s one.</p>
 
-<p><img src="/images/SelectorProfile.png" width="900"></p>
+<p><img loading="lazy" src="/images/SelectorProfile.png" width="900"></p>
 
 <p>I wasn&#8217;t able to do many tests with it, but noticed one interesting thing. Selector matching in WebKit was <strong>marginally faster</strong> than that of Opera. The same document — that one-page app I was working on (before optimizations) — took 1,144ms on selector matching in Opera, and only 18ms in WebKit. That&#8217;s a ~65x difference. Either something is off in calculations of one of the engines, or WebKit is really much much faster at selector matching. For what it&#8217;s worth, Chrome&#8217;s timeline was showing ~37ms for total style recalculation (much closer to WebKit), and ~52ms for repaint (compare to Opera&#8217;s 225ms &#8220;Paint&#8221; total; different but much closer). I wasn&#8217;t able to save &#8220;Timeline&#8221; data in WebKit, so couldn&#8217;t check reflow and repaint numbers there.</p></li>
 </ol>

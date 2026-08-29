@@ -1,6 +1,7 @@
 ---
 layout: post
 title: Understanding delete
+description: "How the delete operator really works: property attributes, DontDelete, undeclared assignments, Gecko and IE bugs, and what ES5 strict mode changes."
 popular: popular
 permalink: understanding-delete/
 tags:
@@ -255,7 +256,7 @@ tags:
 
   <h4 id="undeclared_assignments">Undeclared assignments</h4>
 
-  <p>As <a href="http://perfectionkills.com/onloadfunction-considered-harmful/#how_does_it_work">you might remember</a>, undeclared assignment <strong>creates a property on a global object</strong>. That is unless that property is found somewhere in the scope chain before global object. And now that we know the difference between property assignment and variable declaration — latter one sets DontDelete, whereas former one doesn&#8217;t — it should be clear why <strong>undeclared assignment creates a deletable property</strong>:</p>
+  <p>As <a href="/onloadfunction-considered-harmful/#how_does_it_work">you might remember</a>, undeclared assignment <strong>creates a property on a global object</strong>. That is unless that property is found somewhere in the scope chain before global object. And now that we know the difference between property assignment and variable declaration — latter one sets DontDelete, whereas former one doesn&#8217;t — it should be clear why <strong>undeclared assignment creates a deletable property</strong>:</p>
 
 <pre lang="javascript"><code>
   var GLOBAL_OBJECT = this;

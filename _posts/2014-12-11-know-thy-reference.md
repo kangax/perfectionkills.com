@@ -234,7 +234,7 @@ Finally, if it's NOT a reference at all — `(function(){})()` — use `undefine
 
 Are you feeling like this right now?
 
-<img src="/images/matrix.jpg">
+<img width="412" height="346" loading="lazy" src="/images/matrix.jpg">
 
 ### Assignment, comma, and grouping operators
 

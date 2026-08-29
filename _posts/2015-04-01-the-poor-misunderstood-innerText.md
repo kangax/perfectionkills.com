@@ -92,7 +92,7 @@ It sure is, but as you can imagine, the performance of such thing [leaves more t
 
 The problems with this frankenstein of a workaround are performance, complexity, and clarity. It shouldn't be so hard to get "plain text" representation of an element. Especially when there's an already "implemented" property that does just that.
 
-<img src="/images/innerText_emulation.png">
+<img width="888" height="527" loading="lazy" src="/images/innerText_emulation.png">
 
 Internet Explorer got this right — <code>textContent</code> and <code>Selection#toString</code> are poor contenders in cases like this; <code>innerText</code> is exactly what we need. Except that it's non-standard, and unsupported by one major browser. Thankfully, at least Chrome (Blink) and Safari (WebKit) were considerate enough to immitate it. One would hope there's no deviations among their implementations. Or is there?
 
@@ -100,7 +100,7 @@ Internet Explorer got this right — <code>textContent</code> and <code>Selectio
 
 Once I realized the significance of <code>innerText</code>, I wanted to see the differences among 2 engines. Since there was nothing like this out there, I set on a path to explore it. In true ["cross-browser maddness" traditions](http://unixpapa.com/js/key.html), what I've found was not for the faint of heart.
 
-<img src="/images/innerText_tests.png">
+<img width="910" height="486" loading="lazy" src="/images/innerText_tests.png">
 
 I started with (now extinct) [test suite by Aryeh Gregor](https://web.archive.org/web/20110205234444/http://aryeh.name/spec/innertext/test/innerText.html) and [added few more things](http://kangax.github.io/jstests/innerText/) to it. I also searched WebKit/Blink bug trackers and included [whatever](https://code.google.com/p/chromium/issues/detail?id=96839) [relevant](https://bugs.webkit.org/show_bug.cgi?id=14805) [things](https://bugs.webkit.org/show_bug.cgi?id=17830) I found there.
 
@@ -123,7 +123,7 @@ Another difference lurks behind <code>textContent</code> and <code>innerText</co
 You can find dozens of [tests on jsperf.com comparing innerText and textContent](http://jsperf.com/search?q=innerText) — <code>innerText</code> is often dozens time slower.
 
 <a href="http://jsperf.com/innertext-vs-textcontent-and-various-markup">
-  <img src="/images/innerText_vs_textContent.png">
+  <img width="890" height="535" loading="lazy" src="/images/innerText_vs_textContent.png">
 </a>
 
 In [this blog post](http://www.kellegous.com/j/2013/02/27/innertext-vs-textcontent/), Kelly Norton is talking about <code>innerText</code> being up to 300x slower (although that seems like a particularly rare case) and advises against using it entirely.
@@ -276,7 +276,7 @@ First of all, [Robert O'Callahan](http://robert.ocallahan.org/) of Mozilla made 
 
 I've added FF45 results to [a compat table](http://kangax.github.io/jstests/innerText/) and aside from couple differences, FF is pretty close to Chrome's implementation. I'm also planning to add more tests to find any other differences among Chrome, FF, and Edge.
 
-<img src="/images/innerText_updated.png">
+<img width="1794" height="1086" loading="lazy" src="/images/innerText_updated.png">
 
 The spec already revealed few bugs in Chrome, which I'm hoping to file tickets for and see resolved. If we can then also get Edge to converge, we'll be very close to having all 3 biggest browsers behave similarly, making `innerText` viable feature in a near future.
 
