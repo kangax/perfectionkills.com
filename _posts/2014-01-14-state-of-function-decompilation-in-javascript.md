@@ -8,7 +8,7 @@ tags:
 
 # State of function decompilation in Javascript
 
-<img src="/images/decompilation2.png" style="box-shadow:rgba(0,0,0,0.5) 1px 1px 1px">
+<img width="417" height="247" loading="lazy" src="/images/decompilation2.png" style="box-shadow:rgba(0,0,0,0.5) 1px 1px 1px">
 
 It's always fun to see something described as "magic" in Javascript world.
 
@@ -90,7 +90,7 @@ But what about today? Surely, things must have gotten better. There's a converge
 And indeed, things are looking good. But it's not nearly all nice and peachy yet, and there's more "fun" on the horizon.
 
 <a href="http://kangax.github.io/jstests/function-decompilation/">
-  <img src="/images/decompilation.png" style="width: 100%">
+  <img width="1319" height="362" loading="lazy" src="/images/decompilation.png" style="width: 100%">
 </a>
 
 I made [a simple test page](http://kangax.github.io/jstests/function-decompilation/), checking various cases of functions and their string representations. Then tested it on desktop browsers, including pretty "old" ones (IE6+, FF3+, Safari4+, Opera 9.6+, Chrome), as well as [slew of mobiles](http://www.browserstack.com/screenshots/bfc89b1d22472a5a2c25626c9c99ade9084b235b) and looked at common patterns.
@@ -150,7 +150,7 @@ Curiously, some engines (e.g. latest WebKit) *preserve function's original ident
 
 ### Non-standard
 
-What about non-standard extensions? Like [Mozilla's expression closures](http://perfectionkills.com/a-closer-look-at-expression-closures/).
+What about non-standard extensions? Like [Mozilla's expression closures](/a-closer-look-at-expression-closures/).
 
 <!-- ```
 var expressionClosure = function(x, y) x + y

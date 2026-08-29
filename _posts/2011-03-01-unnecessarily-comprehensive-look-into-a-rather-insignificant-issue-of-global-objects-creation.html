@@ -209,7 +209,7 @@ var global = f();
 function f(){return this}
 f(); // undefined
 </code></pre>
-<p>The rationale for this was, supposedly, to increase security by limiting access to global object. There is, however, a workaround and it involves <strong>indirect eval call</strong> (which I <a href="http://perfectionkills.com/global-eval-what-are-the-options/#indirect_eval_call_theory">explained in the past</a>):</p>
+<p>The rationale for this was, supposedly, to increase security by limiting access to global object. There is, however, a workaround and it involves <strong>indirect eval call</strong> (which I <a href="/global-eval-what-are-the-options/#indirect_eval_call_theory">explained in the past</a>):</p>
 <pre lang="javascript"><code>
 "use strict";
 var global = (1,eval)("this");
@@ -221,7 +221,7 @@ var global = (1,eval)("this");
 var global = (function(){return this})(); // ES3, ES5 non strict
 var global = (1,eval)('this'); // ES5 strict
 </code></pre>
-<p>In our current world of just-appearing ES5-compliant implementations, it&#8217;s hard to come up with a reliable cross-platform solution. Should we use ES3-ES5-non-strict snippet or ES5-strict one? The latter one sounds like a more future-proof solution, but reliance on indirect eval makes it a moving target: as <a href="http://perfectionkills.com/global-eval-what-are-the-options/#indirect_eval_call_in_practice">we&#8217;ve seen before</a>, indirect eval behavior varies across browsers. </p>
+<p>In our current world of just-appearing ES5-compliant implementations, it&#8217;s hard to come up with a reliable cross-platform solution. Should we use ES3-ES5-non-strict snippet or ES5-strict one? The latter one sounds like a more future-proof solution, but reliance on indirect eval makes it a moving target: as <a href="/global-eval-what-are-the-options/#indirect_eval_call_in_practice">we&#8217;ve seen before</a>, indirect eval behavior varies across browsers. </p>
 <p>Perhaps we can <strong>assume</strong> that browsers with strict mode support also follow ES5-compliant indirect eval behavior? In that case solution is simple:</p>
 <pre lang="javascript"><code>
 "use strict";

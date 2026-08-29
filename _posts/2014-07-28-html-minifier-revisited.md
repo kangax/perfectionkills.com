@@ -8,7 +8,7 @@ tags:
 
 # HTML minifier revisted
 
-4 years ago I [wrote about](http://perfectionkills.com/experimenting-with-html-minifier/) and released [HTMLMinifier](http://kangax.github.io/html-minifier/). Back then, there were [almost no tools](http://perfectionkills.com/optimizing-html/#tools) for proper HTML minification; unless you considered things like ["Absolute HTML Compressor"](http://www.alentum.com/ahc/) for Windows 95/98/XP/2000 or [Java-based HTMLCompressor](https://code.google.com/p/htmlcompressor/).
+4 years ago I [wrote about](/experimenting-with-html-minifier/) and released [HTMLMinifier](http://kangax.github.io/html-minifier/). Back then, there were [almost no tools](/optimizing-html/#tools) for proper HTML minification; unless you considered things like ["Absolute HTML Compressor"](http://www.alentum.com/ahc/) for Windows 95/98/XP/2000 or [Java-based HTMLCompressor](https://code.google.com/p/htmlcompressor/).
 
 I haven't been working on it all that much, but occasionally would add a feature, fix a bug, add some tests, refactor, or pull someone's generous contribution.
 
@@ -192,7 +192,7 @@ This could come in useful if your page layout/rendering depends on whitespace, s
 
 Minifier doesn't know that input-preceding element is rendered as **inline-block**; it doesn't know that **whitespace around it is significant**. Removing whitespace would render checkbox too close (squeeshed) to a "label".
 
-<img src="../images/inline_block.png" style="box-shadow: 1px 1px 1px rgba(0,0,0,0.5)">
+<img loading="lazy" src="../images/inline_block.png" style="box-shadow: 1px 1px 1px rgba(0,0,0,0.5)">
 
 This is when "conservativeCollapse" (and that extra space) comes in useful.
 
@@ -204,7 +204,7 @@ Another recently-introduced customization is maximum line length. An interesting
 
 We also have a benchmark suite now that goes over a number of "source" files (front pages of popular websites), minifies them, then reports size comparison and time spent on minification.
 
-<img src="../images/minifier_benchmarks.png">
+<img loading="lazy" src="../images/minifier_benchmarks.png">
 
 How does HTMLMinifier compare <sup><a href="#benchmarks">[1]</a></sup> to the other solutions out there ([Will Peavy's online minifier](http://www.willpeavy.com/minifier/) and a Java-based [HTMLCompressor](http://htmlcompressor.com))?
 
