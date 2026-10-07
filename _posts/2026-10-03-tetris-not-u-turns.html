@@ -1,0 +1,99 @@
+---
+layout: post
+title: "Tetris, not U-turns"
+description: "18 months of building PRzilla, one piece at a time"
+permalink: tetris-not-u-turns/
+image: /images/tetris-not-u-turns/cover.png
+tags:
+  - other
+---
+
+<h2>Tetris, not U-turns</h2>
+
+<p><em>Originally published on <a href="https://kangax.substack.com/p/tetris-not-u-turns">Substack</a> on October 3, 2026.</em></p>
+
+<figure><img src="/images/tetris-not-u-turns/01.png" alt="A Tetris-style stack of PRzilla features, with Programming marked as the next piece." loading="eager" width="548"></figure>
+
+<p>My training partner Bella logs every score now. She’s chasing someone called “Anonymous squirrel” on a leaderboard in <a href="https://przilla.app/">PRzilla</a>, the CrossFit app I’ve been building for the last 18 months.</p>
+
+<p>I didn’t plan that. I didn’t plan most of what PRzilla does today. It started with one training question, and once I answered it, the next one showed up on its own.</p>
+
+<p>I always thought a pivot meant a U-turn, a full reversal of direction. But these 18 months feel more like Tetris: you only ever see the next piece, and where it fits depends on what’s already there. The pieces are user needs, my own or someone else’s.</p>
+
+<h3>What’s a good time?</h3>
+
+<p>In spring 2025, PRzilla was a simple app: a list of classic CrossFit workouts where I could log my scores, modeled after <a href="https://wodwell.com">WODwell</a>. But a score on its own doesn’t tell you much, so I wanted to answer a question: “What’s a good time on a specific CrossFit workout?” WODwell showed levels for the famous ones, like Fran, but not for most workouts. I spent a few months playing around with AI to grade all of them. It was a lot less capable back then, so it needed a lot of prompting and experimentation, but by May, 907 workouts had levels from beginner to elite, and I was pretty satisfied with <a href="/using-ai-to-accurately-predict-crossfit/">how accurate many of them were</a>.</p>
+
+<p>That answer changed what my old scores meant. Every result I’d ever logged now had a level next to it.</p>
+
+<figure><img src="/images/tetris-not-u-turns/02.png" alt="Every WOD gets a curve from L1 to L10. Here are Grace and Murph." loading="lazy" width="600"><figcaption>Every WOD gets a curve from L1 to L10. Here are Grace and Murph.</figcaption></figure>
+
+<h3>Where do I stand?</h3>
+
+<p>Now I could see my approximate fitness level and how it changed over time. It was great, but conditioning was only one part of my fitness, so I brought in the other pillars I’d been tracking: strength and skills. Most of that history lived in <a href="https://www.sugarwod.com/">SugarWOD</a> exports and old spreadsheets, so I built a pipeline that turned years of messy notes into structured data. I then spent a lot of time—perhaps a bit too much—figuring out the best UI for <a href="/my-fitness-from-spreadsheet-to-an-app/">“My Fitness”</a>, which replaced a decade of spreadsheets. This was October 2025.</p>
+
+<p>But My Fitness was only as good as the data in it, and most of my day-to-day training still lived in other apps.</p>
+
+<figure><img src="/images/tetris-not-u-turns/03.png" alt="My Fitness, and my fitness level going back to 2015." loading="lazy" width="600"><figcaption>My Fitness, and my fitness level going back to 2015.</figcaption></figure>
+
+<h3>What did I do today?</h3>
+
+<p>Even though PRzilla was already a few months old, I was still using <a href="https://www.strong.app/">Strong</a> app to log my strength training and my practice (= open gym) CrossFit sessions. PRzilla could log a WOD score, but not a custom workout or a practice session. And almost nothing did both: CrossFit apps are built around the class WOD, Strong and <a href="https://www.hevyapp.com/">Hevy</a> don’t understand WODs, and <a href="https://beyondthewhiteboard.com/">BTWB</a>, the closest, felt like an airplane cockpit. I wanted a Monday like 10x3 ring muscle-ups, a 5k row and a 15min AMRAP to live in one session. And so I started building <a href="/crossfit-tracking-app-but-youre-in-control/">a workout tracker</a>: first on the web, finished in December 2025, then native, in the App Store by February 2026.</p>
+
+<p>The web version didn’t last. Within months I’d stopped updating it, because native had taken over. But having the tracker on my phone felt like entering a new era: for the first time, I could completely ditch my Strong app, and one app knew everything I did in the gym.</p>
+
+<figure><img src="/images/tetris-not-u-turns/04.png" alt="The training log and one logged WOD, May 2026." loading="lazy" width="600"><figcaption>The training log and one logged WOD, May 2026.</figcaption></figure>
+
+<h3>Should I go hard today?</h3>
+
+<p>Knowing what I did was half of it. The other half was what to do with it: push today, or back off? With my whole training history in one place, an AI coach could finally read it. By March, PRzilla had one.</p>
+
+<p>The coach only knew what I did, though, not how I’d recovered. I was using <a href="https://whoop.com/">Whoop</a> at that point and also had an Apple Watch. Whoop was great for recovery and habit tracking, and honestly, I loved its UI — a lot of PRzilla is modeled after it. But its workout tracker was limited, and I knew it could never be the one place for all my training. So naturally I brought recovery into PRzilla, and at that point I was able to stop using Whoop.</p>
+
+<p>Now the coach has both halves. Every morning it reads my recent sessions and my recovery, and tells me whether to push or back off. One week my HRV dropped 15ms after back-to-back heavy sessions. Without that data I would have pushed through another hard day; instead I dialed back to skill work and was fully recovered by Thursday. As a coach myself, I’d put its advice at 80–90% of what a human coach would recommend. <a href="/crossfit-training-in-the-age-of-ai/">I wrote about this</a> in May 2026.</p>
+
+<p>The one thing the coach didn’t know was the workout my gym had planned.</p>
+
+<figure><img src="/images/tetris-not-u-turns/05.png" alt="The morning note, and the recovery reading behind it. June 2026." loading="lazy" width="600"><figcaption>The morning note, and the recovery reading behind it. June 2026.</figcaption></figure>
+
+<h3>What’s on the whiteboard?</h3>
+
+<p>I resisted this one. The whiteboard is a core part of SugarWOD and <a href="https://www.pushpress.com/">PushPress</a>: it’s how programming from somewhere else reaches you. I didn’t want to rebuild it, and honestly, I was proud of my own answer: snap a photo of any whiteboard and PRzilla turns it into a workout you can log.</p>
+
+<p>Then a user on Reddit asked whether PRzilla could pull in <a href="https://pushjerk.com/">PushJerk</a>’s programming. I added it in May as an experiment. When I added my own gym, <a href="https://www.murderofcrowsbrooklyn.com/">Murder of Crows</a>, I realized I actually enjoyed using it myself. Within ten days it shipped as <a href="https://przilla.app/changelog/2026-05-29-crossfitcom-whiteboard">a Whiteboard tab</a> with <a href="https://www.crossfit.com/">CrossFit.com</a> and PushJerk.</p>
+
+<p>Now PRzilla knew the workout before I did it.</p>
+
+<p>Fast forward to the end of September: the coach started reading the whiteboard too. You <a href="https://przilla.app/changelog/2026-09-26-follow-a-track-and-athlete-profiles">follow a track</a>, and it plans around that track’s workouts. Mine is Murder of Crows: I don’t do it every day, but it’s my default. Now the coach actually looks up what’s planned, tells me, and suggests whether to scale it down, scale it up, or skip it, depending on my goal. I haven’t been this happy with a feature in a long time. Again, another piece just fitting in.</p>
+
+<figure><img src="/images/tetris-not-u-turns/06.png" alt="PushJerk on the Whiteboard in May, and the coach’s note about the track’s workout in September." loading="lazy" width="600"><figcaption>PushJerk on the Whiteboard in May, and the coach’s note about the track’s workout in September.</figcaption></figure>
+
+<h3>What’s on the clock?</h3>
+
+<p>This next piece took me by surprise, but is obvious in hindsight. Some of my early users started asking for a workout timer. I realized that the last time I did a 40min EMOM workout at home, I used the <a href="https://smartwod.app/">SmartWOD Timer</a> app, out of habit. I could easily add one to PRzilla. After some UI polish, we got stopwatch, AMRAP, EMOM, and interval timers. Then the requests got specific. One user, Mirko, wanted the timer to name each interval, call out stations in an EMOM, and chain custom sections. The first two shipped in July. The third is still on my list.</p>
+
+<p>The more important realization: mid-workout, what you need most is to see the structure of the workout — where you are and what’s coming. This is why we write things on a little whiteboard: to mark reps and sets as we do them, or note our time and splits. A standalone timer doesn’t know your workout. PRzilla did: every WOD in it was already broken down into movements and rounds. So the real challenge was building <a href="https://przilla.app/changelog/2026-09-12-the-timer-shows-the-workout">a WOD-aware timer</a>, which shipped in September. Start Helen, and the run, swings and pull-ups are listed under the clock, round by round.</p>
+
+<figure><img src="/images/tetris-not-u-turns/07.png" alt="Helen at the start of round two, and Fight Gone Bad counting wall balls." loading="lazy" width="600"><figcaption>Helen at the start of round two, and Fight Gone Bad counting wall balls.</figcaption></figure>
+
+<h3>Who else is out there?</h3>
+
+<p>As we’re entering October, the latest piece is social, and it’s an interesting one. I resisted social too, and for the same reason: I didn’t want to build another SugarWOD or PushPress. Those apps are great at community but they suck at logging. And if you can’t log your training, you have nothing solid to build on: no analysis, no scaling recommendations, no program adjustments.</p>
+
+<p>Today the logging is solid. Any WOD you can dream of, a heavy complex, the run your Apple Watch picked up, even the occasional squash game: it all goes in, and <a href="/your-crossfit-app-doesnt-know-what-you-did/">it’s accurate</a>. But logging is a solo sport.</p>
+
+<p>So social wasn’t a new idea. It only became worth building in the context of PRzilla. Friends started joining friends, and they wanted to see each other’s scores and PR’s. And there were finally enough of us for leaderboards to mean something: when we switched them on, Murph, Cindy and other popular workouts suddenly showed 20+ results each. That’s when social landed on top of the core: global <a href="https://przilla.app/changelog/2026-09-05-search-your-training-history">leaderboards</a> and <a href="https://przilla.app/changelog/2026-09-26-follow-a-track-and-athlete-profiles">athlete profiles</a> that show your fitness level, estimated lifts, best benchmarks and skills, all built from what you’ve logged. A profile is only interesting if there’s something true to show. Mine has 2,222 sessions behind it.</p>
+
+<p>Which brings me back to Bella. What I didn’t anticipate is what a leaderboard would do for logging: she’s chasing the squirrel on the Fittest board, so she logs every score. The newest piece is making the ones under it stronger.</p>
+
+<figure><img src="/images/tetris-not-u-turns/08.png" alt="The Fittest board in September, with Bella at #3 chasing the squirrel. Next to it, my profile." loading="lazy" width="600"><figcaption>The Fittest board in September, with Bella at #3 chasing the squirrel. Next to it, my profile.</figcaption></figure>
+
+<h3>What’s next?</h3>
+
+<p>Looking at the stack now, it’s funny what’s missing. There are four things I could have built first but didn’t: the whiteboard, social, gym management, and programming. That’s where SugarWOD, <a href="https://www.wodify.com/">Wodify</a> and PushPress start, because they start with the gym. I started with one athlete’s question.</p>
+
+<p>The whiteboard and social are here now, and both turned out to need everything under them. Next come adding friends and perhaps a feed. Gym management I’ve always resisted — reservations, billing, invoices, churn… Again, I think PushPress does it pretty well, as per many owners I spoke to. Building it would be the real U-turn: PRzilla would become an app for the gym instead of the athlete.</p>
+
+<p>Programming is the big next piece. The Whiteboard brings in programming someone else wrote. What’s missing is writing it: the part where you have a calendar and you add workouts onto it. It’s a big project, and it only makes sense now. Your training log is the past and your programming is the future. As a coach, I need to know what you’re capable of before I can design a program for you, and now PRzilla knows. Goal tracking is on the roadmap too.</p>
+
+<p>After that, I don’t know. You only ever see the next piece, and judging by the last few, the one after it will probably come from one of you. If there’s something you need, <a href="mailto:hello@przilla.app">drop me a note</a> or <a href="https://przilla.app/roadmap">add it to the roadmap</a>. And if you haven’t tried PRzilla yet, it’s on <a href="https://apps.apple.com/app/id6758307458">iOS</a> and <a href="https://play.google.com/store/apps/details?id=app.przilla.przilla&amp;hl=en_US">Android</a>.</p>
