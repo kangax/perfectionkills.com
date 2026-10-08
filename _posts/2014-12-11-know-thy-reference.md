@@ -6,7 +6,6 @@ tags:
   - js
 ---
 
-# Know thy reference
 ### Abusing leaky abstractions for a better understanding of "this"
 
 It was a sunny Monday morning that I woke up to [an article on HackerNews](https://news.ycombinator.com/item?id=8713270), simply named ["This in Javascript"](http://bjorn.tipling.com/all-this). Curious to see what all the attention is about, I started skimming through. As expected, there were mentions of `this` in global scope, `this` in function calls, `this` in constructor instantiation, and so on. It was a long article. And the more I looked through, the more I realized just how **overwhelming** this topic might seem to folks unfamiliar with intricacies of `this`, especially when thrown into a myriad of various examples with seemingly random behavior.
@@ -234,7 +233,7 @@ Finally, if it's NOT a reference at all — `(function(){})()` — use `undefine
 
 Are you feeling like this right now?
 
-<img width="412" height="346" loading="lazy" src="/images/matrix.jpg">
+<img width="412" height="346" loading="lazy" src="/images/matrix.jpg" alt="The Matrix film still illustrating references">
 
 ### Assignment, comma, and grouping operators
 

@@ -3,11 +3,10 @@
     if (header.id) {
       var permalink = document.createElement('a');
       permalink.href = '#' + header.id;
-      permalink.innerHTML = '&sect;';
+      permalink.className = 'heading-permalink';
+      permalink.textContent = '§';
+      permalink.setAttribute('aria-label', 'Link to section: ' + header.textContent.trim());
       header.appendChild(permalink);
-      header.tabIndex = 0;
-      permalink.onfocus = function() { this.style.display = 'block' };
-      permalink.onblur = function() { this.style.display = '' };
     }
   }
   var headers = document.getElementsByTagName('h3');
@@ -24,15 +23,6 @@
   }
 })();
 
-// (function(){
-//   var z = document.createElement("script");
-//   z.type = "text/javascript";
-//   z.async = true;
-//   z.src = "http://engine.carbonads.com/z/12089/carbon_2_1_0_VERT";
-//   var s = document.getElementsByTagName("script")[0];
-//   s.parentNode.insertBefore(z, s);
-// })();
-
 (function(d) {
   var script = d.createElement('script');
   script.async = true;
@@ -44,48 +34,42 @@ function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
 gtag('config', 'G-JMMHN1E71L');
 
-document.documentElement.onclick = function(e) {
-  e = e || window.event;
-  var target = e.target || e.srcElement;
-  var clearAll;
+(function () {
+  var filters = document.querySelector('.archive-filters');
+  if (!filters) return;
 
-  if (target.className.indexOf('topic') > -1) {
+  var buttons = Array.prototype.slice.call(filters.querySelectorAll('.topic'));
+  var years = Array.prototype.slice.call(document.querySelectorAll('.archive-year-section'));
+  var posts = Array.prototype.slice.call(document.querySelectorAll('.post-list li'));
+  var status = document.getElementById('archive-status');
+  filters.hidden = false;
 
-    // only add class if not clicking on the same one
-    if (target.className.indexOf('selected') === -1) {
-      clearAll = false;
-    }
-    else {
-      clearAll = true;
-    }
+  buttons.forEach(function (button) {
+    button.addEventListener('click', function () {
+      var selected = button.getAttribute('data-tags');
+      var selectedTags = selected.split(' ');
+      var shown = 0;
 
-    var topicEls = [].slice.call(document.getElementsByClassName('topic'));
-    for (var i = 0, len = topicEls.length; i < len; i++) {
-      topicEls[i].className = topicEls[i].className.replace('selected', '');
-    }
+      buttons.forEach(function (item) {
+        var active = item === button;
+        item.classList.toggle('selected', active);
+        item.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
 
-    if (!clearAll) {
-      target.className += ' selected';
-    }
+      posts.forEach(function (post) {
+        var tags = (post.getAttribute('data-tags') || '').split(' ');
+        var visible = selected === 'all' || selectedTags.some(function (tag) {
+          return tags.indexOf(tag) !== -1;
+        });
+        post.hidden = !visible;
+        if (visible) shown++;
+      });
 
-    var tagName = target.getAttribute('data-name');
-    var liEls = document.getElementsByClassName('posts')[0].getElementsByTagName('li');
+      years.forEach(function (year) {
+        year.hidden = !year.querySelector('.post-list li:not([hidden])');
+      });
 
-    var numShown = 0;
-
-    for (var i = 0, len = liEls.length; i < len; i++) {
-      var content = liEls[i].getElementsByClassName('tags')[0].textContent;
-      if (content.indexOf(tagName) > -1 || clearAll) {
-        liEls[i].className = liEls[i].className.replace(/hidden/g, '');
-        numShown++;
-      }
-      else {
-        liEls[i].className += ' hidden';
-      }
-    }
-
-    document.getElementById('shown').innerHTML = numShown;
-
-    return false;
-  }
-};
+      status.textContent = shown + (shown === 1 ? ' post' : ' posts');
+    });
+  });
+})();

@@ -3,48 +3,62 @@ layout: default
 title: Home page
 ---
 
-<section class="site-callout">
-  <a class="site-callout__logo" href="https://przilla.app" target="_blank" rel="noopener">
-    <img src="/images/przilla_logo.png" alt="PRzilla" />
-  </a>
-  <div class="site-callout__content">
-    <h2 class="site-callout__title">New: PRzilla app</h2>
-    <p class="site-callout__body">
-      I’m building <a href="https://przilla.app" target="_blank" rel="noopener">PRzilla</a>—a dedicated home for tracking WOD benchmarks,
-      strength work, and long-term progress. If you’ve enjoyed the deep dives on Perfection Kills,
-      you’ll feel at home with the tooling, data, and obsessive detail there.
-    </p>
-    <div class="site-callout__stores">
-      <a class="site-callout__cta" href="https://apps.apple.com/app/id6758307458" target="_blank" rel="noopener">App Store</a>
-      <a class="site-callout__cta" href="https://play.google.com/store/apps/details?id=app.przilla.przilla&hl=en_US" target="_blank" rel="noopener">Google Play</a>
-    </div>
-  </div>
+<section class="latest-posts" aria-labelledby="latest-heading">
+  <h2 id="latest-heading">Latest writing</h2>
+  {% for post in site.posts limit:3 %}
+  <article class="latest-post">
+    <time datetime="{{ post.date | date: '%Y-%m-%d' }}">{{ post.date | date: "%-d %B %Y" }}</time>
+    <h3><a href="{{ post.url }}">{{ post.title }}</a></h3>
+    {% if post.description %}<p>{{ post.description }}</p>{% endif %}
+  </article>
+  {% endfor %}
 </section>
 
-<div class="filter">
-  Read about
+<aside class="site-callout" aria-labelledby="przilla-heading">
+  <a class="site-callout__logo" href="https://przilla.app">
+    <img src="/images/przilla_logo.png" alt="PRzilla" width="80" height="80" />
+  </a>
+  <div class="site-callout__content">
+    <h2 id="przilla-heading" class="site-callout__title">I also build PRzilla</h2>
+    <p class="site-callout__body">A CrossFit training app for logging WODs, strength work, and progress over time.</p>
+    <div class="site-callout__stores">
+      <a class="site-callout__cta" href="https://apps.apple.com/app/id6758307458">App Store</a>
+      <a class="site-callout__cta" href="https://play.google.com/store/apps/details?id=app.przilla.przilla&amp;hl=en_US">Google Play</a>
+    </div>
+  </div>
+</aside>
 
-  <span>
-    <a href="#" class="topic" data-name="js">JS</a> |
-    <a href="#" class="topic" data-name="css">CSS</a> |
-    <a href="#" class="topic" data-name="html">HTML</a> |
-    <a href="#" class="topic" data-name="prototype">Prototype.js</a> |
-    <a href="#" class="topic" data-name="other">Other</a>
-  </span>
-</div>
+<section class="archive" aria-labelledby="archive-heading">
+  <div class="archive-heading-row">
+    <h2 id="archive-heading">Browse the archive</h2>
+    <p id="archive-status" role="status">{{ site.posts | size | minus: 3 }} posts</p>
+  </div>
 
-<ul class="posts">
-{% for post in site.posts %}
-  <li class="{{ post.popular }} {{ post.new }}">
-    <span class="tags" style="display: none">{{ post.tags | jsonify }}</span>
-    <a href="{{ post.url }}">{{ post.title }}</a>
-    <span class="date">{{ post.date | date: "%-d %B %Y" }}</span>
-    <span class="num-words"><em>{{ post.content | number_of_words }}</em> words</span>
-  </li>
-{% endfor %}
-</ul>
+  <div class="archive-filters" role="group" aria-label="Filter archive by topic" hidden>
+    <button type="button" class="topic selected" data-tags="all" aria-pressed="true">All</button>
+    <button type="button" class="topic" data-tags="fitness" aria-pressed="false">Training</button>
+    <button type="button" class="topic" data-tags="przilla" aria-pressed="false">Building PRzilla</button>
+    <button type="button" class="topic" data-tags="essay" aria-pressed="false">Personal</button>
+    <button type="button" class="topic" data-tags="js css html prototype" aria-pressed="false">Web development</button>
+    <button type="button" class="topic" data-tags="other" aria-pressed="false">Other</button>
+  </div>
 
-<p style="font-size: 12px; margin-top: 30px">
-  Showing <b id="shown">{{ site.posts | size }}</b> posts.
-  Those with 50,000+ views are marked as <span class="popular-tag">popular</span>
-</p>
+  {% assign archive_year = '' %}
+  {% for post in site.posts offset:3 %}
+    {% assign year = post.date | date: '%Y' %}
+    {% if year != archive_year %}
+      {% unless forloop.first %}</ul></section>{% endunless %}
+      <section class="archive-year-section">
+        <h3>{{ year }}</h3>
+        <ul class="post-list">
+      {% assign archive_year = year %}
+    {% endif %}
+          <li data-tags="{{ post.tags | join: ' ' }}">
+            <a href="{{ post.url }}">{{ post.title }}</a>
+            <time datetime="{{ post.date | date: '%Y-%m-%d' }}">{{ post.date | date: "%-d %B %Y" }}</time>
+            {% if post.popular %}<span class="post-badge">Popular</span>{% endif %}
+          </li>
+  {% endfor %}
+        </ul>
+      </section>
+</section>

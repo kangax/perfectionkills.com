@@ -2,9 +2,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 
 {%- comment -%}
-  Every post body opens with an <h2> repeating its own title, so that heading is
-  removed before deriving a description. Entities are decoded first because
-  strip_html leaves them encoded and xml_escape would double-escape them.
+  Older HTML posts may repeat the title in their first heading. Remove that
+  heading text only when it begins the body-derived description. Decode entities
+  before xml_escape so they are not double-escaped.
 {%- endcomment -%}
 
 {%- if page.layout == 'post' -%}
@@ -14,12 +14,15 @@
     {%- capture page_description -%}{{ page.description }}{%- endcapture -%}
   {%- else -%}
     {%- comment -%}
-      Drop leading <style> blocks (always after the title heading) and anything
-      from the first <script> on; strip_html keeps their text otherwise.
+      Drop <style> blocks and anything from the first <script> on;
+      strip_html keeps their text otherwise.
     {%- endcomment -%}
     {%- assign body = page.content | split: '</style>' | last | split: '<script' | first -%}
     {%- assign body = body | strip_html | normalize_whitespace | strip -%}
-    {%- assign body = body | remove_first: page.title | strip -%}
+    {%- assign body_start = body | slice: 0, page.title.size -%}
+    {%- if body_start == page.title -%}
+      {%- assign body = body | remove_first: page.title | strip -%}
+    {%- endif -%}
     {%- comment -%}
       These posts were imported from Wordpress and carry literal numeric
       entities. Decode them before xml_escape, or a curly quote ships to Google

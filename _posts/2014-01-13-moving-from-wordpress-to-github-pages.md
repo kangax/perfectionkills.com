@@ -6,8 +6,6 @@ tags:
   - other
 ---
 
-# Moving from Wordpress to Github Pages
-
 Moving from Wordpress to [Github Pages](http://pages.github.com) (and [Jekyll](http://jekyllrb.com/)) is the best thing that ever happened to this blog. I've been meaning to do it for a while and finally found some time over these holidays.
 
 Jekyll is a static site generator, and Github Pages allow for seamless hosting of its content. I've been using it on [fabricjs.com](http://fabricjs.com) for [couple years now](https://github.com/kangax/fabricjs.com); once you get familiar with the worklow, it's simple and straightforward.

@@ -3,43 +3,38 @@
   <head>
     {% include head.html %}
   </head>
-  <body>
+  <body class="post-page">
     <div id="outer-wrapper">
       <div id="wrapper">
 
         {% include header.html %}
 
-        <div class="content">
+        <main id="main-content" class="content">
+          <article class="post">
+            <header class="post-header">
+              <a href="/" class="back-to-front">&larr; All posts</a>
+              <h1 class="post-title">{{ page.title }}</h1>
+              {% if page.description %}<p class="post-dek">{{ page.description }}</p>{% endif %}
+              <p class="post-meta">
+                <time datetime="{{ page.date | date: '%Y-%m-%d' }}">{{ page.date | date: "%-d %B %Y" }}</time>
+              </p>
+            </header>
 
-          <a href="/" class="back-to-front" title="Back to all posts">&larr; back</a>
+            <div class="post-body">
+              {{ content }}
+            </div>
 
-          <span class="post-num-words">
-            {{ page.content | number_of_words }} <span>words</span>
-          </span>
+            <aside class="post-ad" aria-label="Advertisement">
+              <div id="carbonads-container"></div>
+            </aside>
+          </article>
 
-          <span class="post-date">
-            {{ page.date | date: "%-d %B %Y" }}
-          </span>
-
-          <div id="carbonads-container">
-            <script async type="text/javascript" src="//cdn.carbonads.com/carbon.js?serve=CKYIKK3L&placement=perfectionkillscom" id="_carbonads_js"></script>
-          </div>
-
-          {{ content }}
-
-          <div id="disqus_thread"></div>
-          <script>
-            var disqus_shortname = 'perfectionkillscom';
-            (function() {
-              var dsq = document.createElement('script'); dsq.async = true;
-              dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
-              (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
-            })();
-          </script>
-          <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-          <a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
-
-        </div>
+          <details class="post-discussion">
+            <summary>Comments</summary>
+            <div id="disqus_thread"></div>
+            <noscript>Please enable JavaScript to view comments.</noscript>
+          </details>
+        </main>
 
       </div>
     </div>
@@ -47,6 +42,7 @@
     {% include footer.html %}
 
     <script src="/js/master.js"></script>
+    <script src="/js/post.js"></script>
 
   </body>
 </html>

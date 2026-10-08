@@ -6,7 +6,6 @@ tags:
   - js
 ---
 
-# Refactoring single page app
 ### _A tale of reducing complexity and exploring client-side MVC_
 
 Skip straight to <a href="#tldr">TL;DR</a>.
@@ -17,7 +16,7 @@ I created it couple years ago to showcase _everything_ that [Fabric.js](http://f
 
 You could quickly try things out — add simple shapes or images or SVG's or text; move them around, scale, rotate, delete, group, change colors, opacity; experiment with locking or z-index properties; serialize canvas into image or JSON or SVG; and so on.
 
-<img loading="lazy" src="/images/kitchensink.png" width="400px">
+<img loading="lazy" src="/images/kitchensink.png" width="400" height="382" alt="Fabric.js kitchen sink canvas demo">
 
 And so there was a good old, _single_ **kitchensink.js** file (accompanied by kitchensink.html and kitchensink.css) — just a bunch of procedural commands and conditions, really. Pressed that button? Add a rectangle to the canvas. Pressed another one? Load an image. Was object selected on canvas? Enable that button and update its text. You get the idea.
 
@@ -34,7 +33,7 @@ The following is my step-by-step refactoring path, including close look at some 
 
 <h2 id="complexity_vs_maintainability">Complexity vs. Maintainability</h2>
 
-<img width="1193" height="343" loading="lazy" src="/images/plato.png">
+<img width="1193" height="343" loading="lazy" src="/images/plato.png" alt="Plato code analysis report">
 
 Before changing anything, I decided to do a little experiment and **statically analyze complexity** of an app. Not to tell me that it was in shitty state; that I already knew. I wanted to see how it **changes** based on different solutions.
 
@@ -78,7 +77,7 @@ It would have also provided **good foundation** for further improvements, in cas
 
 Notice how it shaved off ~50 lines of code and even improved complexity from 132 to **116** (mainly removing some DOM handling conditions: think `toggleClass`, etc.).
 
-<img width="857" height="545" loading="lazy" src="/images/refactoring/jquery.png">
+<img width="857" height="545" loading="lazy" src="/images/refactoring/jquery.png" alt="Charts of app complexity, maintainability, and JavaScript size after the jQuery refactor">
 
 ## Backbone? Angular? Ember?
 
@@ -112,7 +111,7 @@ Maintainability rose from 104 to ~**125**.
 
 {% gist kangax/564310b2b1b601e43ae7 %}
 
-<img width="880" height="542" loading="lazy" src="/images/refactoring/ui_business.png">
+<img width="880" height="542" loading="lazy" src="/images/refactoring/ui_business.png" alt="Charts of app complexity, maintainability, and JavaScript size after separating UI and business logic">
 
 ## Introducing convention
 
@@ -120,7 +119,7 @@ Looking at the code revealed few more possible optimizations. One of them was to
 
 The changes weren't very impressive, but complexity of the view went down from 26 to **21**, SLOC went from 829 to **805**. Not bad.
 
-<img width="862" height="542" loading="lazy" src="/images/refactoring/convention.png">
+<img width="862" height="542" loading="lazy" src="/images/refactoring/convention.png" alt="Charts of app complexity, maintainability, and JavaScript size after introducing conventions">
 
 ## Backbone
 
@@ -158,7 +157,7 @@ Views became more declarative and easier to follow. SLOC went down a bit (787 ->
 
 {% gist kangax/d15e75e3ee13a2bcee4f %}
 
-<img width="872" height="555" loading="lazy" src="/images/refactoring/backbone.png">
+<img width="872" height="555" loading="lazy" src="/images/refactoring/backbone.png" alt="Charts of app complexity, maintainability, and JavaScript size after adding Backbone">
 
 ## Backbone.unclassified
 
@@ -190,7 +189,7 @@ The code size obviously increased once again, but look what happened with views 
 
 Of course I didn't need complexity report to tell me that things got better. I was now looking at 5 beautiful concise view files, each with its own rendering logic and behavior. As a nice side effect, some of the views (e.g. `AddCommandsView`) [became **entirely declarative**](https://github.com/kangax/fabricjs.com/blob/089cd6a93d05f4bf4c9b09a5c235f4010e08c545/js/kitchensink/add_commands_view.js).
 
-<img width="873" height="557" loading="lazy" src="/images/refactoring/multiple_views.png">
+<img width="873" height="557" loading="lazy" src="/images/refactoring/multiple_views.png" alt="Charts of app complexity, maintainability, and JavaScript size after splitting the app into views">
 
 ## 2-way binding
 
@@ -330,7 +329,7 @@ Improvement across the board. And what about HTML, where so much logic was moved
 
 {% gist kangax/04057452dd3d33ae76e1 %}
 
-<img width="855" height="546" loading="lazy" src="/images/refactoring/rivets.png">
+<img width="855" height="546" loading="lazy" src="/images/refactoring/rivets.png" alt="Charts of app complexity, maintainability, and JavaScript size after adding Rivets">
 
 Ok, 100 lines longer, and only 3KB heavier. Doesn't seem too bad.
 
@@ -356,7 +355,7 @@ SLOC stayed the same but what happened to complexity? Not only it went down to t
 
 Unfortunately, maintainability went slightly down (to **128**), likely due to all the additional cruft.
 
-<img width="900" height="550" loading="lazy" src="/images/refactoring/multiple_controllers.png">
+<img width="900" height="550" loading="lazy" src="/images/refactoring/multiple_controllers.png" alt="Charts of app complexity, maintainability, and JavaScript size after adding controllers">
 
 Even though this was the **best case complexity-wise**, I still wasn't *too happy* with this solution. There were still bindings in HTML and canvas controllers felt a bit too overly abstracted (i.e. it would take some time to understand how app works, how to change or extend it).
 
@@ -431,13 +430,13 @@ Comparing to previous Backbone/Rivets combo, SLOC went from 715 to __660__. Comp
 
 The reduction in SLOC was expected, knowing Angular's nature of controller "entrees" right in markup. Complexity and maintainability, on the other hand, practically stayed the same.
 
-<img width="865" height="560" loading="lazy" src="/images/refactoring/angular.png">
+<img width="865" height="560" loading="lazy" src="/images/refactoring/angular.png" alt="Charts of app complexity, maintainability, and JavaScript size after the Angular version">
 
 ## HTML size
 
 If you're wondering how this refactoring affected size of the main HTML file, the picture is very simple and straightforward.
 
-<img width="879" height="551" loading="lazy" src="/images/refactoring/html_size.png">
+<img width="879" height="551" loading="lazy" src="/images/refactoring/html_size.png" alt="Charts comparing lines of code and file size across app implementations">
 
 As expected, it's been continuously growing little by little, with the spike from markup-based solutions like Rivets and Angular. Curiously, while Angular resulted in higher SLOC, it was actually less KB comparing to Rivets.
 
